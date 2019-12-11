@@ -5,7 +5,10 @@ import cors from 'cors'
 
 import { Client } from 'pg'
 
-const dbParams = process.env.DATABASE_URL ? { connectionString: process.env.DATABASE_URL } : {
+const dbParams = process.env.DATABASE_URL ? {
+  url: process.env.DATABASE_URL,
+  ssl: true
+} : {
   user: 'postgres',
   host: 'localhost',
   database: 'pl',
