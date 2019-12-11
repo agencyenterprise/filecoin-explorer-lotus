@@ -4,6 +4,8 @@ import axios from 'axios'
 import { BrowserRouter as Router, Route, Switch, withRouter } from 'react-router-dom'
 import './App.css'
 
+const host = window.location.hostname == 'localhost' ? 'http://localhost:8888' : ''
+
 class ChainPage extends React.Component {
   state = {
     chain: {
@@ -21,7 +23,7 @@ class ChainPage extends React.Component {
 
 
   getChain() {
-    axios.get('http://localhost:8888/api/chain').then(res => {
+    axios.get(`${host}/api/chain`).then(res => {
       const chain = {
         nodes: [],
         edges: []
