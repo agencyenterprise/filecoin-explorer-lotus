@@ -1,3 +1,7 @@
+@import url('https://fonts.googleapis.com/css?family=IBM+Plex+Sans:100,200,300,400,500,600,700&display=swap');
+body {
+  font-family: IBM Plex Sans;
+}
 .App {
   text-align: center;
 }
@@ -35,4 +39,24 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+.header {
+  background-color: #24456e;
+  padding: 20px;
+  position: fixed;
+  width: 100%;
+  z-index: 99;
+}
+
+.header a {
+  color: #fff;
+  text-decoration: none;
+  padding: 20px;
+  font-size: 18px;
+}
+
+.container {
+  width: 900px;
+  margin: 0 auto;
 }
