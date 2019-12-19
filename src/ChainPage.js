@@ -1,5 +1,4 @@
 import React from "react";
-import Graph from "react-graph-vis";
 import axios from "axios";
 import {
   BrowserRouter as Router,
@@ -40,20 +39,31 @@ class ChainPage extends React.Component {
   }
 
   async getChain() {
-    const res = await axios.get(`${host}/api/chain/graph.json`);
-    const nodes = res.data.nodes.map(n => {
-      console.log(n);
-      return { key: n.id.toString(), color: this.minerToRGB(n.miner) };
-    });
-    const edges = res.data.links.map((e, i) => {
-      return {
-        key: i.toString(),
-        sourcename: e.sourcename ? e.sourcename.toString() : "0",
-        targetname: e.targetname ? e.targetname.toString() : "0",
+    const res = await axios.get(`${host}/api/chain`);
+    const chain = {
+      nodes: [],
+      edges: []
+    };
+    const blocks = {};
+
+    res.data.forEach(block => {
+      blocks[block.block] = chain.nodes.length;
+      chain.nodes.push({
+        id: blocks[block.block],
+        key: blocks[block.block].toString(),
+        height: block.height,
+        miner: block.miner,
+        color: this.minerToRGB(block.miner)
+        //name: blocks[block.block],
+        //title: block.block
+      });
+      chain.edges.push({
+        sourcename: blocks[block.block],
+        targetname: blocks[block.parent],
+        key: `${blocks[block.block]}-e`,
         dash: 1
-      };
+      });
     });
-    const chain = { nodes, edges };
     this.setState({ chain });
   }
 
@@ -186,7 +196,9 @@ class ChainPage extends React.Component {
         return n.value.fixed;
       })
       .nodeStrokeWidth(0) // turn off outlines
-      .nodeLabel("")
+      .nodeLabel(function(n) {
+        return n.value.height;
+      })
       .nodeLabelFill(function(n) {
         var rgb = d3.rgb(
             selectionDiagram.nodeFillScale()(selectionDiagram.nodeFill()(n))
@@ -296,7 +308,7 @@ class ChainPage extends React.Component {
   }
   render() {
     return (
-      <div id="main">
+      <div id="main" style={{ padding: 20 }}>
         <div id="graph" className="chart"></div>
         <div id="message" style={{ display: "none" }}></div>
       </div>
