@@ -78,7 +78,8 @@ class ChainPage extends React.Component {
     var querystring = window.querystring;
 
     var selectionDiagram = dc_graph.diagram("#graph"),
-      pie,
+      minerPie,
+      blockHeightPie,
       row;
 
     var options = {
@@ -154,6 +155,10 @@ class ChainPage extends React.Component {
           return n.miner;
         }),
         minerGroup = minerDimension.group(),
+        blockHeightDimension = data.nodef.crossfilter.dimension(function(n) {
+          return n.height;
+        }),
+        blockHeightGroup = blockHeightDimension.group(),
         dashDimension = data.edgef.crossfilter.dimension(function(e) {
           return e.dash;
         }),
@@ -163,7 +168,8 @@ class ChainPage extends React.Component {
         .nodeGroup(data.nodef.group)
         .edgeDimension(data.edgef.dimension)
         .edgeGroup(data.edgef.group);
-      pie.dimension(minerDimension).group(minerGroup);
+      minerPie.dimension(minerDimension).group(minerGroup);
+      blockHeightPie.dimension(blockHeightDimension).group(blockHeightGroup);
       row.dimension(dashDimension).group(dashGroup);
     }.bind(this);
     var engine = dc_graph.spawn_engine(
@@ -277,8 +283,8 @@ class ChainPage extends React.Component {
         })
     );
 
-    pie = dc
-      .pieChart("#pie")
+    minerPie = dc
+      .pieChart("#minerPie")
       .width(150)
       .height(150)
       .radius(75)
@@ -292,7 +298,25 @@ class ChainPage extends React.Component {
         return n.key;
       })
       .title(function(kv) {
-        return colors[kv.key] + " nodes (" + kv.value + ")";
+        return kv.key;
+      });
+
+    blockHeightPie = dc
+      .pieChart("#blockHeightPie")
+      .width(150)
+      .height(150)
+      .radius(75)
+      .colors(
+        d3.scale
+          .ordinal()
+          .domain([0, 1, 2])
+          .range(colors)
+      )
+      .label(function(n) {
+        return n.key;
+      })
+      .title(function(kv) {
+        return kv.key;
       });
 
     row = dc
@@ -312,7 +336,8 @@ class ChainPage extends React.Component {
       <div id="main" style={{ padding: 20 }}>
         <div className="charts">
           <div id="row"></div>
-          <div id="pie"></div>
+          <div id="minerPie"></div>
+          <div id="blockHeightPie"></div>
         </div>
         <div id="graph" className="chart"></div>
         <div id="message" style={{ display: "none" }}></div>
