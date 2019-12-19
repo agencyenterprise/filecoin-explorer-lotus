@@ -35,13 +35,14 @@ app.get("/api/chain", async (req, res) => {
       parent,
       b.miner,
       b.height,
+      b.parentweight,
       b.timestamp
     from
       block_parents
     inner join
       blocks b on block_parents.block = b.cid
     where b.height > $1 and b.height < $2`,
-    [13800, 14000]
+    [13800, 13900]
   );
   //console.log(query.rows[0].message)
   res.json(query.rows);

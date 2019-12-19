@@ -46,13 +46,14 @@ class ChainPage extends React.Component {
     };
     const blocks = {};
 
-    res.data.forEach(block => {
+    res.data.forEach((block, index) => {
       blocks[block.block] = chain.nodes.length;
       chain.nodes.push({
         id: blocks[block.block],
         key: blocks[block.block].toString(),
         height: block.height,
         miner: block.miner,
+        parentWeight: block.parentweight,
         color: this.minerToRGB(block.miner)
         //name: blocks[block.block],
         //title: block.block
@@ -61,7 +62,7 @@ class ChainPage extends React.Component {
         sourcename: blocks[block.block],
         targetname: blocks[block.parent],
         key: `${blocks[block.block]}-e`,
-        dash: 1
+        dash: index % 2 === 0 ? 0 : 1
       });
     });
     this.setState({ chain });
@@ -149,10 +150,10 @@ class ChainPage extends React.Component {
     var populate = function(n) {
       console.log(this.state.chain.nodes);
       var data = build_data(this.state.chain.nodes, this.state.chain.edges),
-        colorDimension = data.nodef.crossfilter.dimension(function(n) {
-          return n.color;
+        minerDimension = data.nodef.crossfilter.dimension(function(n) {
+          return n.miner;
         }),
-        colorGroup = colorDimension.group(),
+        minerGroup = minerDimension.group(),
         dashDimension = data.edgef.crossfilter.dimension(function(e) {
           return e.dash;
         }),
@@ -162,7 +163,7 @@ class ChainPage extends React.Component {
         .nodeGroup(data.nodef.group)
         .edgeDimension(data.edgef.dimension)
         .edgeGroup(data.edgef.group);
-      pie.dimension(colorDimension).group(colorGroup);
+      pie.dimension(minerDimension).group(minerGroup);
       row.dimension(dashDimension).group(dashGroup);
     }.bind(this);
     var engine = dc_graph.spawn_engine(
@@ -197,7 +198,7 @@ class ChainPage extends React.Component {
       })
       .nodeStrokeWidth(0) // turn off outlines
       .nodeLabel(function(n) {
-        return n.value.height;
+        return `${n.value.height}-${n.value.parentWeight}`;
       })
       .nodeLabelFill(function(n) {
         var rgb = d3.rgb(
@@ -287,8 +288,8 @@ class ChainPage extends React.Component {
           .domain([0, 1, 2])
           .range(colors)
       )
-      .label(function() {
-        return "";
+      .label(function(n) {
+        return n.key;
       })
       .title(function(kv) {
         return colors[kv.key] + " nodes (" + kv.value + ")";
@@ -309,6 +310,10 @@ class ChainPage extends React.Component {
   render() {
     return (
       <div id="main" style={{ padding: 20 }}>
+        <div className="charts">
+          <div id="row"></div>
+          <div id="pie"></div>
+        </div>
         <div id="graph" className="chart"></div>
         <div id="message" style={{ display: "none" }}></div>
       </div>
