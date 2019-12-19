@@ -1,0 +1,86 @@
+#overlay {
+    z-index: 2; /* otherwise it can get clobbered by charts-area */
+    width: 280px;
+    position: absolute;
+    top: 90px;
+    right: 0;
+    background-color: rgba(221, 238, 221, 0.75);
+    padding: 30px;
+    padding-right: 10px;
+    font: 14px verdana, sans-serif
+}
+
+#charts-area {
+    width: 250px;
+    height: 400px;
+    position: absolute;
+    right: 0px;
+    bottom: 0px;
+    display: table;
+}
+
+#charts-positioner {
+    display:table-cell;
+    vertical-align:bottom;
+    overflow-y: scroll;
+}
+
+#charts-container {
+    background-color: white;
+    display: inline-block;
+}
+
+#charts-container p {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+#run-indicator {
+    position: absolute;
+    right: 1em;
+    top: 1em;
+    display: hidden;
+    color: darkred;
+}
+
+#time-stuff {
+}
+
+.play-control {
+    float: left;
+    vertical-align: top;
+    padding-top: 2px;
+}
+.play-control i {
+    padding: 5px;
+}
+
+.play-control i:hover {
+    outline: #bbb inset 1px;
+}
+
+#timeline {
+    display: block;
+    overflow: auto;
+    padding-left: 10px;
+    padding-top: 5px;
+}
+
+.dc-graph text.node-label {
+    font: 12px verdana, san-serif;
+}
+
+div.heading {
+    display: block;
+    font: 10px verdana, san-serif;
+    margin-left: -1em;
+}
+
+#type-views a {
+    font: 12px verdana, san-serif;
+}
+
+body {
+    margin: 0;
+    overflow: hidden;
+}
