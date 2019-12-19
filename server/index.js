@@ -11,7 +11,7 @@ const dbParams = process.env.DATABASE_URL
       ssl: true
     }
   : {
-      user: "postgres",
+      user: "melanie",
       host: "localhost",
       database: "pl",
       password: "",
@@ -41,7 +41,7 @@ app.get("/api/chain", async (req, res) => {
     inner join
       blocks b on block_parents.block = b.cid
     where b.height > $1 and b.height < $2`,
-    [13800, 13840]
+    [1000, 1200]
   );
   //console.log(query.rows[0].message)
   res.json(query.rows);
@@ -61,7 +61,7 @@ app.get("/api/chain/graph.json", async (req, res) => {
     inner join
       blocks b on block_parents.block = b.cid
     where b.height > $1 and b.height < $2`,
-    [13800, 13840]
+    [13800, 14000]
   );
 
   const chain = {
@@ -74,7 +74,8 @@ app.get("/api/chain/graph.json", async (req, res) => {
     blocks[block.block] = chain.nodes.length;
     chain.nodes.push({
       id: blocks[block.block],
-      name: `${block.miner}:${block.height}`
+      name: `${block.miner}:${block.height}`,
+      miner: block.miner
       //name: blocks[block.block],
       //title: block.block
     });
