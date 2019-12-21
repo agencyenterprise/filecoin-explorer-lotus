@@ -28,6 +28,7 @@ db.connect();
 app.use(express.static(path.join(__dirname, "../build")));
 
 app.get("/api/chain", async (req, res) => {
+  console.log("params are", req.query);
   const query = await db.query(
     `
     select
@@ -36,13 +37,16 @@ app.get("/api/chain", async (req, res) => {
       b.miner,
       b.height,
       b.parentweight,
-      b.timestamp
+      b.timestamp,
+      p.timestamp as parenttimestamp
     from
       block_parents
     inner join
       blocks b on block_parents.block = b.cid
+    inner join
+      blocks p on block_parents.parent = p.cid
     where b.height > $1 and b.height < $2`,
-    [13800, 13900]
+    [req.query.start || 13800, req.query.end || 13840]
   );
   //console.log(query.rows[0].message)
   res.json(query.rows);
@@ -62,7 +66,7 @@ app.get("/api/chain/graph.json", async (req, res) => {
     inner join
       blocks b on block_parents.block = b.cid
     where b.height > $1 and b.height < $2`,
-    [13800, 14000]
+    [13800, 13820]
   );
 
   const chain = {
