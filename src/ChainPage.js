@@ -24,10 +24,9 @@ const d3 = window.d3;
 const dcgraph_domain = window.dcgraph_domain;
 const querystring = window.querystring;
 
-const layoutOptions = [
-  { value: "d3force", label: "d3force" },
-  { value: "dagre", label: "dagre" },
-  { value: "d3v4force", label: "d3v4force" }
+const nodeLabelOptions = [
+  { value: "height", label: "height" },
+  { value: "parentWeight", label: "parent weight" }
 ];
 
 class ChainPage extends React.Component {
@@ -37,7 +36,7 @@ class ChainPage extends React.Component {
       links: []
     },
     blockRange: [13800, 13840],
-    layout: "d3force"
+    nodeLabel: "height"
   };
 
   async componentDidMount() {
@@ -67,9 +66,7 @@ class ChainPage extends React.Component {
         height: block.height,
         miner: block.miner,
         weirdTime: index % 2 === 0 ? 0 : 1,
-        nodeLabel: block.height
-        //name: blocks[block.block],
-        //title: block.block
+        parentWeight: block.parentweight
       });
       const edge = {
         sourcename: blocks[block.block],
@@ -106,6 +103,7 @@ class ChainPage extends React.Component {
   }
 
   populate(n) {
+    console.log("populate!");
     const data = this.build_data(
         this.state.chain.nodes,
         this.state.chain.edges
@@ -241,8 +239,14 @@ class ChainPage extends React.Component {
         return n.value.fixed;
       })
       .nodeStrokeWidth(0) // turn off outlines
-      .nodeLabel(function(n) {
-        return `${n.value.nodeLabel}`;
+      .nodeLabel(n => {
+        console.log("node label", this.state.nodeLabel);
+        if (this.state.nodeLabel === "parentWeight") {
+          console.log("is parent weight", n.value);
+          return `${n.value.parentWeight}`;
+        } else {
+          return `${n.value.height}`;
+        }
       })
       .edgeLabel(function(n) {
         return `${n.value.time}`;
@@ -269,7 +273,9 @@ class ChainPage extends React.Component {
           .domain([0, 1, 2])
           .range(colors)
       )
-      .nodeTitle(dc.pluck("key"))
+      .nodeTitle(kv => {
+        return kv.parentWeight;
+      })
       .edgeStrokeDashArray(function(e) {
         return dasheses[e.value.dash].ray;
       })
@@ -381,28 +387,6 @@ class ChainPage extends React.Component {
         return dasheses[kv.key].label;
       });
 
-    // .on("renderlet", chart => {
-    //   chart.selectAll("#weirdTimeBar .row").on("mouseover", d => {
-    //     console.log("mouseover");
-    //   });
-    //   chart.selectAll("#weirdTimeBar .row").on("mouseout", function(d) {
-    //     console.log("mouseout");
-    //   });
-    // });
-    // this.weightOverHeight
-    //   .width(300)
-    //   .height(150)
-    //   .label(function(kv) {
-    //     return kv.key;
-    //   })
-    //   .x(d3.scale.linear().domain([-2500, 2500]))
-    //   .y(d3.scale.linear().domain([-100, 100]))
-    //   .r(d3.scale.linear().domain([0, 4000]))
-    //   .keyAccessor(function(p) {
-    //     console.log("p is", p);
-    //     return p.value.absGain;
-    //   });
-
     this.populate(this.sync_url.vals.n);
 
     dc.renderAll();
@@ -412,16 +396,23 @@ class ChainPage extends React.Component {
     console.log("redraw graph");
     this.populate(this.sync_url.vals.n);
     this.selectionDiagram.redraw();
+    this.minerPie.redraw();
+    this.blockHeightPie.redraw();
+    this.weirdTimeBar.redraw();
   };
   updateBlockHeightFilter = async blockRange => {
     console.log(blockRange);
     this.setState({ blockRange });
     await this.getChain(blockRange[0], blockRange[1]);
-    console.log("chain is", this.state.chain);
     this.redrawGraph();
   };
+  changeNodeLabel = async label => {
+    console.log("changed node label", label.value);
+    await this.setState({ nodeLabel: label.value });
+    this.selectionDiagram.redraw();
+  };
   render() {
-    const { blockRange } = this.state;
+    const { blockRange, nodeLabel } = this.state;
     return (
       <div id="main" style={{ padding: 20 }}>
         <div id="controls">
@@ -453,6 +444,14 @@ class ChainPage extends React.Component {
                 Block Height
               </div>
               <div id="blockHeightPie"></div>
+            </div>
+            <div style={{ float: "left", width: 155, margin: 10 }}>
+              <Select
+                value={nodeLabel}
+                onChange={this.changeNodeLabel}
+                options={nodeLabelOptions}
+                placeholder="Change node label..."
+              />
             </div>
           </div>
           <div id="graph"></div>
