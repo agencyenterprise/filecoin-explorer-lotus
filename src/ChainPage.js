@@ -10,6 +10,7 @@ import debounce from "lodash/debounce";
 import Slider from "rc-slider";
 import "./App.css";
 import "rc-slider/assets/index.css";
+import Select from "react-select";
 const createSliderWithTooltip = Slider.createSliderWithTooltip;
 const Range = createSliderWithTooltip(Slider.Range);
 
@@ -23,13 +24,20 @@ const d3 = window.d3;
 const dcgraph_domain = window.dcgraph_domain;
 const querystring = window.querystring;
 
+const layoutOptions = [
+  { value: "d3force", label: "d3force" },
+  { value: "dagre", label: "dagre" },
+  { value: "d3v4force", label: "d3v4force" }
+];
+
 class ChainPage extends React.Component {
   state = {
     chain: {
       nodes: [],
       links: []
     },
-    blockRange: [13800, 13840]
+    blockRange: [13800, 13840],
+    layout: "d3force"
   };
 
   async componentDidMount() {
@@ -139,7 +147,7 @@ class ChainPage extends React.Component {
     this.weirdTimeBar = dc.rowChart("#weirdTimeBar");
     // this.weightOverHeight = dc.bubbleChart("#weightOverHeight");
 
-    var options = {
+    this.options = {
       layout: {
         default: "dagre",
         values: dc_graph.engines.available(),
@@ -173,7 +181,7 @@ class ChainPage extends React.Component {
       }
     };
     this.sync_url = sync_url_options(
-      options,
+      this.options,
       dcgraph_domain(this.selectionDiagram),
       this.selectionDiagram
     );
@@ -201,7 +209,6 @@ class ChainPage extends React.Component {
       querystring.parse(),
       this.sync_url.vals.worker
     );
-    console.log("this is", this);
     apply_engine_parameters(engine);
     // maximally distinct colors from: https://graphicdesign.stackexchange.com/revisions/3815/8
     // prettier-ignore
@@ -221,6 +228,7 @@ class ChainPage extends React.Component {
       .timeLimit(5000)
       .transitionDuration(this.sync_url.vals.transition_duration)
       .fitStrategy(this.sync_url.vals.fit || "default")
+      .zoomExtent([0.1, 1.5])
       .restrictPan(true)
       .margins({ top: 5, left: 5, right: 5, bottom: 5 })
       .autoZoom("always")
@@ -228,12 +236,16 @@ class ChainPage extends React.Component {
       .altKeyZoom(true)
       .width("auto")
       .height("auto")
+      .mouseZoomable(true)
       .nodeFixed(function(n) {
         return n.value.fixed;
       })
       .nodeStrokeWidth(0) // turn off outlines
       .nodeLabel(function(n) {
         return `${n.value.nodeLabel}`;
+      })
+      .edgeLabel(function(n) {
+        return `${n.value.time}`;
       })
       .nodeLabelFill(n => {
         var rgb = d3.rgb(
@@ -422,6 +434,7 @@ class ChainPage extends React.Component {
             allowCross={false}
             onChange={debounce(this.updateBlockHeightFilter, 500)}
           />
+          <select id="layout"></select>
         </div>
         <div id="content">
           <div id="charts">
@@ -443,6 +456,7 @@ class ChainPage extends React.Component {
             </div>
           </div>
           <div id="graph"></div>
+          <div>press alt key to enable zoom and pan</div>
         </div>
         {/* <div id="message" style={{ display: "none" }}></div> */}
       </div>
