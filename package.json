@@ -1,50 +1,21 @@
 {
   "name": "filecoin-explorer-lotus",
   "version": "0.1.0",
-  "private": true,
-  "dependencies": {
-    "@babel/core": "^7.7.5",
-    "@babel/node": "^7.7.4",
-    "@babel/preset-env": "^7.7.6",
-    "@testing-library/jest-dom": "^4.2.4",
-    "@testing-library/react": "^9.3.2",
-    "@testing-library/user-event": "^7.1.2",
-    "axios": "^0.19.0",
-    "cors": "^2.8.5",
-    "dotenv": "^8.2.0",
-    "lodash": "^4.17.15",
-    "pg": "^7.14.0",
-    "rc-slider": "^8.7.1",
-    "react": "^16.12.0",
-    "react-dom": "^16.12.0",
-    "react-graph-vis": "^1.0.5",
-    "react-router-dom": "^5.1.2",
-    "react-scripts": "3.3.0",
-    "react-select": "^3.0.8"
-  },
+  "description": "",
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject",
-    "server": "babel-node server/index.js",
-    "dev": "nodemon --exec babel-node server/index.js",
-    "heroku-postbuild": "yarn build"
+    "start": "yarn --cwd client start & yarn --cwd server start",
+    "test": "yarn --cwd client test && yarn --cwd server test",
+    "client": "yarn --cwd client start",
+    "server": "yarn --cwd server start"
   },
-  "eslintConfig": {
-    "extends": "react-app"
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/agencyenterprise/filecoin-explorer-lotus.git"
   },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
+  "author": "AE Studio",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/agencyenterprise/filecoin-explorer-lotus/issues"
   },
-  "devDependencies": {}
+  "homepage": "https://github.com/agencyenterprise/filecoin-explorer-lotus#readme"
 }

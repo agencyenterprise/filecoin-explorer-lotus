@@ -1,9 +1,7 @@
+import "dotenv/config";
 import React from "react";
 import axios from "axios";
 import {
-  BrowserRouter as Router,
-  Route,
-  Switch,
   withRouter
 } from "react-router-dom";
 import debounce from "lodash/debounce";
@@ -14,8 +12,9 @@ import Select from "react-select";
 const createSliderWithTooltip = Slider.createSliderWithTooltip;
 const Range = createSliderWithTooltip(Slider.Range);
 
-const host =
-  window.location.hostname == "localhost" ? "http://localhost:8888" : "";
+const { REACT_APP_API_URL } = process.env;
+if (!REACT_APP_API_URL)
+  throw new Error("REACT_APP_API_URL environment variable is required");
 
 const dc_graph = window.dc_graph;
 const dc = window.dc;
@@ -47,8 +46,8 @@ class ChainPage extends React.Component {
   async getChain(bhRangeStart, bhRangeEnd) {
     const chainAPI =
       bhRangeStart && bhRangeEnd
-        ? `${host}/api/chain?start=${bhRangeStart}&end=${bhRangeEnd}`
-        : `${host}/api/chain`;
+        ? `${REACT_APP_API_URL}/api/chain?start=${bhRangeStart}&end=${bhRangeEnd}`
+        : `${REACT_APP_API_URL}/api/chain`;
     const res = await axios.get(chainAPI);
     const chain = {
       nodes: [],
@@ -194,6 +193,10 @@ class ChainPage extends React.Component {
           break;
         case "d3-force":
           engine.gravityStrength(0.1).initialCharge(-1000);
+          break;
+
+        default:
+          // note: should never get here
           break;
       }
       this.selectionDiagram.initLayoutOnRedraw(

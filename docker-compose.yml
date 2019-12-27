@@ -1,0 +1,65 @@
+version: '3.7'
+
+services:
+  proxy:
+    image: jwilder/nginx-proxy
+    ports:
+      - 80:80
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+
+  site:
+    build: ./client
+    volumes:
+      - ./client:/usr/src/app
+      - /usr/src/app/node_modules/
+    depends_on:
+      - server
+    links:
+      - server
+    ports:
+      - '3000:3000'
+    environment:
+      NODE_ENV: development
+      VIRTUAL_HOST: site.localtest.me
+      VIRTUAL_PORT: 3000
+      REACT_APP_API_URL: http://server.localtest.me
+
+  server:
+    build: ./server
+    volumes:
+      - ./server:/usr/src/app
+      - /usr/src/app/node_modules/
+    ports:
+      - '8888:8888'
+    depends_on:
+      - db
+    links:
+      - db
+    environment:
+      NODE_ENV: development
+      VIRTUAL_HOST: server.localtest.me
+      VIRTUAL_PORT: 8888
+      DATABASE_URL: postgres://user:password@db/api-db?sslmode=disable
+      DATABASE_POOL_MIN: 0
+      DATABASE_POOL_MAX: 10
+      ENABLE_NODE_CLUSTER: 'false'
+
+  db:
+    image: postgres:10.4
+    ports:
+      - '5434:5432'
+    command: postgres -D /run/pgsql-10.4-data -c logging_collector=on
+    volumes:
+      - ./docker/volumes/db:/run/pgsql-10.4-data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    environment:
+      LOGGING_COLLECTOR: 'on'
+      PGDATA: /run/pgsql-10.4-data
+      POSTGRES_DB: api-db
+      POSTGRES_PASSWORD: password
+      POSTGRES_USER: user

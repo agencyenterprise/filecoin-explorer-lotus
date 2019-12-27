@@ -5,18 +5,10 @@ import cors from "cors";
 
 import { Client } from "pg";
 
-const dbParams = process.env.DATABASE_URL
-  ? {
-      connectionString: process.env.DATABASE_URL,
-      ssl: true
-    }
-  : {
-      user: "melanie",
-      host: "localhost",
-      database: "pl",
-      password: "",
-      port: 5432
-    };
+const { DATABASE_URL } = process.env
+const dbParams = {
+  connectionString: process.env.DATABASE_URL
+};
 const db = new Client(dbParams);
 
 const app = express();
