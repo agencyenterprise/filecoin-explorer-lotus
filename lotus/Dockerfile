@@ -22,10 +22,23 @@ RUN apt-get update && \
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 
 # 6. Clone the repo
-RUN git clone git@github.com:filecoin-project/lotus.git .
+RUN git clone https://github.com/filecoin-project/lotus.git .
 
-#7. Change user
+
+RUN chown -R lotus:lotus /home/lotus
+
+COPY --chown=lotus:lotus entrypoint.sh .
+
+
+# WS port
+EXPOSE 1234
+# P2P port
+EXPOSE 5678
+
+USER lotus
+RUN git fetch && git checkout feat/chainwatch-pg && make clean && make all && make chainwatch
+USER root
+RUN chmod +x /home/lotus/app/entrypoint.sh && chmod +x /home/lotus/app/lotus && chmod +x /home/lotus/app/chainwatch && chown -R lotus:lotus /var/tmp
 USER lotus
 
-# 8. Build
-RUN make clean && make all
+ENTRYPOINT ["/home/lotus/app/entrypoint.sh"]
