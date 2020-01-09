@@ -8,6 +8,19 @@ services:
     volumes:
       - /var/run/docker.sock:/tmp/docker.sock:ro
 
+  daemon:
+    build: ./lotus
+    command: git fetch && git checkout feat/chainwatch-pg && /home/lotus/app/lotus daemon & /home/lotus/app/lotus sync wait & ./chainwatch --db 'postgres://user:password@db/api-db?sslmode=disable' run
+    depends_on:
+      - db
+    links:
+      - db
+    volumes:
+      - ./docker/volumes/daemon:/home/lotus/app
+    ports:
+      - '1234:1234'
+      - '1347:1347'
+
   site:
     build: ./client
     volumes:
@@ -33,6 +46,7 @@ services:
     ports:
       - '8888:8888'
     depends_on:
+      - daemon
       - db
     links:
       - db
