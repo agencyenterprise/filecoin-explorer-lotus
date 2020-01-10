@@ -8,14 +8,10 @@ services:
     volumes:
       - /var/run/docker.sock:/tmp/docker.sock:ro
 
-  lotus:
-    build: ./lotus
-    depends_on:
-      - db
-    links:
-      - db
-    volumes:
-      - ./docker/volumes/lotus:/home/lotus/.lotus
+  dockerhost:
+    image: qoomon/docker-host
+    cap_add: [ 'NET_ADMIN', 'NET_RAW' ]
+    restart: on-failure
 
   site:
     build: ./client
@@ -42,34 +38,12 @@ services:
     ports:
       - '8888:8888'
     depends_on:
-      - lotus
-      - db
-    links:
-      - db
+      - dockerhost
     environment:
       NODE_ENV: development
       VIRTUAL_HOST: server.localtest.me
       VIRTUAL_PORT: 8888
-      DATABASE_URL: postgres://user:password@db/api-db?sslmode=disable
+      DATABASE_URL: postgres://user:password@dockerhost:5432/lotus?sslmode=disable
       DATABASE_POOL_MIN: 0
       DATABASE_POOL_MAX: 10
       ENABLE_NODE_CLUSTER: 'false'
-
-  db:
-    image: postgres:10.4
-    ports:
-      - '5434:5432'
-    command: postgres -D /run/pgsql-10.4-data -c logging_collector=on
-    volumes:
-      - ./docker/volumes/db:/run/pgsql-10.4-data
-    healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U postgres']
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    environment:
-      LOGGING_COLLECTOR: 'on'
-      PGDATA: /run/pgsql-10.4-data
-      POSTGRES_DB: api-db
-      POSTGRES_PASSWORD: password
-      POSTGRES_USER: user
