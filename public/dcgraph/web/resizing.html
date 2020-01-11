@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Dynamic resizing</title>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" type="text/css" href="css/dc.graph.css"/>
+  <link rel="stylesheet" type="text/css" href="css/dc.css"/>
+  <link rel="stylesheet" type="text/css" href="css/bootstrap.css"/>
+  <link rel="stylesheet" type="text/css" href="css/jquery-ui.css"/>
+
+  <script type="text/javascript" src="js/d3.js"></script>
+  <script type="text/javascript" src="js/crossfilter.js"></script>
+  <script type="text/javascript" src="js/dc.js"></script>
+
+  <script type="text/javascript" src="js/cola.js"></script>
+  <script type="text/javascript" src="js/dagre.js"></script>
+  <script type="text/javascript" src="js/d3v4-force.js"></script>
+  <script type="text/javascript" src="js/viz.js"></script>
+
+  <script type="text/javascript" src="js/dc.graph.js"></script>
+
+  <script type="text/javascript" src="js/chart.registry.js"></script>
+  <script type="text/javascript" src="js/querystring.js"></script>
+
+  <script type="text/javascript" src="js/promise-polyfill.js"></script>
+  <script type="text/javascript" src="js/jquery.js"></script>
+  <script type="text/javascript" src="js/jquery-ui.js"></script>
+
+  <script type="text/javascript" src="js/sync-url-options.js"></script>
+  <script type="text/javascript" src="js/dc.graph.tracker.domain.js"></script>
+
+  <style type="text/css">
+    body {
+      overflow: hidden;
+      margin: 0;
+    }
+    #main {
+        position: absolute;
+        left: 0; top: 0; right: 0; bottom: 0;
+        display: flex;
+        flex-direction: column;
+    }
+    #controls {
+        padding: 1em;
+    }
+    #resize {
+        flex: 1;
+        position: absolute;
+        left: 200px;
+        top: 200px;
+        width: 400px;
+        height: 400px;
+        border: 1px solid grey;
+    }
+    #canvas {
+        position: absolute;
+        left: 0; top: 0; right: 0; bottom: 0;
+    }
+  </style>
+
+</head>
+
+
+<body>
+
+  <div id="main">
+    <script type="text/javascript" src="js/example-header.js"></script>
+    <div id="controls">
+      <select id="layout"></select>&emsp;&emsp;<select id="number"></select>&emsp;&emsp;<select id="fit"></select>
+    </div>
+    <div id="resize">
+      <div id="canvas"></div>
+    </div>
+  </div>
+
+  <script type="text/javascript" src="js/resizing.js"></script>
+</body>

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Draw a graph</title>
+  <meta charset="UTF-8">
+  <link rel="icon" href="img/favicon.png" type="image/x-icon" />
+  <link rel="stylesheet" type="text/css" href="css/dc.graph.css"/>
+  <link rel="stylesheet" type="text/css" href="css/dc.css"/>
+  <link rel="stylesheet" type="text/css" href="css/bootstrap.css"/>
+
+  <script type="text/javascript" src="js/d3.js"></script>
+  <script type="text/javascript" src="js/crossfilter.js"></script>
+  <script type="text/javascript" src="js/dc.js"></script>
+
+  <script type="text/javascript" src="js/lodash.js"></script>
+  <script type="text/javascript" src="js/promise-polyfill.js"></script>
+
+  <script type="text/javascript" src="js/cola.js"></script>
+  <script type="text/javascript" src="js/dagre.js"></script>
+  <script type="text/javascript" src="js/d3v4-force.js"></script>
+  <script type="text/javascript" src="js/viz.js"></script>
+  <script type="text/javascript" src="js/dc.graph.js"></script>
+  <script type="text/javascript" src="js/chart.registry.js"></script>
+
+  <script type="text/javascript" src="js/jquery.js"></script>
+  <script type="text/javascript" src="js/querystring.js"></script>
+  <script type="text/javascript" src="js/sync-url-options.js"></script>
+  <script type="text/javascript" src="js/dc.graph.tracker.domain.js"></script>
+
+  <style>
+    tr {
+      border: 1px solid black;
+      table-layout: fixed;
+      width: 200px;
+    }
+    .dc-table-head, .dc-table-column {
+        width: 75px;
+    }
+    th {
+        text-align: left;
+    }
+
+    #main {
+      position: absolute;
+      left: 0;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #controls {
+        padding: 1em;
+    }
+
+    #content {
+        flex: 1;
+        display: flex;
+        flex-direction: row;
+    }
+
+    #left-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    #graph {
+        flex: 1;
+    }
+
+    #output-nodes {
+    }
+
+    #output-edges {
+    }
+
+    text.edge-label {
+        visibility: visible;
+    }
+
+    .dc-graph text.node-label {
+        font: 24px sans-serif;
+    }
+
+    table {
+        border-spacing: 5px;
+        border-collapse: separate;
+        table-layout: fixed;
+    }
+
+    td {
+        background-color: #f4faff;
+        padding: 3px;
+        max-width: 50px;
+        overflow: hidden;
+    }
+    td:empty:after{
+        content: "\200C";
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="main">
+    <script type="text/javascript" src="js/example-header.js"></script>
+    <div id="content">
+      <div id="left-content">
+        <div id="controls">
+          <select id="layout"></select>
+        </div>
+        <div id="graph" class="chart"></div>
+      </div>
+      <div id="output-nodes">
+        <h4>Nodes</h4>
+        <table id="output-nodes-table"></table>
+      </div>
+      <div id="output-edges">
+        <h4>Edges</h4>
+        <table id="output-edges-table"></table>
+      </div>
+    </div>
+  </div>
+  <script type="text/javascript" src="js/network-building.js"></script>
+</body>
+</html>
