@@ -19,7 +19,9 @@
     "install": "yarn install-client && yarn install-server",
     "heroku-postbuild": "yarn build"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "yarn": "^1.21.1"
+  },
   "author": "Agency Enterprise",
   "license": "MIT"
 }
