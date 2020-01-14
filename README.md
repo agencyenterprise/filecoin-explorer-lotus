@@ -28,6 +28,10 @@ $ ./chainwatch --db='postgres://postgres:@localhost:5432/lotus?sslmode=disable' 
 Finally, inside of this repo's directory, run the following commands:
 
 ```bash
+# use docker-compose
+$ docker-compose up
+
+# or, use yarn / npm
 $ yarn install
 $ yarn start
 ```
