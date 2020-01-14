@@ -34,7 +34,7 @@ class ChainPage extends React.Component {
       nodes: [],
       links: []
     },
-    blockRange: [13800, 13840],
+    blockRange: [0, 13840],
     nodeLabel: "height"
   };
 
@@ -419,8 +419,8 @@ class ChainPage extends React.Component {
         <div id="controls">
           <div>Block Range</div>
           <Range
-            min={13800}
-            max={13900}
+            min={blockRange[0]}
+            max={blockRange[1]}
             value={blockRange}
             step={5}
             allowCross={false}
