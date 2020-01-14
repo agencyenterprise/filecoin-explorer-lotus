@@ -2,6 +2,31 @@
 
 # Usage
 
+First, you need lotus up and running. Follow [these instructions](https://docs.lotu.sh/en+install-lotus-ubuntu) to install the necessary dep's.
+
+Next, clone the repo and switch to the appropriate branch and make:
+
+```bash
+$ git clone https://github.com/filecoin-project/lotus.git
+$ cd lotus/
+$ git checkout feat/chainwatch-pg
+$ make clean && make all && make chainwatch
+```
+
+Next, run the daemon, sync the chain, and run the chain watcher.
+
+```bash
+$ ./lotus daemon
+
+# in another terminal
+$ ./lotus sync wait
+
+# in yet another terminal
+$ ./chainwatch --db='postgres://postgres:@localhost:5432/lotus?sslmode=disable' run
+```
+
+Finally, inside of this repo's directory, run the following commands:
+
 ```bash
 $ yarn install
 $ yarn start
