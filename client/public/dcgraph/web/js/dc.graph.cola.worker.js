@@ -1,5 +1,5 @@
 /*!
- *  dc.graph 0.9.7
+ *  dc.graph 0.7.11
  *  http://dc-js.github.io/dc.graph.js/
  *  Copyright 2015-2019 AT&T Intellectual Property & the dc.graph.js Developers
  *  https://github.com/dc-js/dc.graph.js/blob/master/AUTHORS
@@ -25,7 +25,7 @@
  * instance whenever it is appropriate.  The getter forms of functions do not participate in function
  * chaining because they return values that are not the diagram.
  * @namespace dc_graph
- * @version 0.9.7
+ * @version 0.7.11
  * @example
  * // Example chaining
  * diagram.width(600)
@@ -35,7 +35,7 @@
  */
 
 var dc_graph = {
-    version: '0.9.7',
+    version: '0.7.11',
     constants: {
         CHART_CLASS: 'dc-graph'
     }
@@ -108,15 +108,6 @@ function named_children() {
     var f = function(id, object) {
         if(arguments.length === 1)
             return _children[id];
-        if(f.reject) {
-            var reject = f.reject(id, object);
-            if(reject) {
-                console.groupCollapsed(reject);
-                console.trace();
-                console.groupEnd();
-                return this;
-            }
-        }
         // do not notify unnecessarily
         if(_children[id] === object)
             return this;
@@ -155,35 +146,22 @@ function deprecated_property(message, defaultValue) {
     return ret;
 }
 
-function onetime_trace(level, message) {
+function deprecation_warning(message) {
     var said = false;
     return function() {
         if(said)
             return;
-        if(level === 'trace') {
-            console.groupCollapsed(message);
-            console.trace();
-            console.groupEnd();
-        }
-        else
-            console[level](message);
+        console.warn(message);
         said = true;
     };
 }
 
-function deprecation_warning(message) {
-    return onetime_trace('warn', message);
-}
-
-function trace_function(level, message, f) {
-    var dep = onetime_trace(level, message);
+function deprecate_function(message, f) {
+    var dep = deprecation_warning(message);
     return function() {
         dep();
         return f.apply(this, arguments);
     };
-}
-function deprecate_function(message, f) {
-    return trace_function('warn', message, f);
 }
 
 // http://stackoverflow.com/questions/105034/create-guid-uuid-in-javascript
@@ -442,8 +420,7 @@ dc_graph.apply_graphviz_accessors = function(diagram) {
         })
         .nodeLabelFill(function(n) { return nvalue(n).fontcolor || 'black'; })
         .nodeTitle(function(n) {
-            return (nvalue(n).htmltip || nvalue(n).jsontip) ? null :
-                nvalue(n).tooltip !== undefined ?
+            return nvalue(n).tooltip !== undefined ?
                 nvalue(n).tooltip :
                 diagram.nodeLabel()(n);
         })
@@ -478,19 +455,6 @@ dc_graph.apply_graphviz_accessors = function(diagram) {
             }
             return null;
         });
-    var draw_clusters = diagram.child('draw-clusters');
-    if(draw_clusters) {
-        draw_clusters
-            .clusterStroke(function(c) {
-                return c.value.color || 'black';
-            })
-            .clusterFill(function(c) {
-                return c.value.style === 'filled' ? c.value.fillcolor || c.value.color || c.value.bgcolor : null;
-            })
-            .clusterLabel(function(c) {
-                return c.value.label;
-            });
-    }
 };
 
 dc_graph.snapshot_graphviz = function(diagram) {
@@ -554,21 +518,18 @@ dc_graph.snapshot_graphviz = function(diagram) {
 dc_graph.cola_layout = function(id) {
     var _layoutId = id || uuid();
     var _d3cola = null;
-    var _setcola_nodes;
     var _dispatch = d3.dispatch('tick', 'start', 'end');
     var _flowLayout;
     // node and edge objects shared with cola.js, preserved from one iteration
     // to the next (as long as the object is still in the layout)
     var _nodes = {}, _edges = {};
-    var _options;
 
     function init(options) {
-        _options = options;
+        // width, height, handleDisconnected, lengthStrategy, baseLength, flowLayout, tickSize
         _d3cola = cola.d3adaptor()
             .avoidOverlaps(true)
             .size([options.width, options.height])
             .handleDisconnected(options.handleDisconnected);
-
         if(_d3cola.tickSize) // non-standard
             _d3cola.tickSize(options.tickSize);
 
@@ -592,18 +553,14 @@ dc_graph.cola_layout = function(id) {
         }
     }
 
-    function data(nodes, edges, clusters, constraints) {
+    function data(nodes, edges, constraints) {
         var wnodes = regenerate_objects(_nodes, nodes, null, function(v) {
             return v.dcg_nodeKey;
         }, function(v1, v) {
             v1.dcg_nodeKey = v.dcg_nodeKey;
-            v1.dcg_nodeParentCluster = v.dcg_nodeParentCluster;
             v1.width = v.width;
             v1.height = v.height;
             v1.fixed = !!v.dcg_nodeFixed;
-            _options.nodeAttrs.forEach(function(key) {
-                v1[key] = v[key];
-            });
 
             if(v1.fixed && typeof v.dcg_nodeFixed === 'object') {
                 v1.x = v.dcg_nodeFixed.x;
@@ -626,9 +583,6 @@ dc_graph.cola_layout = function(id) {
             e1.source = _nodes[e.dcg_edgeSource];
             e1.target = _nodes[e.dcg_edgeTarget];
             e1.dcg_edgeLength = e.dcg_edgeLength;
-            _options.edgeAttrs.forEach(function(key) {
-                e1[key] = e[key];
-            });
         });
 
         // cola needs each node object to have an index property
@@ -640,59 +594,16 @@ dc_graph.cola_layout = function(id) {
         if(engine.groupConnected()) {
             var components = cola.separateGraphs(wnodes, wedges);
             groups = components.map(function(g) {
-                return {
-                    dcg_autoGroup: true,
-                    leaves: g.array.map(function(n) { return n.index; })
-                };
-            });
-        } else if(clusters) {
-            var G = {};
-            groups = clusters.filter(function(c) {
-                return /^cluster/.test(c.dcg_clusterKey);
-            }).map(function(c, i) {
-                return G[c.dcg_clusterKey] = {
-                    dcg_clusterKey: c.dcg_clusterKey,
-                    index: i,
-                    groups: [],
-                    leaves: []
-                };
-            });
-            clusters.forEach(function(c) {
-                if(c.dcg_clusterParent && G[c.dcg_clusterParent])
-                    G[c.dcg_clusterParent].groups.push(G[c.dcg_clusterKey].index);
-            });
-            wnodes.forEach(function(n, i) {
-                if(n.dcg_nodeParentCluster && G[n.dcg_nodeParentCluster])
-                    G[n.dcg_nodeParentCluster].leaves.push(i);
+                return {leaves: g.array.map(function(n) { return n.index; })};
             });
         }
 
         function dispatchState(event) {
-            // clean up extra setcola annotations
-            wnodes.forEach(function(n) {
-                Object.keys(n).forEach(function(key) {
-                    if(/^get/.test(key) && typeof n[key] === 'function')
-                        delete n[key];
-                });
-            });
             _dispatch[event](
                 wnodes,
                 wedges.map(function(e) {
                     return {dcg_edgeKey: e.dcg_edgeKey};
-                }),
-                groups.filter(function(g) {
-                    return !g.dcg_autoGroup;
-                }).map(function(g) {
-                    g = Object.assign({}, g);
-                    g.bounds = {
-                        left: g.bounds.x,
-                        top: g.bounds.y,
-                        right: g.bounds.X,
-                        bottom: g.bounds.Y
-                    };
-                    return g;
-                }),
-                _setcola_nodes
+                })
             );
         }
         _d3cola.on('tick', /* _tick = */ function() {
@@ -702,28 +613,10 @@ dc_graph.cola_layout = function(id) {
         }).on('end', /* _done = */ function() {
             dispatchState('end');
         });
-
-        if(_options.setcolaSpec && typeof setcola !== 'undefined') {
-            console.log('generating setcola constrains');
-            var setcola_result = setcola
-                .nodes(wnodes)
-                .links(wedges)
-                .constraints(_options.setcolaSpec)
-                .gap(10) //default value is 10, can be customized in setcolaSpec
-                .layout();
-
-            _setcola_nodes = setcola_result.nodes.filter(function(n) { return n._cid; });
-            _d3cola.nodes(setcola_result.nodes)
-                .links(setcola_result.links)
-                .constraints(setcola_result.constraints)
-                .groups(groups);
-        } else {
-            _d3cola.nodes(wnodes)
-                .links(wedges)
-                .constraints(constraints)
-                .groups(groups);
-        }
-
+        _d3cola.nodes(wnodes)
+            .links(wedges)
+            .constraints(constraints)
+            .groups(groups);
     }
 
     function start() {
@@ -762,12 +655,11 @@ dc_graph.cola_layout = function(id) {
             this.optionNames().forEach(function(option) {
                 options[option] = options[option] || this[option]();
             }.bind(this));
-            this.propagateOptions(options);
             init(options);
             return this;
         },
-        data: function(graph, nodes, edges, clusters, constraints) {
-            data(nodes, edges, clusters, constraints);
+        data: function(graph, nodes, edges, constraints) {
+            data(nodes, edges, constraints);
         },
         start: function() {
             start();
@@ -776,18 +668,8 @@ dc_graph.cola_layout = function(id) {
             stop();
         },
         optionNames: function() {
-            return ['handleDisconnected', 'lengthStrategy', 'baseLength', 'flowLayout',
-                    'tickSize', 'groupConnected', 'setcolaSpec', 'setcolaNodes']
+            return ['handleDisconnected', 'lengthStrategy', 'baseLength', 'flowLayout', 'tickSize', 'groupConnected']
                 .concat(graphviz_keys);
-        },
-        passThru: function() {
-            return ['extractNodeAttrs', 'extractEdgeAttrs'];
-        },
-        propagateOptions: function(options) {
-            if(!options.nodeAttrs)
-                options.nodeAttrs = Object.keys(engine.extractNodeAttrs());
-            if(!options.edgeAttrs)
-                options.edgeAttrs = Object.keys(engine.extractEdgeAttrs());
         },
         populateLayoutNode: function() {},
         populateLayoutEdge: function() {},
@@ -865,22 +747,12 @@ dc_graph.cola_layout = function(id) {
         allConstraintsIterations: property(20),
         gridSnapIterations: property(0),
         tickSize: property(1),
-        groupConnected: property(false),
-        setcolaSpec: property(null),
-        setcolaNodes: function() {
-            return _setcola_nodes;
-        },
-        extractNodeAttrs: property({}), // {attr: function(node)}
-        extractEdgeAttrs: property({}),
-        processExtraWorkerResults: function(setcolaNodes) {
-            _setcola_nodes = setcolaNodes;
-        }
+        groupConnected: property(false)
     });
     return engine;
 };
 
 dc_graph.cola_layout.scripts = ['d3.js', 'cola.js'];
-dc_graph.cola_layout.optional_scripts = ['setcola.js'];
 
 var _layouts;
 
@@ -908,14 +780,6 @@ onmessage = function(e) {
         if(!_layouts) {
             _layouts = {};
             importScripts.apply(null, dc_graph[layout_name].scripts);
-            if(dc_graph[layout_name].optional_scripts) {
-                try {
-                    importScripts.apply(null, dc_graph[layout_name].optional_scripts);
-                }
-                catch(xep) {
-                    console.log(xep);
-                }
-            }
         }
 
         _layouts[args.layoutId] = dc_graph[layout_name]()
@@ -926,7 +790,7 @@ onmessage = function(e) {
         break;
     case 'data':
         if(_layouts)
-            _layouts[args.layoutId].data(args.graph, args.nodes, args.edges, args.clusters, args.constraints);
+            _layouts[args.layoutId].data(args.graph, args.nodes, args.edges, args.constraints);
         break;
     case 'start':
         // if(args.initialOnly) {

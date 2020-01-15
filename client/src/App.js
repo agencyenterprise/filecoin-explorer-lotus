@@ -1,7 +1,8 @@
 import React from "react";
 import { BrowserRouter as Router, Route, Switch } from "react-router-dom";
-import ChainPage from "./ChainPage";
+import ChainPage from "./pages/ChainPage";
 import "./App.css";
+import "dotenv/config";
 
 const BlockPage = () => {
   return <div></div>;

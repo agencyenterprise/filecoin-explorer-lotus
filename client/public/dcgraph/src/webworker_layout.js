@@ -1,5 +1,4 @@
 var _workers = {};
-var NUMBER_RESULTS = 3;
 function create_worker(layoutAlgorithm) {
     if(!_workers[layoutAlgorithm]) {
         var worker = _workers[layoutAlgorithm] = {
@@ -10,9 +9,6 @@ function create_worker(layoutAlgorithm) {
             var layoutId = e.data.layoutId;
             if(!worker.layouts[layoutId])
                 throw new Error('layoutId "' + layoutId + '" unknown!');
-            var engine = worker.layouts[layoutId].getEngine();
-            if(e.data.args.length > NUMBER_RESULTS && engine.processExtraWorkerResults)
-                engine.processExtraWorkerResults.apply(engine, e.data.args.slice(NUMBER_RESULTS));
             worker.layouts[layoutId].dispatch()[e.data.response].apply(null, e.data.args);
         };
     }
@@ -35,8 +31,6 @@ dc_graph.webworker_layout = function(layoutEngine) {
                 options[option] = layoutEngine[option]();
                 return options;
             }, options);
-        if(layoutEngine.propagateOptions)
-            layoutEngine.propagateOptions(options);
         _worker.worker.postMessage({
             command: 'init',
             args: {
@@ -46,7 +40,7 @@ dc_graph.webworker_layout = function(layoutEngine) {
         });
         return this;
     };
-    engine.data = function(graph, nodes, edges, clusters, constraints) {
+    engine.data = function(graph, nodes, edges, constraints) {
         _worker.worker.postMessage({
             command: 'data',
             args: {
@@ -54,7 +48,6 @@ dc_graph.webworker_layout = function(layoutEngine) {
                 graph: graph,
                 nodes: nodes,
                 edges: edges,
-                clusters: clusters,
                 constraints: constraints
             }
         });
@@ -83,8 +76,7 @@ dc_graph.webworker_layout = function(layoutEngine) {
     // somewhat sketchy - do we want this object to be transparent or not?
     var passthroughs = ['layoutAlgorithm', 'populateLayoutNode', 'populateLayoutEdge',
                         'rankdir', 'ranksep'];
-    passthroughs.concat(layoutEngine.optionNames(),
-                        layoutEngine.passThru ? layoutEngine.passThru() : []).forEach(function(name) {
+    passthroughs.concat(layoutEngine.optionNames()).forEach(function(name) {
         engine[name] = function() {
             var ret = layoutEngine[name].apply(layoutEngine, arguments);
             return arguments.length ? this : ret;

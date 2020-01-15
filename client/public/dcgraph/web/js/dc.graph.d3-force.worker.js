@@ -1,5 +1,5 @@
 /*!
- *  dc.graph 0.9.7
+ *  dc.graph 0.7.11
  *  http://dc-js.github.io/dc.graph.js/
  *  Copyright 2015-2019 AT&T Intellectual Property & the dc.graph.js Developers
  *  https://github.com/dc-js/dc.graph.js/blob/master/AUTHORS
@@ -25,7 +25,7 @@
  * instance whenever it is appropriate.  The getter forms of functions do not participate in function
  * chaining because they return values that are not the diagram.
  * @namespace dc_graph
- * @version 0.9.7
+ * @version 0.7.11
  * @example
  * // Example chaining
  * diagram.width(600)
@@ -35,7 +35,7 @@
  */
 
 var dc_graph = {
-    version: '0.9.7',
+    version: '0.7.11',
     constants: {
         CHART_CLASS: 'dc-graph'
     }
@@ -108,15 +108,6 @@ function named_children() {
     var f = function(id, object) {
         if(arguments.length === 1)
             return _children[id];
-        if(f.reject) {
-            var reject = f.reject(id, object);
-            if(reject) {
-                console.groupCollapsed(reject);
-                console.trace();
-                console.groupEnd();
-                return this;
-            }
-        }
         // do not notify unnecessarily
         if(_children[id] === object)
             return this;
@@ -155,35 +146,22 @@ function deprecated_property(message, defaultValue) {
     return ret;
 }
 
-function onetime_trace(level, message) {
+function deprecation_warning(message) {
     var said = false;
     return function() {
         if(said)
             return;
-        if(level === 'trace') {
-            console.groupCollapsed(message);
-            console.trace();
-            console.groupEnd();
-        }
-        else
-            console[level](message);
+        console.warn(message);
         said = true;
     };
 }
 
-function deprecation_warning(message) {
-    return onetime_trace('warn', message);
-}
-
-function trace_function(level, message, f) {
-    var dep = onetime_trace(level, message);
+function deprecate_function(message, f) {
+    var dep = deprecation_warning(message);
     return function() {
         dep();
         return f.apply(this, arguments);
     };
-}
-function deprecate_function(message, f) {
-    return trace_function('warn', message, f);
 }
 
 // http://stackoverflow.com/questions/105034/create-guid-uuid-in-javascript
@@ -442,8 +420,7 @@ dc_graph.apply_graphviz_accessors = function(diagram) {
         })
         .nodeLabelFill(function(n) { return nvalue(n).fontcolor || 'black'; })
         .nodeTitle(function(n) {
-            return (nvalue(n).htmltip || nvalue(n).jsontip) ? null :
-                nvalue(n).tooltip !== undefined ?
+            return nvalue(n).tooltip !== undefined ?
                 nvalue(n).tooltip :
                 diagram.nodeLabel()(n);
         })
@@ -478,19 +455,6 @@ dc_graph.apply_graphviz_accessors = function(diagram) {
             }
             return null;
         });
-    var draw_clusters = diagram.child('draw-clusters');
-    if(draw_clusters) {
-        draw_clusters
-            .clusterStroke(function(c) {
-                return c.value.color || 'black';
-            })
-            .clusterFill(function(c) {
-                return c.value.style === 'filled' ? c.value.fillcolor || c.value.color || c.value.bgcolor : null;
-            })
-            .clusterLabel(function(c) {
-                return c.value.label;
-            });
-    }
 };
 
 dc_graph.snapshot_graphviz = function(diagram) {
@@ -844,14 +808,6 @@ onmessage = function(e) {
         if(!_layouts) {
             _layouts = {};
             importScripts.apply(null, dc_graph[layout_name].scripts);
-            if(dc_graph[layout_name].optional_scripts) {
-                try {
-                    importScripts.apply(null, dc_graph[layout_name].optional_scripts);
-                }
-                catch(xep) {
-                    console.log(xep);
-                }
-            }
         }
 
         _layouts[args.layoutId] = dc_graph[layout_name]()
@@ -862,7 +818,7 @@ onmessage = function(e) {
         break;
     case 'data':
         if(_layouts)
-            _layouts[args.layoutId].data(args.graph, args.nodes, args.edges, args.clusters, args.constraints);
+            _layouts[args.layoutId].data(args.graph, args.nodes, args.edges, args.constraints);
         break;
     case 'start':
         // if(args.initialOnly) {

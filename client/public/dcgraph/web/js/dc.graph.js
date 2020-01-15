@@ -1,5 +1,5 @@
 /*!
- *  dc.graph 0.9.7
+ *  dc.graph 0.7.11
  *  http://dc-js.github.io/dc.graph.js/
  *  Copyright 2015-2019 AT&T Intellectual Property & the dc.graph.js Developers
  *  https://github.com/dc-js/dc.graph.js/blob/master/AUTHORS
@@ -28,7 +28,7 @@
  * instance whenever it is appropriate.  The getter forms of functions do not participate in function
  * chaining because they return values that are not the diagram.
  * @namespace dc_graph
- * @version 0.9.7
+ * @version 0.7.11
  * @example
  * // Example chaining
  * diagram.width(600)
@@ -38,7 +38,7 @@
  */
 
 var dc_graph = {
-    version: '0.9.7',
+    version: '0.7.11',
     constants: {
         CHART_CLASS: 'dc-graph'
     }
@@ -111,15 +111,6 @@ function named_children() {
     var f = function(id, object) {
         if(arguments.length === 1)
             return _children[id];
-        if(f.reject) {
-            var reject = f.reject(id, object);
-            if(reject) {
-                console.groupCollapsed(reject);
-                console.trace();
-                console.groupEnd();
-                return this;
-            }
-        }
         // do not notify unnecessarily
         if(_children[id] === object)
             return this;
@@ -158,35 +149,22 @@ function deprecated_property(message, defaultValue) {
     return ret;
 }
 
-function onetime_trace(level, message) {
+function deprecation_warning(message) {
     var said = false;
     return function() {
         if(said)
             return;
-        if(level === 'trace') {
-            console.groupCollapsed(message);
-            console.trace();
-            console.groupEnd();
-        }
-        else
-            console[level](message);
+        console.warn(message);
         said = true;
     };
 }
 
-function deprecation_warning(message) {
-    return onetime_trace('warn', message);
-}
-
-function trace_function(level, message, f) {
-    var dep = onetime_trace(level, message);
+function deprecate_function(message, f) {
+    var dep = deprecation_warning(message);
     return function() {
         dep();
         return f.apply(this, arguments);
     };
-}
-function deprecate_function(message, f) {
-    return trace_function('warn', message, f);
 }
 
 // http://stackoverflow.com/questions/105034/create-guid-uuid-in-javascript
@@ -2196,59 +2174,6 @@ function arrow_length(parts, stemWidth) {
     return front_ref(parts[0].frontRef)[0] - offsets[parts.length-1].backRef[0];
 }
 
-
-function scaled_arrow_lengths(diagram, e) {
-    var arrowSize = diagram.edgeArrowSize.eval(e),
-        stemWidth = diagram.edgeStrokeWidth.eval(e) / arrowSize;
-    var headLength = arrowSize *
-        (arrow_length(arrow_parts(diagram.arrows(), diagram.edgeArrowhead.eval(e)), stemWidth) +
-         diagram.nodeStrokeWidth.eval(e.target) / 2),
-        tailLength = arrowSize *
-        (arrow_length(arrow_parts(diagram.arrows(), diagram.edgeArrowtail.eval(e)), stemWidth) +
-         diagram.nodeStrokeWidth.eval(e.source) / 2);
-    return {headLength: headLength, tailLength: tailLength};
-}
-
-function clip_path_to_arrows(headLength, tailLength, path) {
-    var points0 = as_bezier3(path),
-        points = chop_bezier(points0, 'head', headLength);
-    return {
-        bezDegree: 3,
-        points: chop_bezier(points, 'tail', tailLength),
-        sourcePort: path.sourcePort,
-        targetPort: path.targetPort
-    };
-}
-
-function place_arrows_on_spline(diagram, e, points) {
-    var alengths = scaled_arrow_lengths(diagram, e);
-    var path0 = {
-        points: points,
-        bezDegree: 3
-    };
-    var path = clip_path_to_arrows(alengths.headLength, alengths.tailLength, path0);
-    return {
-        path: path,
-        full: path0,
-        orienthead: angle_between_points(path.points[path.points.length-1], path0.points[path0.points.length-1]) + 'rad', //calculate_arrowhead_orientation(e.cola.points, 'head'),
-        orienttail: angle_between_points(path.points[0], path0.points[0]) + 'rad' //calculate_arrowhead_orientation(e.cola.points, 'tail')
-    };
-}
-
-
-// determine pre-transition orientation that won't spin a lot going to new orientation
-function unsurprising_orient(oldorient, neworient) {
-    var oldang = +oldorient.slice(0, -3),
-        newang = +neworient.slice(0, -3);
-    if(Math.abs(oldang - newang) > Math.PI) {
-        if(newang > oldang)
-            oldang += 2*Math.PI;
-        else oldang -= 2*Math.PI;
-    }
-    return oldang;
-}
-
-
 function edgeArrow(diagram, arrdefs, e, kind, desc) {
     var id = diagram.arrowId(e, kind);
     var strokeOfs, edgeStroke;
@@ -2321,7 +2246,7 @@ dc_graph.text_contents = function() {
                     return _contents.parent().nodeLabelDecoration.eval(line.node);
                 },
                 x: 0
-            }).html(function(s) { return s.line; });
+            }).text(function(s) { return s.line; });
             text
                 .each(function(n) {
                     n.xofs = 0;
@@ -2447,17 +2372,19 @@ dc_graph.diagram = function (parent, chartGroup) {
     var _diagram = dc.marginMixin({});
     _diagram.__dcFlag__ = dc.utils.uniqueId();
     _diagram.margins({left: 10, top: 10, right: 10, bottom: 10});
+    var _svg = null, _defs = null, _g = null, _nodeLayer = null, _edgeLayer = null;
     var _dispatch = d3.dispatch('preDraw', 'data', 'end', 'start', 'render', 'drawn', 'receivedLayout', 'transitionsStarted', 'zoomed', 'reset');
     var _nodes = {}, _edges = {}; // hold state between runs
     var _ports = {}; // id = node|edge/id/name
-    var _clusters = {};
     var _nodePorts; // ports sorted by node id
     var _stats = {};
     var _nodes_snapshot, _edges_snapshot;
     var _arrows = {};
     var _running = false; // for detecting concurrency issues
+    var _translate = [0,0], _scale = 1;
+    var _zoom, _animateZoom;
     var _anchor, _chartGroup;
-    var _animateZoom;
+    var _animating = false; // do not refresh during animations
 
     var _minWidth = 200;
     var _defaultWidthCalc = function (element) {
@@ -2686,9 +2613,11 @@ dc_graph.diagram = function (parent, chartGroup) {
      **/
     _diagram.autoZoom = property(null);
     _diagram.zoomToFit = function(animate) {
-        // if(!(_nodeLayer && _edgeLayer))
-        //     return;
-        auto_zoom(animate);
+        if(!(_nodeLayer && _edgeLayer))
+            return;
+        var node = _diagram.selectAllNodes(),
+            edge = _diagram.selectAllEdges();
+        auto_zoom(node, edge, animate);
     };
     _diagram.zoomDuration = property(500);
 
@@ -2844,95 +2773,6 @@ dc_graph.diagram = function (parent, chartGroup) {
 
     _diagram.edgeSourcePortName = property(null);
     _diagram.edgeTargetPortName = property(null);
-
-    /**
-     * Set or get the crossfilter dimension which represents the edges in the
-     * diagram. Typically there will be a crossfilter instance for the nodes, and another for
-     * the edges.
-     *
-     * *As with node and edge dimensions, the diagram will itself not filter on cluster dimensions;
-     * this is included for symmetry, and for modes which may want to filter clusters.*
-     * @method clusterDimension
-     * @memberof dc_graph.diagram
-     * @instance
-     * @param {crossfilter.dimension} [clusterDimension]
-     * @return {crossfilter.dimension}
-     * @return {dc_graph.diagram}
-     **/
-    _diagram.clusterDimension = property(null);
-
-    /**
-     * Set or get the crossfilter group which is the data source for clusters in the
-     * diagram.
-     *
-     * The key/value pairs returned by `diagram.clusterGroup().all()` need to support, at a minimum,
-     * the {@link dc_graph.diagram#clusterKey clusterKey} and {@link dc_graph.diagram#clusterParent clusterParent}
-     * accessors, which should return keys in this group.
-     *
-     * @method clusterGroup
-     * @memberof dc_graph.diagram
-     * @instance
-     * @param {crossfilter.group} [clusterGroup]
-     * @return {crossfilter.group}
-     * @return {dc_graph.diagram}
-     **/
-    _diagram.clusterGroup = property(null);
-
-    // cluster accessors
-    /**
-     * Set or get the function which will be used to retrieve the unique key for each cluster. By
-     * default, this accesses the `key` field of the object passed to it.
-     *
-     * @method clusterKey
-     * @memberof dc_graph.diagram
-     * @instance
-     * @param {Function} [clusterKey=function(kv) { return kv.key }]
-     * @return {Function}
-     * @return {dc_graph.diagram}
-     **/
-    _diagram.clusterKey = property(dc.pluck('key'));
-
-    /**
-     * Set or get the function which will be used to retrieve the key of the parent of a cluster,
-     * which is another cluster.
-     *
-     * @method clusterParent
-     * @memberof dc_graph.diagram
-     * @instance
-     * @param {Function} [clusterParent=function(kv) { return kv.key }]
-     * @return {Function}
-     * @return {dc_graph.diagram}
-     **/
-    _diagram.clusterParent = property(null);
-
-    /**
-     * Set or get the function which will be used to retrieve the padding, in pixels, around a cluster.
-     *
-     * **To be implemented.** If a single value is returned, it will be used on all sides; if two
-     * values are returned they will be interpreted as the vertical and horizontal padding.
-     *
-     * @method clusterPadding
-     * @memberof dc_graph.diagram
-     * @instance
-     * @param {Function} [clusterPadding=function(kv) { return kv.key }]
-     * @return {Function}
-     * @return {dc_graph.diagram}
-     **/
-    _diagram.clusterPadding = property(8);
-
-    // node accessor
-    /**
-     * Set or get the function which will be used to retrieve the parent cluster of a node, or
-     * `null` if the node is not in a cluster.
-     *
-     * @method nodeParentCluster
-     * @memberof dc_graph.diagram
-     * @instance
-     * @param {Function} [nodeParentCluster=function(kv) { return kv.key }]
-     * @return {Function}
-     * @return {dc_graph.diagram}
-     **/
-    _diagram.nodeParentCluster = property(null);
 
     /**
      * Set or get the function which will be used to retrieve the radius, in pixels, for each
@@ -3636,17 +3476,6 @@ dc_graph.diagram = function (parent, chartGroup) {
      **/
     _diagram.mode = _diagram.child = named_children();
 
-    _diagram.mode.reject = function(id, object) {
-        var rtype = _diagram.renderer().rendererType();
-        if(!object)
-            return false; // null is always a valid mode for any renderer
-        if(!object.supportsRenderer)
-            console.log('could not check if "' + id + '" is compatible with ' + rtype);
-        else if(!object.supportsRenderer(rtype))
-            return 'not installing "' + id + '" because it is not compatible with renderer ' + rtype;
-        return false;
-    };
-
     _diagram.legend = deprecate_function(".legend() is deprecated; use .child() for more control & multiple legends", function(_) {
         if(!arguments.length)
             return _diagram.child('node-legend');
@@ -3673,7 +3502,7 @@ dc_graph.diagram = function (parent, chartGroup) {
         if(!arguments.length)
             return _diagram.layoutEngine() ? _diagram.layoutEngine().layoutAlgorithm() : 'cola';
         if(!skipWarning)
-            console.warn('dc.graph.diagram.layoutAlgorithm is deprecated - pass the layout engine object to dc_graph.diagram.layoutEngine instead');
+            console.warn('dc.graph.diagram.layoutAlgorithm is depecrated - pass the layout engine object to dc_graph.diagram.layoutEngine instead');
 
         var engine;
         switch(value) {
@@ -3689,7 +3518,7 @@ dc_graph.diagram = function (parent, chartGroup) {
     };
 
     /**
-     * The layout engine determines positions of nodes and edges.
+     * The layout engine determines how to draw things!
      * @method layoutEngine
      * @memberof dc_graph.diagram
      * @instance
@@ -3703,7 +3532,7 @@ dc_graph.diagram = function (parent, chartGroup) {
     _diagram.layoutEngine = property(null).react(function(val) {
         if(val && val.parent)
             val.parent(_diagram);
-        if(_diagram.renderer().isRendered()) {
+        if(_g) { // already rendered
             // remove any calculated points, if engine did that
             Object.keys(_edges).forEach(function(k) {
                 _edges[k].cola.points = null;
@@ -3711,12 +3540,6 @@ dc_graph.diagram = function (parent, chartGroup) {
             // initialize engine
             initLayout(val);
         }
-    });
-
-    _diagram.renderer = property(dc_graph.render_svg().parent(_diagram)).react(function(r) {
-        if(_diagram.renderer())
-            _diagram.renderer().parent(null);
-        r.parent(_diagram);
     });
 
     // S-spline any edges that are not going in this direction
@@ -3767,10 +3590,6 @@ dc_graph.diagram = function (parent, chartGroup) {
         return _nodePorts;
     };
 
-    _diagram.getWholeCluster = function(id) {
-        return _clusters[id] || null;
-    };
-
     /**
      * Instructs cola.js to fit the connected components.
      *
@@ -3806,6 +3625,67 @@ dc_graph.diagram = function (parent, chartGroup) {
     _diagram.forEachContent = function(node, f) {
         _diagram.forEachChild(node, _diagram.content, _diagram.nodeContent.eval, f);
     };
+    _diagram.renderNode = _diagram._enterNode = function(nodeEnter) {
+        if(_diagram.nodeTitle())
+            nodeEnter.append('title');
+        nodeEnter.each(infer_shape(_diagram));
+        _diagram.forEachShape(nodeEnter, function(shape, node) {
+            node.call(shape.create);
+        });
+        return _diagram;
+    };
+    _diagram.redrawNode = _diagram._updateNode = function(node) {
+        var changedShape = node.filter(shape_changed(_diagram));
+        changedShape.selectAll('.node-shape').remove();
+        changedShape.each(infer_shape(_diagram));
+        _diagram.forEachShape(changedShape, function(shape, node) {
+            node.call(shape.create);
+        });
+        node.select('title')
+            .text(_diagram.nodeTitle.eval);
+        _diagram.forEachContent(node, function(contentType, node) {
+            node.call(contentType.update);
+            _diagram.forEachShape(contentType.selectContent(node), function(shape, content) {
+                content
+                    .call(fit_shape(shape, _diagram));
+            });
+        });
+        _diagram.forEachShape(node, function(shape, node) {
+            node.call(shape.update);
+        });
+        node.select('.node-shape')
+            .attr({
+                stroke: _diagram.nodeStroke.eval,
+                'stroke-width': _diagram.nodeStrokeWidth.eval,
+                'stroke-dasharray': _diagram.nodeStrokeDashArray.eval,
+                fill: compose(_diagram.nodeFillScale() || identity, _diagram.nodeFill.eval)
+            });
+        return _diagram;
+    };
+    _diagram.redrawEdge = _diagram._updateEdge = function(edge, edgeArrows) {
+        edge
+            .attr('stroke', _diagram.edgeStroke.eval)
+            .attr('stroke-width', _diagram.edgeStrokeWidth.eval)
+            .attr('stroke-dasharray', _diagram.edgeStrokeDashArray.eval);
+        edgeArrows
+            .attr('marker-end', function(e) {
+                var name = _diagram.edgeArrowhead.eval(e),
+                    id = edgeArrow(_diagram, _arrows, e, 'head', name);
+                return id ? 'url(#' + id + ')' : null;
+            })
+            .attr('marker-start', function(e) {
+                var name = _diagram.edgeArrowtail.eval(e),
+                    arrow_id = edgeArrow(_diagram, _arrows, e, 'tail', name);
+                return name ? 'url(#' + arrow_id + ')' : null;
+            })
+            .each(function(e) {
+                var fillEdgeStroke = _diagram.edgeStroke.eval(e);
+                d3.selectAll('#' + _diagram.arrowId(e, 'head'))
+                    .attr('fill', _diagram.edgeStroke.eval(e));
+                d3.selectAll('#' + _diagram.arrowId(e, 'tail'))
+                    .attr('fill', _diagram.edgeStroke.eval(e));
+            });
+    };
 
     function has_source_and_target(e) {
         return !!e.source && !!e.target;
@@ -3825,45 +3705,29 @@ dc_graph.diagram = function (parent, chartGroup) {
             _diagram.transitionDuration() / 2;
     };
 
+    _diagram.selectAllNodes = function(selector) {
+        selector = selector || '.node';
+        return _nodeLayer && _nodeLayer.selectAll(selector).filter(function(n) {
+            return !n.deleted;
+        }) || d3.selectAll('.foo-this-does-not-exist');
+    };
+
+    _diagram.selectAllEdges = function(selector) {
+        selector = selector || '.edge';
+        return _edgeLayer && _edgeLayer.selectAll(selector).filter(function(e) {
+            return !e.deleted;
+        }) || d3.selectAll('.foo-this-does-not-exist');
+    };
+
+    _diagram.selectAllDefs = function(selector) {
+        return _defs && _defs.selectAll(selector).filter(function(def) {
+            return !def.deleted;
+        }) || d3.selectAll('.foo-this-does-not-exist');
+    };
+
     _diagram.isRunning = function() {
         return _running;
     };
-
-    function svg_specific(name) {
-        return trace_function('trace', name + '() is specific to the SVG renderer', function() {
-            return _diagram.renderer()[name].apply(this, arguments);
-        });
-    }
-
-    function call_on_renderer(name) {
-        return trace_function('trace', 'calling ' + name + '() on renderer', function() {
-            return _diagram.renderer()[name].apply(this, arguments);
-        });
-    }
-
-    _diagram.svg = svg_specific('svg');
-    _diagram.g = svg_specific('g');
-    _diagram.select = svg_specific('select');
-    _diagram.selectAll = svg_specific('selectAll');
-    _diagram.addOrRemoveDef = svg_specific('addOrRemoveDef');
-    _diagram.selectAllNodes = svg_specific('selectAllNodes');
-    _diagram.selectAllEdges = svg_specific('selectAllEdges');
-    _diagram.selectNodePortsOfStyle = svg_specific('selectNodePortsOfStyle');
-    _diagram.zoom = svg_specific('zoom');
-    _diagram.translate = svg_specific('translate');
-    _diagram.scale = svg_specific('scale');
-
-    function renderer_specific(name) {
-        return trace_function('trace', name + '() will have renderer-specific arguments', function() {
-            return _diagram.renderer()[name].apply(this, arguments);
-        });
-    }
-    _diagram.renderNode = svg_specific('renderNode');
-    _diagram.renderEdge = svg_specific('renderEdge');
-    _diagram.redrawNode = svg_specific('redrawNode');
-    _diagram.redrawEdge = svg_specific('redrawEdge');
-    _diagram.reposition = call_on_renderer('reposition');
-
 
     /**
      * Standard dc.js
@@ -3881,10 +3745,6 @@ dc_graph.diagram = function (parent, chartGroup) {
      * {@link #dc_graph.diagram+showLayoutSteps showLayoutSteps}
      * is enabled. Watch the {@link #dc_graph.diagram+on 'end'} event to know when layout is
      * complete.
-     * @method redraw
-     * @memberof dc_graph.diagram
-     * @instance
-     * @return {dc_graph.diagram}
      **/
     var _needsRedraw = false;
     _diagram.redraw = function () {
@@ -3898,89 +3758,38 @@ dc_graph.diagram = function (parent, chartGroup) {
         else return _diagram.startLayout();
     };
 
-    /**
-     * Standard dc.js
-     * {@link https://github.com/dc-js/dc.js/blob/develop/web/docs/api-latest.md#dc.baseMixin baseMixin}
-     * method. Erases any existing SVG elements and draws the diagram from scratch. `.render()`
-     * must be called the first time, and `.redraw()` can be called after that.
-     * @method render
-     * @memberof dc_graph.diagram
-     * @instance
-     * @return {dc_graph.diagram}
-     **/
-    _diagram.render = function() {
-        if(_diagram.renderer().isRendered())
-            _dispatch.reset();
-        if(!_diagram.initLayoutOnRedraw())
-            initLayout();
-
-        _nodes = {};
-        _edges = {};
-        _ports = {};
-        _clusters = {};
-
-        // start out with 1:1 zoom
-        _diagram.x(d3.scale.linear()
-                   .domain([0, _diagram.width()])
-                   .range([0, _diagram.width()]));
-        _diagram.y(d3.scale.linear()
-                   .domain([0, _diagram.height()])
-                   .range([0, _diagram.height()]));
-        _diagram.renderer().initializeDrawing();
-        _dispatch.render();
-        _diagram.redraw();
-        return this;
-    };
-
-    _diagram.refresh = call_on_renderer('refresh');
-
-    _diagram.width_is_automatic = function() {
-        return _width === 'auto';
-    };
-
-    _diagram.height_is_automatic = function() {
-        return _height === 'auto';
-    };
-
     function detect_size_change() {
         var oldWidth = _lastWidth, oldHeight = _lastHeight;
         var newWidth = _diagram.width(), newHeight = _diagram.height();
-        if(oldWidth !== newWidth || oldHeight !== newHeight)
-            _diagram.renderer().rezoom(oldWidth, oldHeight, newWidth, newHeight);
-    }
-
-    // extract just the topology-related parts of nodes & edges to see if
-    // graph has changed wrt layout. imperfect heuristic: assume that the original
-    // data as well as all cola fields starting with dcg_ are related to topology
-    function dcg_fields(cola) {
-        var entries = Object.entries(cola)
-            .filter(function(entry) { return /^dcg_/.test(entry[0]); });
-        return entries.reduce(function(p, entry) {
-            p[entry[0]] = entry[1];
-            return p;
-        }, {});
-    }
-    function topology_node(n) {
-        return {orig: get_original(n), cola: dcg_fields(n.cola)};
-    }
-    function topology_edge(e) {
-        return {orig: get_original(e), cola: dcg_fields(e.cola)};
+        if(oldWidth !== newWidth || oldHeight !== newHeight) {
+            var scale = _zoom.scale(), translate = _zoom.translate();
+            _zoom.scale(1).translate([0,0]);
+            var xDomain = _diagram.x().domain(), yDomain = _diagram.y().domain();
+            _diagram.x()
+                .domain([xDomain[0], xDomain[0] + (xDomain[1] - xDomain[0])*newWidth/oldWidth])
+                .range([0, newWidth]);
+            _diagram.y()
+                .domain([yDomain[0], yDomain[0] + (yDomain[1] - yDomain[0])*newHeight/oldHeight])
+                .range([0, newHeight]);
+            _zoom
+                .x(_diagram.x()).y(_diagram.y())
+                .translate(translate).scale(scale);
+        }
     }
 
     _diagram.startLayout = function () {
         var nodes = _diagram.nodeGroup().all();
         var edges = _diagram.edgeGroup().all();
         var ports = _diagram.portGroup() ? _diagram.portGroup().all() : [];
-        var clusters = _diagram.clusterGroup() ? _diagram.clusterGroup().all() : [];
         if(_running) {
             throw new Error('dc_graph.diagram.redraw already running!');
         }
         _running = true;
 
-        if(_diagram.width_is_automatic() || _diagram.height_is_automatic())
+        if(_width === 'auto' || _height === 'auto')
             detect_size_change();
         else
-            _diagram.renderer().resize();
+            _diagram.resizeSvg();
 
         if(_diagram.initLayoutOnRedraw())
             initLayout();
@@ -4001,7 +3810,6 @@ dc_graph.diagram = function (parent, chartGroup) {
             v1.orig = v;
             v1.cola = v1.cola || {};
             v1.cola.dcg_nodeKey = _diagram.nodeKey.eval(v1);
-            v1.cola.dcg_nodeParentCluster = _diagram.nodeParentCluster.eval(v1);
             _diagram.layoutEngine().populateLayoutNode(v1.cola, v1);
         });
         var wedges = regenerate_objects(_edges, edges, null, function(e) {
@@ -4093,21 +3901,6 @@ dc_graph.diagram = function (parent, chartGroup) {
                     delete _nodes[k];
         }
 
-        var needclusters = d3.set(wnodes.map(function(n) {
-            return _diagram.nodeParentCluster.eval(n);
-        }).filter(identity)).values();
-
-        var wclusters = regenerate_objects(_clusters, clusters, needclusters, function(c) {
-            return _diagram.clusterKey()(c);
-        }, function(c1, c) { // assign
-            c1.orig = c;
-            c1.cola = c1.cola || {
-                dcg_clusterKey: _diagram.clusterKey.eval(c1),
-                dcg_clusterParent: _diagram.clusterParent.eval(c1)
-            };
-        }, function(k, c) { // create
-        });
-
         wnodes.forEach(function(v, i) {
             v.index = i;
         });
@@ -4150,7 +3943,113 @@ dc_graph.diagram = function (parent, chartGroup) {
             });
         }
 
-        var drawState = _diagram.renderer().startRedraw(_dispatch, wnodes, wedges);
+        // create edge SVG elements
+        var edge = _edgeLayer.selectAll('.edge')
+                .data(wedges, _diagram.edgeKey.eval);
+        var edgeEnter = edge.enter().append('svg:path')
+                .attr({
+                    class: 'edge',
+                    id: _diagram.edgeId,
+                    opacity: 0
+                })
+            .each(function(e) {
+                e.deleted = false;
+            });
+        var edgeArrows = _edgeLayer.selectAll('.edge-arrows')
+                .data(wedges, _diagram.edgeKey.eval);
+        var edgeArrowsEnter = edgeArrows.enter().append('svg:path')
+                .attr({
+                    class: 'edge-arrows',
+                    id: function(d) {
+                        return _diagram.edgeId(d) + '-arrows';
+                    },
+                    fill: 'none',
+                    opacity: 0
+                });
+
+        edge.exit().each(function(e) {
+            e.deleted = true;
+        }).transition()
+            .duration(_diagram.stagedDuration())
+            .delay(_diagram.deleteDelay())
+            .attr('opacity', 0)
+            .each(function(e) {
+                edgeArrow(_diagram, _arrows, e, 'head', null);
+                edgeArrow(_diagram, _arrows, e, 'tail', null);
+            })
+            .remove();
+
+        if(_diagram.edgeSort()) {
+            edge.sort(function(a, b) {
+                var as = _diagram.edgeSort.eval(a), bs = _diagram.edgeSort.eval(b);
+                return as < bs ? -1 : bs < as ? 1 : 0;
+            });
+        }
+
+        // another wider copy of the edge just for hover events
+        var edgeHover = _edgeLayer.selectAll('.edge-hover')
+                .data(wedges, _diagram.edgeKey.eval);
+        var edgeHoverEnter = edgeHover.enter().append('svg:path')
+            .attr('class', 'edge-hover')
+            .attr('opacity', 0)
+            .attr('fill', 'none')
+            .attr('stroke', 'green')
+            .attr('stroke-width', 10)
+            .on('mouseover.diagram', function(e) {
+                d3.select('#' + _diagram.edgeId(e) + '-label')
+                    .attr('visibility', 'visible');
+            })
+            .on('mouseout.diagram', function(e) {
+                d3.select('#' + _diagram.edgeId(e) + '-label')
+                    .attr('visibility', 'hidden');
+            });
+        edgeHover.exit().remove();
+
+        var edgeLabels = _edgeLayer.selectAll('g.edge-label-wrapper')
+            .data(wedges, _diagram.edgeKey.eval);
+        var edgeLabelsEnter = edgeLabels.enter()
+            .append('g')
+              .attr('class', 'edge-label-wrapper')
+              .attr('visibility', 'hidden')
+              .attr('id', function(e) {
+                  return _diagram.edgeId(e) + '-label';
+              });
+        var textPaths = _defs.selectAll('path.edge-label-path')
+                .data(wedges, _diagram.textpathId);
+        var textPathsEnter = textPaths.enter()
+                .append('svg:path').attr({
+                    class: 'edge-label-path',
+                    id: _diagram.textpathId
+                });
+        edgeLabels.exit().transition()
+            .duration(_diagram.stagedDuration())
+            .delay(_diagram.deleteDelay())
+            .attr('opacity', 0).remove();
+
+        // create node SVG elements
+        var node = _nodeLayer.selectAll('.node')
+                .data(wnodes, _diagram.nodeKey.eval);
+        var nodeEnter = node.enter().append('g')
+                .attr('class', 'node')
+                .attr('opacity', '0') // don't show until has layout
+            .each(function(n) {
+                n.deleted = false;
+            });
+        // .call(_d3cola.drag);
+
+        _diagram._enterNode(nodeEnter);
+
+        node.exit().each(function(n) {
+            n.deleted = true;
+        }).transition()
+            .duration(_diagram.stagedDuration())
+            .delay(_diagram.deleteDelay())
+            .attr('opacity', 0)
+            .remove();
+
+        _dispatch.drawn(node, edge, edgeHover);
+
+        _refresh(node, edge, edgeArrows);
 
         // really we should have layout chaining like in the good old Dynagraph days
         // the ordering of this and the previous 4 statements is somewhat questionable
@@ -4160,8 +4059,12 @@ dc_graph.diagram = function (parent, chartGroup) {
         // no layout if the topology and layout parameters haven't changed
         var skip_layout = false;
         if(!_diagram.layoutUnchanged()) {
-            var nodes_snapshot = JSON.stringify(wnodes.map(topology_node));
-            var edges_snapshot = JSON.stringify(wedges.map(topology_edge));
+            var nodes_snapshot = JSON.stringify(wnodes.map(function(n) {
+                return {orig: get_original(n), cola: {dcg_nodeFixed: n.cola.dcg_nodeFixed}};
+            }));
+            var edges_snapshot = JSON.stringify(wedges.map(function(e) {
+                return {orig: get_original(e), cola: e.cola};
+            }));
             if(nodes_snapshot === _nodes_snapshot && edges_snapshot === _edges_snapshot)
                 skip_layout = true;
             _nodes_snapshot = nodes_snapshot;
@@ -4179,53 +4082,7 @@ dc_graph.diagram = function (parent, chartGroup) {
         // i am not satisfied with this constraint generation api...
         // https://github.com/dc-js/dc.graph.js/issues/10
         var constraints = _diagram.constrain()(_diagram, wnodes, wedges);
-
-        // warn if there are any loops (before changing names to indices)
-        // it would be better to do this in webcola
-        // (for one thing, this duplicates logic in rectangle.ts)
-        // but by that time it has lost the names of things,
-        // so the output would be difficult to use
-        var constraints_by_left = constraints.reduce(function(p, c) {
-            if(c.type) {
-                switch(c.type) {
-                case 'alignment':
-                    var left = c.offsets[0].node;
-                    p[left] = p[left] || [];
-                    c.offsets.slice(1).forEach(function(o) {
-                        p[left].push({node: o.node, in_constraint: c});
-                    });
-                    break;
-                }
-            } else if(c.axis) {
-                p[c.left] = p[c.left] || [];
-                p[c.left].push({node: c.right, in_constraint: c});
-            }
-            return p;
-        }, {});
-        var touched = {};
-        function find_constraint_loops(con, stack) {
-            var left = con.node;
-            stack = stack || [];
-            var loop = stack.find(function(con) { return con.node === left; });
-            stack = stack.concat([con]);
-            if(loop)
-                console.warn('found a loop in constraints', stack);
-            if(touched[left])
-                return;
-            touched[left] = true;
-            if(!constraints_by_left[left])
-                return;
-            constraints_by_left[left].forEach(function(right) {
-                find_constraint_loops(right, stack);
-            });
-        }
-        Object.keys(constraints_by_left).forEach(function(left) {
-            if(!touched[left])
-                find_constraint_loops({node: left, in_constraint: null});
-        });
-
         // translate references from names to indices (ugly)
-        var invalid_constraints = [];
         constraints.forEach(function(c) {
             if(c.type) {
                 switch(c.type) {
@@ -4240,15 +4097,11 @@ dc_graph.diagram = function (parent, chartGroup) {
                     });
                     break;
                 }
-            } else if(c.axis && c.left && c.right) {
+            } else if(c.axis) {
                 c.left = _nodes[c.left].index;
                 c.right = _nodes[c.right].index;
             }
-            else invalid_constraints.push(c);
         });
-
-        if(invalid_constraints.length)
-            console.warn(invalid_constraints.length + ' invalid constraints', invalid_constraints);
 
         // pseudo-cola.js features
 
@@ -4310,81 +4163,69 @@ dc_graph.diagram = function (parent, chartGroup) {
         });
         if(skip_layout) {
             _running = false;
-            // init_node_ports?
-            _diagram.renderer().draw(drawState, true);
-            _diagram.renderer().drawPorts(drawState);
-            _diagram.renderer().fireTSEvent(_dispatch, drawState);
-            check_zoom(drawState);
+            draw(node, nodeEnter, edge, edgeEnter, edgeHover, edgeHoverEnter, edgeLabels, edgeLabelsEnter,
+                 edgeArrows, edgeArrowsEnter, textPaths, textPathsEnter, true);
+            draw_ports(node);
+            _dispatch.transitionsStarted(node, edge, edgeHover);
+            check_zoom(node, edge);
             return this;
         }
         var startTime = Date.now();
 
-        function populate_cola(rnodes, redges, rclusters) {
+        function populate_cola(rnodes, redges) {
             rnodes.forEach(function(rn) {
                 var n = _nodes[rn.dcg_nodeKey];
                 if(!n) {
-                    console.warn('received node "' + rn.dcg_nodeKey + '" that we did not send, ignored');
+                    console.warn('received node "' + rn.dcg_nodeKey + '" that we did not send');
                     return;
                 }
                 n.cola.x = rn.x;
                 n.cola.y = rn.y;
-                n.cola.z = rn.z;
             });
             redges.forEach(function(re) {
                 var e = _edges[re.dcg_edgeKey];
                 if(!e) {
-                    console.warn('received edge "' + re.dcg_edgeKey + '" that we did not send, ignored');
+                    console.warn('received edge "' + re.dcg_edgeKey + '" that we did not send');
                     return;
                 }
                 if(re.points)
                     e.cola.points = re.points;
             });
-            wclusters.forEach(function(c) {
-                c.cola.bounds = null;
-            });
-            if(rclusters)
-                rclusters.forEach(function(rc) {
-                    var c = _clusters[rc.dcg_clusterKey];
-                    if(!c) {
-                        console.warn('received cluster "' + rc.dcg_clusterKey + '" that we did not send, ignored');
-                        return;
-                    }
-                    if(rc.bounds)
-                        c.cola.bounds = rc.bounds;
-                });
         }
         _diagram.layoutEngine()
-            .on('tick.diagram', function(nodes, edges, clusters) {
+            .on('tick.diagram', function(nodes, edges) {
                 var elapsed = Date.now() - startTime;
                 if(!_diagram.initialOnly())
-                    populate_cola(nodes, edges, clusters);
+                    populate_cola(nodes, edges);
                 if(_diagram.showLayoutSteps()) {
                     init_node_ports(_nodes, wports);
                     _dispatch.receivedLayout(_diagram, _nodes, wnodes, _edges, wedges, _ports, wports);
                     propagate_port_positions(_nodes, wedges, _ports);
-                    _diagram.renderer().draw(drawState, true);
-                    _diagram.renderer().drawPorts(drawState);
+                    draw(node, nodeEnter, edge, edgeEnter, edgeHover, edgeHoverEnter, edgeLabels, edgeLabelsEnter,
+                         edgeArrows, edgeArrowsEnter, textPaths, textPathsEnter, true);
+                    draw_ports(node);
                     // should do this only once
-                    _diagram.renderer().fireTSEvent(_dispatch, drawState);
+                    _dispatch.transitionsStarted(node, edge, edgeHover);
                 }
                 if(_needsRedraw || _diagram.timeLimit() && elapsed > _diagram.timeLimit()) {
                     console.log('cancelled');
                     _diagram.layoutEngine().stop();
                 }
             })
-            .on('end.diagram', function(nodes, edges, clusters) {
+            .on('end.diagram', function(nodes, edges) {
                 if(!_diagram.showLayoutSteps()) {
                     if(!_diagram.initialOnly())
-                        populate_cola(nodes, edges, clusters);
+                        populate_cola(nodes, edges);
                     init_node_ports(_nodes, wports);
                     _dispatch.receivedLayout(_diagram, _nodes, wnodes, _edges, wedges, _ports, wports);
                     propagate_port_positions(_nodes, wedges, _ports);
-                    _diagram.renderer().draw(drawState, true);
-                    _diagram.renderer().drawPorts(drawState);
-                    _diagram.renderer().fireTSEvent(_dispatch, drawState);
+                    draw(node, nodeEnter, edge, edgeEnter, edgeHover, edgeHoverEnter, edgeLabels, edgeLabelsEnter,
+                         edgeArrows, edgeArrowsEnter, textPaths, textPathsEnter, true);
+                    draw_ports(node);
+                    _dispatch.transitionsStarted(node, edge, edgeHover);
                 }
-                else _diagram.layoutDone(true);
-                check_zoom(drawState);
+                else layout_done(true);
+                check_zoom(node, edge);
             })
             .on('start.diagram', function() {
                 console.log('algo ' + _diagram.layoutEngine().layoutAlgorithm() + ' started.');
@@ -4395,42 +4236,20 @@ dc_graph.diagram = function (parent, chartGroup) {
             _diagram.layoutEngine().dispatch().end(wnodes, wedges);
         else {
             _dispatch.start(); // cola doesn't seem to fire this itself?
-            var engine = _diagram.layoutEngine();
-            engine.data(
+            _diagram.layoutEngine().data(
                 { width: _diagram.width(), height: _diagram.height() },
-                wnodes.map(function(v) {
-                    var lv = Object.assign({}, v.cola, v.dcg_shape);
-                    if(engine.annotateNode)
-                        engine.annotateNode(lv, v);
-                    else if(engine.extractNodeAttrs)
-                        Object.keys(engine.extractNodeAttrs()).forEach(function(key) {
-                            lv[key] = engine.extractNodeAttrs()[key](v.orig);
-                        });
-                    return lv;
-                }),
-                layout_edges.map(function(e) {
-                    var le = e.cola;
-                    if(engine.annotateEdge)
-                        engine.annotateEdge(le, e);
-                    else if(engine.extractEdgeAttrs)
-                        Object.keys(engine.extractEdgeAttrs()).forEach(function(key) {
-                            le[key] = engine.extractEdgeAttrs()[key](e.orig);
-                        });
-                    return le;
-                }),
-                wclusters.map(function(c) {
-                    return c.cola;
-                }),
+                wnodes.map(function(v) { return Object.assign({}, v.cola, v.dcg_shape); }),
+                layout_edges.map(function(v) { return v.cola; }),
                 constraints
             );
-            engine.start();
+            _diagram.layoutEngine().start();
         }
         return this;
     };
 
-    function check_zoom(drawState) {
+    function check_zoom(node, edge) {
         var do_zoom, animate = true;
-        if(_diagram.width_is_automatic() || _diagram.height_is_automatic())
+        if(_width === 'auto' || _height === 'auto')
             detect_size_change();
         switch(_diagram.autoZoom()) {
         case 'always-skipanimonce':
@@ -4448,7 +4267,7 @@ dc_graph.diagram = function (parent, chartGroup) {
         default:
             do_zoom = false;
         }
-        calc_bounds(drawState);
+        calc_bounds(node, edge);
         if(do_zoom)
             auto_zoom(animate);
     }
@@ -4460,8 +4279,6 @@ dc_graph.diagram = function (parent, chartGroup) {
     function edge_vec(n, e) {
         var dy = e.target.cola.y - e.source.cola.y,
             dx = e.target.cola.x - e.source.cola.x;
-        if(dy === 0 && dx === 0)
-            return [1, 0];
         if(e.source !== n)
             dy = -dy, dx = -dx;
         if(e.parallel && e.parallel.edges.length > 1 && e.source.index > e.target.index)
@@ -4514,6 +4331,28 @@ dc_graph.diagram = function (parent, chartGroup) {
         });
     }
 
+    function _refresh(node, edge, edgeArrows) {
+        _diagram._updateEdge(edge, edgeArrows);
+        _diagram._updateNode(node);
+        draw_ports(node);
+    }
+
+    _diagram.refresh = function(node, edge, edgeHover, edgeLabels, textPaths) {
+        if(_animating)
+            return this; // but what about changed attributes?
+        node = node || _diagram.selectAllNodes();
+        edge = edge || _diagram.selectAllEdges();
+        var edgeArrows = _diagram.selectAllEdges('.edge-arrows');
+        _refresh(node, edge, edgeArrows);
+
+        edgeHover = edgeHover || _diagram.selectAllEdges('.edge-hover');
+        edgeLabels = edgeLabels || _diagram.selectAllEdges('.edge-label-wrapper');
+        textPaths = textPaths || _diagram.selectAllDefs('path.edge-label-path');
+        var nullSel = d3.select(null); // no enters
+        draw(node, nullSel, edge, nullSel, edgeHover, nullSel, edgeLabels, nullSel, edgeArrows, nullSel, textPaths, nullSel, false);
+        return this;
+    };
+
     _diagram.requestRefresh = function(durationOverride) {
         window.requestAnimationFrame(function() {
             var transdur;
@@ -4521,13 +4360,38 @@ dc_graph.diagram = function (parent, chartGroup) {
                 transdur = _diagram.transitionDuration();
                 _diagram.transitionDuration(durationOverride);
             }
-            _diagram.renderer().refresh();
+            _diagram.refresh();
             if(durationOverride !== undefined)
                 _diagram.transitionDuration(transdur);
         });
     };
 
-    _diagram.layoutDone = function(happens) {
+    _diagram.reposition = function(node, edge) {
+        node
+            .attr('transform', function (n) {
+                return 'translate(' + n.cola.x + ',' + n.cola.y + ')';
+            });
+        // reset edge ports
+        edge.each(function(e) {
+            e.pos.new = null;
+            e.pos.old = null;
+            calc_edge_path(e, 'new', e.source.cola.x, e.source.cola.y, e.target.cola.x, e.target.cola.y);
+            if(_diagram.edgeArrowhead.eval(e))
+                d3.select('#' + _diagram.arrowId(e, 'head'))
+                .attr('orient', function() {
+                    return e.pos.new.orienthead;
+                });
+            if(_diagram.edgeArrowtail.eval(e))
+                d3.select('#' + _diagram.arrowId(e, 'tail'))
+                .attr('orient', function() {
+                    return e.pos.new.orienttail;
+                });
+        })
+            .attr('d', render_edge_path('new'));
+        return this;
+    };
+
+    function layout_done(happens) {
         _dispatch.end(happens);
         _running = false;
         if(_needsRedraw) {
@@ -4537,7 +4401,7 @@ dc_graph.diagram = function (parent, chartGroup) {
                     _diagram.redraw();
             }, 0);
         }
-    };
+    }
 
     function enforce_path_direction(path, spos, tpos) {
         var points = path.points, first = points[0], last = points[points.length-1];
@@ -4577,7 +4441,7 @@ dc_graph.diagram = function (parent, chartGroup) {
         }
         return path;
     }
-    _diagram.calcEdgePath = function(e, age, sx, sy, tx, ty) {
+    function calc_edge_path(e, age, sx, sy, tx, ty) {
         var parallel = e.parallel;
         var source = e.source, target = e.target;
         if(parallel.edges.length > 1 && e.source.index > e.target.index) {
@@ -4607,7 +4471,7 @@ dc_graph.diagram = function (parent, chartGroup) {
                 points: path.points,
                 bezDegree: path.bezDegree
             };
-            var alengths = scaled_arrow_lengths(_diagram, parallel.edges[p]);
+            var alengths = scaled_arrow_lengths(parallel.edges[p]);
             path = clip_path_to_arrows(alengths.headLength, alengths.tailLength, path);
             var points = path.points, points0 = path0.points;
             parallel.edges[p].pos[age] = {
@@ -4617,7 +4481,60 @@ dc_graph.diagram = function (parent, chartGroup) {
                 orienttail: angle_between_points(points[0], points0[0]) + 'rad'
             };
         }
-    };
+    }
+
+    function clip_path_to_arrows(headLength, tailLength, path) {
+        var points0 = as_bezier3(path),
+            points = chop_bezier(points0, 'head', headLength);
+        return {
+            bezDegree: 3,
+            points: chop_bezier(points, 'tail', tailLength),
+            sourcePort: path.sourcePort,
+            targetPort: path.targetPort
+        };
+    }
+
+    function scaled_arrow_lengths(e) {
+        var arrowSize = _diagram.edgeArrowSize.eval(e),
+            stemWidth = _diagram.edgeStrokeWidth.eval(e) / arrowSize;
+        var headLength = arrowSize *
+            (arrow_length(arrow_parts(_arrows, _diagram.edgeArrowhead.eval(e)), stemWidth) +
+             _diagram.nodeStrokeWidth.eval(e.target) / 2),
+            tailLength = arrowSize *
+            (arrow_length(arrow_parts(_arrows, _diagram.edgeArrowtail.eval(e)), stemWidth) +
+             _diagram.nodeStrokeWidth.eval(e.source) / 2);
+        return {headLength: headLength, tailLength: tailLength};
+    }
+
+    function render_edge_path(age, full) {
+        var field = full ? 'full' : 'path';
+        return function(e) {
+            var path = e.pos[age][field];
+            return generate_path(path.points, path.bezDegree);
+        };
+    }
+
+    function render_edge_label_path(age) {
+        return function(e) {
+            var path = e.pos[age].path;
+            var points = path.points[path.points.length-1].x < path.points[0].x ?
+                    path.points.slice(0).reverse() : path.points;
+            return generate_path(points, path.bezDegree);
+        };
+    }
+
+    // wait on multiple transitions, adapted from
+    // http://stackoverflow.com/questions/10692100/invoke-a-callback-at-the-end-of-a-transition
+    function endall(transitions, callback) {
+        if (transitions.every(function(transition) { return transition.size() === 0; }))
+            callback();
+        var n = 0;
+        transitions.forEach(function(transition) {
+            transition
+                .each(function() { ++n; })
+                .each('end.all', function() { if (!--n) callback(); });
+        });
+    }
 
     function node_bounds(n) {
         var bounds = {left: n.cola.x - n.dcg_rx, top: n.cola.y - n.dcg_ry,
@@ -4662,24 +4579,36 @@ dc_graph.diagram = function (parent, chartGroup) {
         return points.map(point_to_bounds).reduce(union_bounds);
     }
 
-    _diagram.calculateBounds = function(ndata, edata) {
+    function debug_bounds(bounds) {
+        var brect = _g.selectAll('rect.bounds').data([0]);
+        brect.enter()
+            .insert('rect', ':first-child').attr({
+                class: 'bounds',
+                fill: 'rgba(128,255,128,0.1)',
+                stroke: '#000'
+            });
+        brect
+            .attr({
+                x: bounds.left,
+                y: bounds.top,
+                width: bounds.right - bounds.left,
+                height: bounds.bottom - bounds.top
+            });
+    }
+
+    _diagram.calc_bounds0 = function(ndata, edata) {
         // assumption: there can be no edges without nodes
         var bounds = ndata.map(node_bounds).reduce(union_bounds);
         return edata.map(edge_bounds).reduce(union_bounds, bounds);
     };
     var _bounds;
-    function calc_bounds(drawState) {
-        if((_diagram.fitStrategy() || _diagram.restrictPan())) {
-            _bounds = _diagram.renderer().calculateBounds(drawState);
+    function calc_bounds(node, edge) {
+        if((_diagram.fitStrategy() || _diagram.restrictPan()) && node.size()) {
+            // assumption: there can be no edges without nodes
+            _bounds = node.data().map(node_bounds).reduce(union_bounds);
+            _bounds = edge.data().map(edge_bounds).reduce(union_bounds, _bounds);
         }
     }
-
-    _diagram.animateZoom = function(_) {
-        if(!arguments.length)
-            return _animateZoom;
-        _animateZoom = _;
-        return _diagram;
-    };
 
     function auto_zoom(animate) {
         if(_diagram.fitStrategy()) {
@@ -4688,6 +4617,8 @@ dc_graph.diagram = function (parent, chartGroup) {
             var vwidth = _bounds.right - _bounds.left, vheight = _bounds.bottom - _bounds.top,
                 swidth =  _diagram.width() - _diagram.margins().left - _diagram.margins().right,
                 sheight = _diagram.height() - _diagram.margins().top - _diagram.margins().bottom;
+            if(_diagram.DEBUG_BOUNDS)
+                debug_bounds(_bounds);
             var fitS = _diagram.fitStrategy(), translate = [0,0], scale = 1;
             if(['default', 'vertical', 'horizontal'].indexOf(fitS) >= 0) {
                 var sAR = sheight / swidth, vAR = vheight / vwidth,
@@ -4703,8 +4634,8 @@ dc_graph.diagram = function (parent, chartGroup) {
                 if(sides.length > 2)
                     throw new Error("align_ expecting 0-2 sides, not " + sides.length);
                 var bounds = margined_bounds();
-                translate = _diagram.renderer().translate();
-                scale = _diagram.renderer().scale();
+                translate = _zoom.translate();
+                scale = _zoom.scale();
                 var vertalign = false, horzalign = false;
                 sides.forEach(function(s) {
                     switch(s) {
@@ -4738,34 +4669,326 @@ dc_graph.diagram = function (parent, chartGroup) {
                 }
             }
             else if(fitS === 'zoom') {
-                scale = _diagram.renderer().scale();
-                translate = bring_in_bounds(_diagram.renderer().translate());
+                scale = _zoom.scale();
+                translate = bring_in_bounds(_zoom.translate());
             }
             else
                 throw new Error('unknown fitStrategy type ' + typeof fitS);
 
             _animateZoom = animate;
-            _diagram.renderer().translate(translate).scale(scale).commitTranslateScale();
+            _zoom.translate(translate).scale(scale).event(_svg);
             _animateZoom = false;
         }
     }
-    function namespace_event_reducer(msg_fun) {
-        return function(p, ev) {
-            var namespace = {};
-            p[ev] = function(ns) {
-                return namespace[ns] = namespace[ns] || onetime_trace('trace', msg_fun(ns, ev));
-            };
-            return p;
-        };
+
+    // determine pre-transition orientation that won't spin a lot going to new orientation
+    function unsurprising_orient(oldorient, neworient) {
+        var oldang = +oldorient.slice(0, -3),
+            newang = +neworient.slice(0, -3);
+        if(Math.abs(oldang - newang) > Math.PI) {
+            if(newang > oldang)
+                oldang += 2*Math.PI;
+            else oldang -= 2*Math.PI;
+        }
+        return oldang + 'rad';
     }
-    var renderer_specific_events = ['drawn', 'transitionsStarted', 'zoomed']
-            .reduce(namespace_event_reducer(function(ns, ev) {
-                return 'subscribing "' + ns + '" to event "' + ev + '" which takes renderer-specific parameters';
-            }), {});
-    var inconsistent_arguments = ['end']
-            .reduce(namespace_event_reducer(function(ns, ev) {
-                return 'subscribing "' + ns + '" to event "' + ev + '" which may receive inconsistent arguments';
-            }), {});
+
+    function draw(node, nodeEnter, edge, edgeEnter, edgeHover, edgeHoverEnter,
+                  edgeLabels, edgeLabelsEnter, edgeArrows, edgeArrowsEnter,
+                  textPaths, textPathsEnter, animatePositions) {
+        console.assert(edge.data().every(has_source_and_target));
+
+        var nodeEntered = {};
+        nodeEnter
+            .each(function(n) {
+                nodeEntered[_diagram.nodeKey.eval(n)] = true;
+            })
+            .attr('transform', function (n) {
+                // start new nodes at their final position
+                return 'translate(' + n.cola.x + ',' + n.cola.y + ')';
+            });
+        var ntrans = node
+                .transition()
+                .duration(_diagram.stagedDuration())
+                .delay(function(n) {
+                    return _diagram.stagedDelay(nodeEntered[_diagram.nodeKey.eval(n)]);
+                })
+                .attr('opacity', _diagram.nodeOpacity.eval);
+        if(animatePositions)
+            ntrans
+                .attr('transform', function (n) {
+                    return 'translate(' + n.cola.x + ',' + n.cola.y + ')';
+                })
+                .each('end.record', function(n) {
+                    n.prevX = n.cola.x;
+                    n.prevY = n.cola.y;
+                });
+
+        // recalculate edge positions
+        edge.each(function(e) {
+            e.pos.new = null;
+        });
+        edge.each(function(e) {
+            if(e.cola.points) {
+                var alengths = scaled_arrow_lengths(e);
+                var path0 = {
+                    points: e.cola.points,
+                    bezDegree: 3
+                };
+                var path = clip_path_to_arrows(alengths.headLength, alengths.tailLength, path0);
+                e.pos.new = {
+                    path: path,
+                    full: path0,
+                    orienthead: angle_between_points(path.points[path.points.length-1], path0.points[path0.points.length-1]) + 'rad', //calculate_arrowhead_orientation(e.cola.points, 'head'),
+                    orienttail: angle_between_points(path.points[0], path0.points[0]) + 'rad' //calculate_arrowhead_orientation(e.cola.points, 'tail')
+                };
+            }
+            else {
+                if(!e.pos.old)
+                    calc_edge_path(e, 'old', e.source.prevX || e.source.cola.x, e.source.prevY || e.source.cola.y,
+                                   e.target.prevX || e.target.cola.x, e.target.prevY || e.target.cola.y);
+                if(!e.pos.new)
+                    calc_edge_path(e, 'new', e.source.cola.x, e.source.cola.y, e.target.cola.x, e.target.cola.y);
+            }
+            if(e.pos.old) {
+                if(e.pos.old.path.bezDegree !== e.pos.new.path.bezDegree ||
+                   e.pos.old.path.points.length !== e.pos.new.path.points.length) {
+                    //console.log('old', e.pos.old.path.points.length, 'new', e.pos.new.path.points.length);
+                    if(is_one_segment(e.pos.old.path)) {
+                        e.pos.new.path.points = as_bezier3(e.pos.new.path);
+                        e.pos.old.path.points = split_bezier_n(as_bezier3(e.pos.old.path),
+                                                               (e.pos.new.path.points.length-1)/3);
+                        e.pos.old.path.bezDegree = e.pos.new.bezDegree = 3;
+                    }
+                    else if(is_one_segment(e.pos.new.path)) {
+                        e.pos.old.path.points = as_bezier3(e.pos.old.path);
+                        e.pos.new.path.points = split_bezier_n(as_bezier3(e.pos.new.path),
+                                                               (e.pos.old.path.points.length-1)/3);
+                        e.pos.old.path.bezDegree = e.pos.new.bezDegree = 3;
+                    }
+                    else console.warn("don't know how to interpolate two multi-segments");
+                }
+            }
+            else
+                e.pos.old = e.pos.new;
+        });
+
+        var edgeEntered = {};
+        edgeEnter
+            .each(function(e) {
+                edgeEntered[_diagram.edgeKey.eval(e)] = true;
+            })
+            .attr('d', render_edge_path(_diagram.stageTransitions() === 'modins' ? 'new' : 'old'));
+
+        edgeArrowsEnter
+            .each(function(e) {
+                // if staging transitions, just fade new edges in at new position
+                // else start new edges at old positions of nodes, if any, else new positions
+                var age = _diagram.stageTransitions() === 'modins' ? 'new' : 'old';
+                if(_diagram.edgeArrowhead.eval(e))
+                    d3.select('#' + _diagram.arrowId(e, 'head'))
+                    .attr('orient', function() {
+                        return e.pos[age].orienthead;
+                    });
+                if(_diagram.edgeArrowtail.eval(e))
+                    d3.select('#' + _diagram.arrowId(e, 'tail'))
+                    .attr('orient', function() {
+                        return e.pos[age].orienttail;
+                    });
+            })
+            .attr('d', render_edge_path(_diagram.stageTransitions() === 'modins' ? 'new' : 'old', true));
+
+        edgeArrows
+            .each(function(e) {
+                if(_diagram.edgeArrowhead.eval(e))
+                    d3.select('#' + _diagram.arrowId(e, 'head'))
+                    .attr('orient', unsurprising_orient(e.pos.old.orienthead, e.pos.new.orienthead))
+                    .transition().duration(_diagram.stagedDuration())
+                    .delay(_diagram.stagedDelay(false))
+                    .attr('orient', function() {
+                        return e.pos.new.orienthead;
+                    });
+                if(_diagram.edgeArrowtail.eval(e))
+                    d3.select('#' + _diagram.arrowId(e, 'tail'))
+                    .attr('orient', unsurprising_orient(e.pos.old.orienttail, e.pos.new.orienttail))
+                    .transition().duration(_diagram.stagedDuration())
+                    .delay(_diagram.stagedDelay(false))
+                    .attr('orient', function() {
+                        return e.pos.new.orienttail;
+                    });
+            });
+
+        var etrans = edge
+              .transition()
+                .duration(_diagram.stagedDuration())
+                .delay(function(e) {
+                    return _diagram.stagedDelay(edgeEntered[_diagram.edgeKey.eval(e)]);
+                })
+                .attr('opacity', _diagram.edgeOpacity.eval);
+        var arrowtrans = edgeArrows
+              .transition()
+                .duration(_diagram.stagedDuration())
+                .delay(function(e) {
+                    return _diagram.stagedDelay(edgeEntered[_diagram.edgeKey.eval(e)]);
+                })
+                .attr('opacity', _diagram.edgeOpacity.eval);
+        (animatePositions ? etrans : edge)
+            .attr('d', function(e) {
+                var when = _diagram.stageTransitions() === 'insmod' &&
+                        edgeEntered[_diagram.edgeKey.eval(e)] ? 'old' : 'new';
+                return render_edge_path(when)(e);
+            });
+        (animatePositions ? arrowtrans : edgeArrows)
+            .attr('d', function(e) {
+                var when = _diagram.stageTransitions() === 'insmod' &&
+                        edgeEntered[_diagram.edgeKey.eval(e)] ? 'old' : 'new';
+                return render_edge_path(when, true)(e);
+            });
+        var elabels = edgeLabels
+            .selectAll('text').data(function(e) {
+                var labels = _diagram.edgeLabel.eval(e);
+                if(!labels)
+                    return [];
+                else if(typeof labels === 'string')
+                    return [labels];
+                else return labels;
+            });
+        elabels.enter()
+          .append('text')
+            .attr({
+                'class': 'edge-label',
+                'text-anchor': 'middle',
+                dy: function(_, i) {
+                    return i * _diagram.edgeLabelSpacing.eval(this.parentNode) -2;
+                }
+            })
+          .append('textPath')
+            .attr('startOffset', '50%');
+        elabels
+          .select('textPath')
+            .text(function(t) { return t; })
+            .attr('opacity', function() {
+                return _diagram.edgeOpacity.eval(d3.select(this.parentNode.parentNode).datum());
+            })
+            .attr('xlink:href', function(e) {
+                var id = _diagram.textpathId(d3.select(this.parentNode.parentNode).datum());
+                // angular on firefox needs absolute paths for fragments
+                return window.location.href.split('#')[0] + '#' + id;
+            });
+        textPathsEnter
+            .attr('d', render_edge_label_path(_diagram.stageTransitions() === 'modins' ? 'new' : 'old'));
+        var textTrans = textPaths.transition()
+            .duration(_diagram.stagedDuration())
+            .delay(function(e) {
+                return _diagram.stagedDelay(edgeEntered[_diagram.edgeKey.eval(e)]);
+            });
+        if(animatePositions)
+            textTrans
+            .attr('d', function(e) {
+                var when = _diagram.stageTransitions() === 'insmod' &&
+                        edgeEntered[_diagram.edgeKey.eval(e)] ? 'old' : 'new';
+                return render_edge_label_path(when)(e);
+            });
+        if(_diagram.stageTransitions() === 'insmod' && animatePositions) {
+            // inserted edges transition twice in insmod mode
+            if(_diagram.stagedDuration() >= 50) {
+                etrans = etrans.transition()
+                    .duration(_diagram.stagedDuration())
+                    .attr('d', render_edge_path('new'));
+                textTrans = textTrans.transition()
+                    .duration(_diagram.stagedDuration())
+                    .attr('d', render_edge_label_path('new'));
+                arrowtrans.transition()
+                    .duration(_diagram.stagedDuration())
+                    .attr('d', render_edge_path('new', true));
+            } else {
+                // if transitions are too short, we run into various problems,
+                // from transitions not completing to objects not found
+                // so don't try to chain in that case
+                // this also helped once: d3.timer.flush();
+                etrans
+                    .attr('d', render_edge_path('new'));
+                textTrans
+                    .attr('d', render_edge_path('new'));
+                arrowtrans
+                    .attr('d', render_edge_path('new', true));
+            }
+        }
+
+        // signal layout done when all transitions complete
+        // because otherwise client might start another layout and lock the processor
+        _animating = true;
+        if(!_diagram.showLayoutSteps())
+            endall([ntrans, etrans, textTrans],
+                   function() {
+                       _animating = false;
+                       layout_done(true);
+                   });
+
+        if(animatePositions)
+            edgeHover.attr('d', render_edge_path('new'));
+
+        edge.each(function(e) {
+            e.pos.old = e.pos.new;
+        });
+    }
+
+    _diagram.animating = function() {
+        return _animating;
+    };
+
+    _diagram.selectNodePortsOfStyle = function(node, style) {
+        return node.selectAll('g.port').filter(function(p) {
+            return _diagram.portStyleName.eval(p) === style;
+        });
+    };
+
+    function draw_ports(node) {
+        if(!_nodePorts)
+            return;
+        _diagram.portStyle.enum().forEach(function(style) {
+            var nodePorts2 = {};
+            for(var nid in _nodePorts)
+                nodePorts2[nid] = _nodePorts[nid].filter(function(p) {
+                    return _diagram.portStyleName.eval(p) === style;
+                });
+            var port = _diagram.selectNodePortsOfStyle(node, style);
+            _diagram.portStyle(style).drawPorts(port, nodePorts2, node);
+        });
+    }
+
+    /**
+     * Standard dc.js
+     * {@link https://github.com/dc-js/dc.js/blob/develop/web/docs/api-latest.md#dc.baseMixin baseMixin}
+     * method. Erases any existing SVG elements and draws the diagram from scratch. `.render()`
+     * must be called the first time, and `.redraw()` can be called after that.
+     * @method render
+     * @memberof dc_graph.diagram
+     * @instance
+     * @return {dc_graph.diagram}
+     **/
+    _diagram.render = function () {
+        if(_svg)
+            _dispatch.reset();
+        if(!_diagram.initLayoutOnRedraw())
+            initLayout();
+        _diagram.resetSvg();
+        _g = _svg.append('g')
+            .attr('class', 'draw');
+
+        var layers = ['edge-layer', 'node-layer'];
+        if(_diagram.edgesInFront())
+            layers.reverse();
+        _g.selectAll('g').data(layers)
+          .enter().append('g')
+            .attr('class', function(l) { return l; });
+        _edgeLayer = _g.selectAll('g.edge-layer');
+        _nodeLayer = _g.selectAll('g.node-layer');
+
+        _dispatch.render();
+        _diagram.redraw();
+        return this;
+    };
 
     /**
      * Standard dc.js
@@ -4785,10 +5008,6 @@ dc_graph.diagram = function (parent, chartGroup) {
     _diagram.on = function(event, f) {
         if(arguments.length === 1)
             return _dispatch.on(event);
-        var evns = event.split('.'),
-            warning = renderer_specific_events[evns[0]] || inconsistent_arguments[evns[0]];
-        if(warning)
-            warning(evns[1] || '')();
         _dispatch.on(event, f);
         return this;
     };
@@ -4805,6 +5024,51 @@ dc_graph.diagram = function (parent, chartGroup) {
      **/
     _diagram.getStats = function() {
         return _stats;
+    };
+
+
+    /**
+     * Standard dc.js
+     * {@link https://github.com/dc-js/dc.js/blob/develop/web/docs/api-latest.md#dc.baseMixin baseMixin}
+     * method. Execute a d3 single selection in the diagram's scope using the given selector
+     * and return the d3 selection. Roughly the same as
+     * ```js
+     * d3.select('#diagram-id').select(selector)
+     * ```
+     * Since this function returns a d3 selection, it is not chainable. (However, d3 selection
+     * calls can be chained after it.)
+     * @method select
+     * @memberof dc_graph.diagram
+     * @instance
+     * @param {String} [selector]
+     * @return {d3.selection}
+     * @return {dc_graph.diagram}
+     **/
+    _diagram.select = function (s) {
+        return _diagram.root().select(s);
+    };
+
+    /**
+     * Standard dc.js
+     * {@link https://github.com/dc-js/dc.js/blob/develop/web/docs/api-latest.md#dc.baseMixin baseMixin}
+     * method. Selects all elements that match the d3 single selector in the diagram's scope,
+     * and return the d3 selection. Roughly the same as
+     *
+     * ```js
+     * d3.select('#diagram-id').selectAll(selector)
+     * ```
+     *
+     * Since this function returns a d3 selection, it is not chainable. (However, d3 selection
+     * calls can be chained after it.)
+     * @method selectAll
+     * @memberof dc_graph.diagram
+     * @instance
+     * @param {String} [selector]
+     * @return {d3.selection}
+     * @return {dc_graph.diagram}
+     **/
+    _diagram.selectAll = function (s) {
+        return _diagram.root() ? _diagram.root().selectAll(s) : null;
     };
 
     /**
@@ -4825,7 +5089,7 @@ dc_graph.diagram = function (parent, chartGroup) {
      * Standard dc.js
      * {@link https://github.com/dc-js/dc.js/blob/develop/web/docs/api-latest.md#dc.baseMixin baseMixin}
      * method. Gets or sets the y scale.
-     * @method y
+     * @method x
      * @memberof dc_graph.diagram
      * @instance
      * @param {d3.scale} [scale]
@@ -4834,6 +5098,81 @@ dc_graph.diagram = function (parent, chartGroup) {
 
      **/
     _diagram.y = property(null);
+
+    _diagram.zoom = function(_) {
+        if(!arguments.length)
+            return _zoom;
+        _zoom = _; // is this a good idea?
+        return _diagram;
+    };
+
+    /**
+     * Standard dc.js
+     * {@link https://github.com/dc-js/dc.js/blob/develop/web/docs/api-latest.md#dc.baseMixin baseMixin}
+     * method. Returns the top `svg` element for this specific diagram. You can also pass in a new
+     * svg element, but setting the svg element on a diagram may have unexpected consequences.
+     * @method svg
+     * @memberof dc_graph.diagram
+     * @instance
+     * @param {d3.selection} [selection]
+     * @return {d3.selection}
+     * @return {dc_graph.diagram}
+     **/
+    _diagram.svg = function (_) {
+        if (!arguments.length) {
+            return _svg;
+        }
+        _svg = _;
+        return _diagram;
+    };
+
+    /**
+     * Returns the top `g` element for this specific diagram. This method is usually used to
+     * retrieve the g element in order to overlay custom svg drawing
+     * programatically. **Caution**: The root g element is usually generated internally, and
+     * resetting it might produce unpredictable results.
+     * @method g
+     * @memberof dc_graph.diagram
+     * @instance
+     * @param {d3.selection} [selection]
+     * @return {d3.selection}
+     * @return {dc_graph.diagram}
+
+     **/
+    _diagram.g = function (_) {
+        if (!arguments.length) {
+            return _g;
+        }
+        _g = _;
+        return _diagram;
+    };
+
+    _diagram.translate = function() {
+        return _translate;
+    };
+    _diagram.scale = function() {
+        return _scale;
+    };
+
+    /**
+     * Standard dc.js
+     * {@link https://github.com/dc-js/dc.js/blob/develop/web/docs/api-latest.md#dc.baseMixin baseMixin}
+     * method. Remove the diagram's SVG elements from the dom and recreate the container SVG
+     * element.
+     * @method resetSvg
+     * @memberof dc_graph.diagram
+     * @instance
+     * @return {dc_graph.diagram}
+     **/
+    _diagram.resetSvg = function () {
+        // we might be re-initialized in a div, in which case
+        // we already have an <svg> element to delete
+        var svg = _svg || _diagram.select('svg');
+        svg.remove();
+        _svg = null;
+        _diagram.x(null).y(null);
+        return generateSvg();
+    };
 
     /**
      * Standard dc.js
@@ -4881,14 +5220,36 @@ dc_graph.diagram = function (parent, chartGroup) {
         return _arrows;
     };
 
+    _diagram.addOrRemoveDef = function(id, whether, tag, onEnter) {
+        var data = whether ? [0] : [];
+        var sel = _defs.selectAll('#' + id).data(data);
+
+        var selEnter = sel
+            .enter().append(tag)
+              .attr('id', id);
+        if(selEnter.size() && onEnter)
+            selEnter.call(onEnter);
+        sel.exit().remove();
+        return sel;
+    };
+
     Object.keys(dc_graph.builtin_arrows).forEach(function(aname) {
         var defn = dc_graph.builtin_arrows[aname];
         _diagram.defineArrow(aname, defn);
     });
 
+    function globalTransform(pos, scale, animate) {
+        _translate = pos;
+        _scale = scale;
+        var obj = _g;
+        if(animate)
+            obj = _g.transition().duration(_diagram.zoomDuration());
+        obj.attr('transform', 'translate(' + pos + ')' + ' scale(' + scale + ')');
+    }
+
     function margined_bounds() {
         var bounds = _bounds || {left: 0, top: 0, right: 0, bottom: 0};
-        var scale = _diagram.renderer().scale();
+        var scale = _zoom ? _zoom.scale() : 1;
         return {
             left: bounds.left - _diagram.margins().left/scale,
             top: bounds.top - _diagram.margins().top/scale,
@@ -4968,17 +5329,103 @@ dc_graph.diagram = function (parent, chartGroup) {
         return translate;
 
     }
-
-    _diagram.doZoom = function() {
-        if(_diagram.width_is_automatic() || _diagram.height_is_automatic())
+    function doZoom() {
+        if(_width === 'auto' || _height === 'auto')
             detect_size_change();
         var translate, scale = d3.event.scale;
         if(_diagram.restrictPan())
-            _diagram.renderer().translate(translate = bring_in_bounds(d3.event.translate));
+            _zoom.translate(translate = bring_in_bounds(d3.event.translate));
         else translate = d3.event.translate;
-        _diagram.renderer().globalTransform(translate, scale, _animateZoom);
+        globalTransform(translate, scale, _animateZoom);
         _dispatch.zoomed(translate, scale, _diagram.x().domain(), _diagram.y().domain());
+    }
+
+    _diagram.resizeSvg = function(w, h) {
+        if(_svg) {
+            _svg.attr('width', w || (_width === 'auto' ? '100%' : _diagram.width()))
+                .attr('height', h || (_height === 'auto' ? '100%' : _diagram.height()));
+        }
+        return _diagram;
     };
+
+    function enableZoom() {
+        _svg.call(_zoom);
+        _svg.on('dblclick.zoom', null);
+    }
+    function disableZoom() {
+        _svg.on('.zoom', null);
+    }
+
+    function generateSvg() {
+        _svg = _diagram.root().append('svg');
+        _diagram.resizeSvg();
+
+        _defs = _svg.append('svg:defs');
+
+        // start out with 1:1 zoom
+        if(!_diagram.x())
+            _diagram.x(d3.scale.linear()
+                     .domain([0, _diagram.width()])
+                     .range([0, _diagram.width()]));
+        if(!_diagram.y())
+            _diagram.y(d3.scale.linear()
+                     .domain([0, _diagram.height()])
+                     .range([0, _diagram.height()]));
+        _zoom = d3.behavior.zoom()
+            .on('zoom.diagram', doZoom)
+            .x(_diagram.x()).y(_diagram.y())
+            .scaleExtent(_diagram.zoomExtent());
+        if(_diagram.mouseZoomable()) {
+            var mod, mods;
+            var brush = _diagram.child('brush');
+            if((mod = _diagram.modKeyZoom())) {
+                if (Array.isArray (mod))
+                    mods = mod.slice ();
+                else if (typeof mod === "string")
+                    mods = [mod];
+                else
+                    mods = ['Alt'];
+                var mouseDown = false, modDown = false, zoomEnabled = false;
+                _svg.on('mousedown.modkey-zoom', function() {
+                    mouseDown = true;
+                }).on('mouseup.modkey-zoom', function() {
+                    mouseDown = false;
+                    if(!mouseDown && !modDown && zoomEnabled) {
+                        zoomEnabled = false;
+                        disableZoom();
+                        if(brush)
+                            brush.activate();
+                    }
+                });
+                d3.select(document)
+                    .on('keydown.modkey-zoom', function() {
+                        if(mods.indexOf (d3.event.key) > -1) {
+                            modDown = true;
+                            if(!mouseDown) {
+                                zoomEnabled = true;
+                                enableZoom();
+                                if(brush)
+                                    brush.deactivate();
+                            }
+                        }
+                    })
+                    .on('keyup.modkey-zoom', function() {
+                        if(mods.indexOf (d3.event.key) > -1) {
+                            modDown = false;
+                            if(!mouseDown) {
+                                zoomEnabled = false;
+                                disableZoom();
+                                if(brush)
+                                    brush.activate();
+                            }
+                        }
+                    });
+            }
+            else enableZoom();
+        }
+
+        return _svg;
+    }
 
     _diagram.invertCoord = function(clientCoord) {
         return [
@@ -5053,1116 +5500,6 @@ dc_graph.diagram = function (parent, chartGroup) {
     return _diagram.anchor(parent, chartGroup);
 };
 
-dc_graph.render_svg = function() {
-    var _svg = null, _defs = null, _g = null, _nodeLayer = null, _edgeLayer = null;
-    var _animating = false; // do not refresh during animations
-    var _zoom;
-    var _renderer = {};
-
-    _renderer.rendererType = function() {
-        return 'svg';
-    };
-
-    _renderer.parent = property(null);
-
-    _renderer.renderNode = _renderer._enterNode = function(nodeEnter) {
-        if(_renderer.parent().nodeTitle())
-            nodeEnter.append('title');
-        nodeEnter.each(infer_shape(_renderer.parent()));
-        _renderer.parent().forEachShape(nodeEnter, function(shape, node) {
-            node.call(shape.create);
-        });
-        return _renderer;
-    };
-    _renderer.redrawNode = _renderer._updateNode = function(node) {
-        var changedShape = node.filter(shape_changed(_renderer.parent()));
-        changedShape.selectAll('.node-shape').remove();
-        changedShape.each(infer_shape(_renderer.parent()));
-        _renderer.parent().forEachShape(changedShape, function(shape, node) {
-            node.call(shape.create);
-        });
-        node.select('title')
-            .text(_renderer.parent().nodeTitle.eval);
-        _renderer.parent().forEachContent(node, function(contentType, node) {
-            node.call(contentType.update);
-            _renderer.parent().forEachShape(contentType.selectContent(node), function(shape, content) {
-                content
-                    .call(fit_shape(shape, _renderer.parent()));
-            });
-        });
-        _renderer.parent().forEachShape(node, function(shape, node) {
-            node.call(shape.update);
-        });
-        node.select('.node-shape')
-            .attr({
-                stroke: _renderer.parent().nodeStroke.eval,
-                'stroke-width': _renderer.parent().nodeStrokeWidth.eval,
-                'stroke-dasharray': _renderer.parent().nodeStrokeDashArray.eval,
-                fill: compose(_renderer.parent().nodeFillScale() || identity, _renderer.parent().nodeFill.eval)
-            });
-        return _renderer;
-    };
-    _renderer.redrawEdge = _renderer._updateEdge = function(edge, edgeArrows) {
-        edge
-            .attr('stroke', _renderer.parent().edgeStroke.eval)
-            .attr('stroke-width', _renderer.parent().edgeStrokeWidth.eval)
-            .attr('stroke-dasharray', _renderer.parent().edgeStrokeDashArray.eval);
-        edgeArrows
-            .attr('marker-end', function(e) {
-                var name = _renderer.parent().edgeArrowhead.eval(e),
-                    id = edgeArrow(_renderer.parent(), _renderer.parent().arrows(), e, 'head', name);
-                return id ? 'url(#' + id + ')' : null;
-            })
-            .attr('marker-start', function(e) {
-                var name = _renderer.parent().edgeArrowtail.eval(e),
-                    arrow_id = edgeArrow(_renderer.parent(), _renderer.parent().arrows(), e, 'tail', name);
-                return name ? 'url(#' + arrow_id + ')' : null;
-            })
-            .each(function(e) {
-                var fillEdgeStroke = _renderer.parent().edgeStroke.eval(e);
-                _renderer.selectAll('#' + _renderer.parent().arrowId(e, 'head'))
-                    .attr('fill', _renderer.parent().edgeStroke.eval(e));
-                _renderer.selectAll('#' + _renderer.parent().arrowId(e, 'tail'))
-                    .attr('fill', _renderer.parent().edgeStroke.eval(e));
-            });
-    };
-
-    _renderer.selectAllNodes = function(selector) {
-        selector = selector || '.node';
-        return _nodeLayer && _nodeLayer.selectAll(selector).filter(function(n) {
-            return !n.deleted;
-        }) || d3.selectAll('.foo-this-does-not-exist');
-    };
-
-    _renderer.selectAllEdges = function(selector) {
-        selector = selector || '.edge';
-        return _edgeLayer && _edgeLayer.selectAll(selector).filter(function(e) {
-            return !e.deleted;
-        }) || d3.selectAll('.foo-this-does-not-exist');
-    };
-
-    _renderer.selectAllDefs = function(selector) {
-        return _defs && _defs.selectAll(selector).filter(function(def) {
-            return !def.deleted;
-        }) || d3.selectAll('.foo-this-does-not-exist');
-    };
-
-    _renderer.resize = function(w, h) {
-        if(_svg) {
-            _svg.attr('width', w || (_renderer.parent().width_is_automatic() ? '100%' : _renderer.parent().width()))
-                .attr('height', h || (_renderer.parent().height_is_automatic() ? '100%' : _renderer.parent().height()));
-        }
-        return _renderer;
-    };
-
-    _renderer.rezoom = function(oldWidth, oldHeight, newWidth, newHeight) {
-        var scale = _zoom.scale(), translate = _zoom.translate();
-        _zoom.scale(1).translate([0,0]);
-        var xDomain = _renderer.parent().x().domain(), yDomain = _renderer.parent().y().domain();
-        _renderer.parent().x()
-            .domain([xDomain[0], xDomain[0] + (xDomain[1] - xDomain[0])*newWidth/oldWidth])
-            .range([0, newWidth]);
-        _renderer.parent().y()
-            .domain([yDomain[0], yDomain[0] + (yDomain[1] - yDomain[0])*newHeight/oldHeight])
-            .range([0, newHeight]);
-        _zoom
-            .x(_renderer.parent().x()).y(_renderer.parent().y())
-            .translate(translate).scale(scale);
-    };
-
-    _renderer.globalTransform = function(pos, scale, animate) {
-        // _translate = pos;
-        // _scale = scale;
-        var obj = _g;
-        if(animate)
-            obj = _g.transition().duration(_renderer.parent().zoomDuration());
-        obj.attr('transform', 'translate(' + pos + ')' + ' scale(' + scale + ')');
-    };
-
-    _renderer.translate = function(_) {
-        if(!arguments.length)
-            return _zoom.translate();
-        _zoom.translate(_);
-        return this;
-    };
-
-    _renderer.scale = function(_) {
-        if(!arguments.length)
-            return _zoom ? _zoom.scale() : 1;
-        _zoom.scale(_);
-        return this;
-    };
-
-    // argh
-    _renderer.commitTranslateScale = function() {
-        _zoom.event(_svg);
-    };
-
-    _renderer.zoom = function(_) {
-        if(!arguments.length)
-            return _zoom;
-        _zoom = _; // is this a good idea?
-        return _renderer;
-    };
-
-    _renderer.startRedraw = function(dispatch, wnodes, wedges) {
-        // create edge SVG elements
-        var edge = _edgeLayer.selectAll('.edge')
-                .data(wedges, _renderer.parent().edgeKey.eval);
-        var edgeEnter = edge.enter().append('svg:path')
-                .attr({
-                    class: 'edge',
-                    id: _renderer.parent().edgeId,
-                    opacity: 0
-                })
-            .each(function(e) {
-                e.deleted = false;
-            });
-        edge.exit().each(function(e) {
-            e.deleted = true;
-        }).transition()
-            .duration(_renderer.parent().stagedDuration())
-            .delay(_renderer.parent().deleteDelay())
-            .attr('opacity', 0)
-            .remove();
-
-        var edgeArrows = _edgeLayer.selectAll('.edge-arrows')
-                .data(wedges, _renderer.parent().edgeKey.eval);
-        var edgeArrowsEnter = edgeArrows.enter().append('svg:path')
-                .attr({
-                    class: 'edge-arrows',
-                    id: function(d) {
-                        return _renderer.parent().edgeId(d) + '-arrows';
-                    },
-                    fill: 'none',
-                    opacity: 0
-                });
-        edgeArrows.exit().transition()
-            .duration(_renderer.parent().stagedDuration())
-            .delay(_renderer.parent().deleteDelay())
-            .attr('opacity', 0)
-            .remove()
-            .each('end.delarrow', function(e) {
-                edgeArrow(_renderer.parent(), _renderer.parent().arrows(), e, 'head', null);
-                edgeArrow(_renderer.parent(), _renderer.parent().arrows(), e, 'tail', null);
-            });
-
-        if(_renderer.parent().edgeSort()) {
-            edge.sort(function(a, b) {
-                var as = _renderer.parent().edgeSort.eval(a), bs = _renderer.parent().edgeSort.eval(b);
-                return as < bs ? -1 : bs < as ? 1 : 0;
-            });
-        }
-
-        // another wider copy of the edge just for hover events
-        var edgeHover = _edgeLayer.selectAll('.edge-hover')
-                .data(wedges, _renderer.parent().edgeKey.eval);
-        var edgeHoverEnter = edgeHover.enter().append('svg:path')
-            .attr('class', 'edge-hover')
-            .attr('opacity', 0)
-            .attr('fill', 'none')
-            .attr('stroke', 'green')
-            .attr('stroke-width', 10)
-            .on('mouseover.diagram', function(e) {
-                _renderer.select('#' + _renderer.parent().edgeId(e) + '-label')
-                    .attr('visibility', 'visible');
-            })
-            .on('mouseout.diagram', function(e) {
-                _renderer.select('#' + _renderer.parent().edgeId(e) + '-label')
-                    .attr('visibility', 'hidden');
-            });
-        edgeHover.exit().remove();
-
-        var edgeLabels = _edgeLayer.selectAll('g.edge-label-wrapper')
-            .data(wedges, _renderer.parent().edgeKey.eval);
-        var edgeLabelsEnter = edgeLabels.enter()
-            .append('g')
-              .attr('class', 'edge-label-wrapper')
-              .attr('visibility', 'hidden')
-              .attr('id', function(e) {
-                  return _renderer.parent().edgeId(e) + '-label';
-              });
-        var textPaths = _defs.selectAll('path.edge-label-path')
-                .data(wedges, _renderer.parent().textpathId);
-        var textPathsEnter = textPaths.enter()
-                .append('svg:path').attr({
-                    class: 'edge-label-path',
-                    id: _renderer.parent().textpathId
-                });
-        edgeLabels.exit().transition()
-            .duration(_renderer.parent().stagedDuration())
-            .delay(_renderer.parent().deleteDelay())
-            .attr('opacity', 0).remove();
-
-        // create node SVG elements
-        var node = _nodeLayer.selectAll('.node')
-                .data(wnodes, _renderer.parent().nodeKey.eval);
-        var nodeEnter = node.enter().append('g')
-                .attr('class', 'node')
-                .attr('opacity', '0') // don't show until has layout
-            .each(function(n) {
-                n.deleted = false;
-            });
-        // .call(_d3cola.drag);
-
-        _renderer.renderNode(nodeEnter);
-
-        node.exit().each(function(n) {
-            n.deleted = true;
-        }).transition()
-            .duration(_renderer.parent().stagedDuration())
-            .delay(_renderer.parent().deleteDelay())
-            .attr('opacity', 0)
-            .remove();
-
-        dispatch.drawn(node, edge, edgeHover);
-
-        var drawState = {
-            node: node,
-            nodeEnter: nodeEnter,
-            edge: edge,
-            edgeEnter: edgeEnter,
-            edgeHover: edgeHover,
-            edgeHoverEnter: edgeHoverEnter,
-            edgeLabels: edgeLabels,
-            edgeLabelsEnter: edgeLabelsEnter,
-            edgeArrows: edgeArrows,
-            edgeArrowsEnter: edgeArrowsEnter,
-            textPaths: textPaths,
-            textPathsEnter: textPathsEnter
-        };
-
-        _refresh(drawState);
-
-        return drawState;
-    };
-
-    function _refresh(drawState) {
-        _renderer.redrawEdge(drawState.edge, drawState.edgeArrows);
-        _renderer.redrawNode(drawState.node);
-        _renderer.drawPorts(drawState);
-    }
-
-    _renderer.refresh = function(node, edge, edgeHover, edgeLabels, textPaths) {
-        if(_animating)
-            return this; // but what about changed attributes?
-        node = node || _renderer.selectAllNodes();
-        edge = edge || _renderer.selectAllEdges();
-        var edgeArrows = _renderer.selectAllEdges('.edge-arrows');
-        _refresh({node: node, edge: edge, edgeArrows: edgeArrows});
-
-        edgeHover = edgeHover || _renderer.selectAllEdges('.edge-hover');
-        edgeLabels = edgeLabels || _renderer.selectAllEdges('.edge-label-wrapper');
-        textPaths = textPaths || _renderer.selectAllDefs('path.edge-label-path');
-        var nullSel = d3.select(null); // no enters
-        draw(node, nullSel, edge, nullSel, edgeHover, nullSel, edgeLabels, nullSel, edgeArrows, nullSel, textPaths, nullSel, false);
-        return this;
-    };
-
-    _renderer.reposition = function(node, edge) {
-        node
-            .attr('transform', function (n) {
-                return 'translate(' + n.cola.x + ',' + n.cola.y + ')';
-            });
-        // reset edge ports
-        edge.each(function(e) {
-            e.pos.new = null;
-            e.pos.old = null;
-            _renderer.parent().calcEdgePath(e, 'new', e.source.cola.x, e.source.cola.y, e.target.cola.x, e.target.cola.y);
-            if(_renderer.parent().edgeArrowhead.eval(e))
-                _renderer.select('#' + _renderer.parent().arrowId(e, 'head'))
-                .attr('orient', function() {
-                    return e.pos.new.orienthead;
-                });
-            if(_renderer.parent().edgeArrowtail.eval(e))
-                _renderer.select('#' + _renderer.parent().arrowId(e, 'tail'))
-                .attr('orient', function() {
-                    return e.pos.new.orienttail;
-                });
-        })
-            .attr('d', generate_edge_path('new'));
-        return this;
-    };
-
-    function generate_edge_path(age, full) {
-        var field = full ? 'full' : 'path';
-        return function(e) {
-            var path = e.pos[age][field];
-            return generate_path(path.points, path.bezDegree);
-        };
-    };
-
-    function generate_edge_label_path(age) {
-        return function(e) {
-            var path = e.pos[age].path;
-            var points = path.points[path.points.length-1].x < path.points[0].x ?
-                    path.points.slice(0).reverse() : path.points;
-            return generate_path(points, path.bezDegree);
-        };
-    };
-
-    function with_rad(f) {
-        return function() {
-            return f.apply(this, arguments) + 'rad';
-        };
-    }
-
-    function unsurprising_orient_rad(oldorient, neworient) {
-        return with_rad(unsurprising_orient)(oldorient, neworient);
-   }
-
-    function has_source_and_target(e) {
-        return !!e.source && !!e.target;
-    }
-
-    _renderer.draw = function(drawState, animatePositions) {
-        draw(drawState.node, drawState.nodeEnter,
-             drawState.edge, drawState.edgeEnter,
-             drawState.edgeHover, drawState.edgeHoverEnter,
-             drawState.edgeLabels, drawState.edgeLabelsEnter,
-             drawState.edgeArrows, drawState.edgeArrowsEnter,
-             drawState.textPaths, drawState.textPathsEnter,
-             animatePositions);
-    };
-
-    function draw(node, nodeEnter, edge, edgeEnter, edgeHover, edgeHoverEnter,
-                  edgeLabels, edgeLabelsEnter, edgeArrows, edgeArrowsEnter,
-                  textPaths, textPathsEnter, animatePositions) {
-        console.assert(edge.data().every(has_source_and_target));
-
-        var nodeEntered = {};
-        nodeEnter
-            .each(function(n) {
-                nodeEntered[_renderer.parent().nodeKey.eval(n)] = true;
-            })
-            .attr('transform', function (n) {
-                // start new nodes at their final position
-                return 'translate(' + n.cola.x + ',' + n.cola.y + ')';
-            });
-        var ntrans = node
-                .transition()
-                .duration(_renderer.parent().stagedDuration())
-                .delay(function(n) {
-                    return _renderer.parent().stagedDelay(nodeEntered[_renderer.parent().nodeKey.eval(n)]);
-                })
-                .attr('opacity', _renderer.parent().nodeOpacity.eval);
-        if(animatePositions)
-            ntrans
-                .attr('transform', function (n) {
-                    return 'translate(' + n.cola.x + ',' + n.cola.y + ')';
-                })
-                .each('end.record', function(n) {
-                    n.prevX = n.cola.x;
-                    n.prevY = n.cola.y;
-                });
-
-        // recalculate edge positions
-        edge.each(function(e) {
-            e.pos.new = null;
-        });
-        edge.each(function(e) {
-            if(e.cola.points) {
-                e.pos.new = place_arrows_on_spline(_renderer.parent(), e, e.cola.points);
-            }
-            else {
-                if(!e.pos.old)
-                    _renderer.parent().calcEdgePath(e, 'old', e.source.prevX || e.source.cola.x, e.source.prevY || e.source.cola.y,
-                                   e.target.prevX || e.target.cola.x, e.target.prevY || e.target.cola.y);
-                if(!e.pos.new)
-                    _renderer.parent().calcEdgePath(e, 'new', e.source.cola.x, e.source.cola.y, e.target.cola.x, e.target.cola.y);
-            }
-            if(e.pos.old) {
-                if(e.pos.old.path.bezDegree !== e.pos.new.path.bezDegree ||
-                   e.pos.old.path.points.length !== e.pos.new.path.points.length) {
-                    //console.log('old', e.pos.old.path.points.length, 'new', e.pos.new.path.points.length);
-                    if(is_one_segment(e.pos.old.path)) {
-                        e.pos.new.path.points = as_bezier3(e.pos.new.path);
-                        e.pos.old.path.points = split_bezier_n(as_bezier3(e.pos.old.path),
-                                                               (e.pos.new.path.points.length-1)/3);
-                        e.pos.old.path.bezDegree = e.pos.new.bezDegree = 3;
-                    }
-                    else if(is_one_segment(e.pos.new.path)) {
-                        e.pos.old.path.points = as_bezier3(e.pos.old.path);
-                        e.pos.new.path.points = split_bezier_n(as_bezier3(e.pos.new.path),
-                                                               (e.pos.old.path.points.length-1)/3);
-                        e.pos.old.path.bezDegree = e.pos.new.bezDegree = 3;
-                    }
-                    else console.warn("don't know how to interpolate two multi-segments");
-                }
-            }
-            else
-                e.pos.old = e.pos.new;
-        });
-
-        var edgeEntered = {};
-        edgeEnter
-            .each(function(e) {
-                edgeEntered[_renderer.parent().edgeKey.eval(e)] = true;
-            })
-            .attr('d', generate_edge_path(_renderer.parent().stageTransitions() === 'modins' ? 'new' : 'old'));
-
-        edgeArrowsEnter
-            .each(function(e) {
-                // if staging transitions, just fade new edges in at new position
-                // else start new edges at old positions of nodes, if any, else new positions
-                var age = _renderer.parent().stageTransitions() === 'modins' ? 'new' : 'old';
-                if(_renderer.parent().edgeArrowhead.eval(e))
-                    _renderer.select('#' + _renderer.parent().arrowId(e, 'head'))
-                    .attr('orient', function() {
-                        return e.pos[age].orienthead;
-                    });
-                if(_renderer.parent().edgeArrowtail.eval(e))
-                    _renderer.select('#' + _renderer.parent().arrowId(e, 'tail'))
-                    .attr('orient', function() {
-                        return e.pos[age].orienttail;
-                    });
-            })
-            .attr('d', generate_edge_path(_renderer.parent().stageTransitions() === 'modins' ? 'new' : 'old', true));
-
-        edgeArrows
-            .each(function(e) {
-                if(_renderer.parent().edgeArrowhead.eval(e))
-                    _renderer.select('#' + _renderer.parent().arrowId(e, 'head'))
-                    .attr('orient', unsurprising_orient_rad(e.pos.old.orienthead, e.pos.new.orienthead))
-                    .transition().duration(_renderer.parent().stagedDuration())
-                    .delay(_renderer.parent().stagedDelay(false))
-                    .attr('orient', function() {
-                        return e.pos.new.orienthead;
-                    });
-                if(_renderer.parent().edgeArrowtail.eval(e))
-                    _renderer.select('#' + _renderer.parent().arrowId(e, 'tail'))
-                    .attr('orient', unsurprising_orient_rad(e.pos.old.orienttail, e.pos.new.orienttail))
-                    .transition().duration(_renderer.parent().stagedDuration())
-                    .delay(_renderer.parent().stagedDelay(false))
-                    .attr('orient', function() {
-                        return e.pos.new.orienttail;
-                    });
-            });
-
-        var etrans = edge
-              .transition()
-                .duration(_renderer.parent().stagedDuration())
-                .delay(function(e) {
-                    return _renderer.parent().stagedDelay(edgeEntered[_renderer.parent().edgeKey.eval(e)]);
-                })
-                .attr('opacity', _renderer.parent().edgeOpacity.eval);
-        var arrowtrans = edgeArrows
-              .transition()
-                .duration(_renderer.parent().stagedDuration())
-                .delay(function(e) {
-                    return _renderer.parent().stagedDelay(edgeEntered[_renderer.parent().edgeKey.eval(e)]);
-                })
-                .attr('opacity', _renderer.parent().edgeOpacity.eval);
-        (animatePositions ? etrans : edge)
-            .attr('d', function(e) {
-                var when = _renderer.parent().stageTransitions() === 'insmod' &&
-                        edgeEntered[_renderer.parent().edgeKey.eval(e)] ? 'old' : 'new';
-                return generate_edge_path(when)(e);
-            });
-        (animatePositions ? arrowtrans : edgeArrows)
-            .attr('d', function(e) {
-                var when = _renderer.parent().stageTransitions() === 'insmod' &&
-                        edgeEntered[_renderer.parent().edgeKey.eval(e)] ? 'old' : 'new';
-                return generate_edge_path(when, true)(e);
-            });
-        var elabels = edgeLabels
-            .selectAll('text').data(function(e) {
-                var labels = _renderer.parent().edgeLabel.eval(e);
-                if(!labels)
-                    return [];
-                else if(typeof labels === 'string')
-                    return [labels];
-                else return labels;
-            });
-        elabels.enter()
-          .append('text')
-            .attr({
-                'class': 'edge-label',
-                'text-anchor': 'middle',
-                dy: function(_, i) {
-                    return i * _renderer.parent().edgeLabelSpacing.eval(this.parentNode) -2;
-                }
-            })
-          .append('textPath')
-            .attr('startOffset', '50%');
-        elabels
-          .select('textPath')
-            .html(function(t) { return t; })
-            .attr('opacity', function() {
-                return _renderer.parent().edgeOpacity.eval(d3.select(this.parentNode.parentNode).datum());
-            })
-            .attr('xlink:href', function(e) {
-                var id = _renderer.parent().textpathId(d3.select(this.parentNode.parentNode).datum());
-                // angular on firefox needs absolute paths for fragments
-                return window.location.href.split('#')[0] + '#' + id;
-            });
-        textPathsEnter
-            .attr('d', generate_edge_label_path(_renderer.parent().stageTransitions() === 'modins' ? 'new' : 'old'));
-        var textTrans = textPaths.transition()
-            .duration(_renderer.parent().stagedDuration())
-            .delay(function(e) {
-                return _renderer.parent().stagedDelay(edgeEntered[_renderer.parent().edgeKey.eval(e)]);
-            });
-        if(animatePositions)
-            textTrans
-            .attr('d', function(e) {
-                var when = _renderer.parent().stageTransitions() === 'insmod' &&
-                        edgeEntered[_renderer.parent().edgeKey.eval(e)] ? 'old' : 'new';
-                return generate_edge_label_path(when)(e);
-            });
-        if(_renderer.parent().stageTransitions() === 'insmod' && animatePositions) {
-            // inserted edges transition twice in insmod mode
-            if(_renderer.parent().stagedDuration() >= 50) {
-                etrans = etrans.transition()
-                    .duration(_renderer.parent().stagedDuration())
-                    .attr('d', generate_edge_path('new'));
-                textTrans = textTrans.transition()
-                    .duration(_renderer.parent().stagedDuration())
-                    .attr('d', generate_edge_label_path('new'));
-                arrowtrans.transition()
-                    .duration(_renderer.parent().stagedDuration())
-                    .attr('d', generate_edge_path('new', true));
-            } else {
-                // if transitions are too short, we run into various problems,
-                // from transitions not completing to objects not found
-                // so don't try to chain in that case
-                // this also helped once: d3.timer.flush();
-                etrans
-                    .attr('d', generate_edge_path('new'));
-                textTrans
-                    .attr('d', generate_edge_path('new'));
-                arrowtrans
-                    .attr('d', generate_edge_path('new', true));
-            }
-        }
-
-        // signal layout done when all transitions complete
-        // because otherwise client might start another layout and lock the processor
-        _animating = true;
-        if(!_renderer.parent().showLayoutSteps())
-            endall([ntrans, etrans, textTrans],
-                   function() {
-                       _animating = false;
-                       _renderer.parent().layoutDone(true);
-                   });
-
-        if(animatePositions)
-            edgeHover.attr('d', generate_edge_path('new'));
-
-        edge.each(function(e) {
-            e.pos.old = e.pos.new;
-        });
-    }
-
-    // wait on multiple transitions, adapted from
-    // http://stackoverflow.com/questions/10692100/invoke-a-callback-at-the-end-of-a-transition
-    function endall(transitions, callback) {
-        if (transitions.every(function(transition) { return transition.size() === 0; }))
-            callback();
-        var n = 0;
-        transitions.forEach(function(transition) {
-            transition
-                .each(function() { ++n; })
-                .each('end.all', function() { if (!--n) callback(); });
-        });
-    }
-
-    _renderer.isRendered = function() {
-        return !!_svg;
-    };
-
-    _renderer.initializeDrawing = function () {
-        _renderer.resetSvg();
-        _g = _svg.append('g')
-            .attr('class', 'draw');
-
-        var layers = ['edge-layer', 'node-layer'];
-        if(_renderer.parent().edgesInFront())
-            layers.reverse();
-        _g.selectAll('g').data(layers)
-          .enter().append('g')
-            .attr('class', function(l) { return l; });
-        _edgeLayer = _g.selectAll('g.edge-layer');
-        _nodeLayer = _g.selectAll('g.node-layer');
-        return this;
-    };
-
-
-    /**
-     * Standard dc.js
-     * {@link https://github.com/dc-js/dc.js/blob/develop/web/docs/api-latest.md#dc.baseMixin baseMixin}
-     * method. Execute a d3 single selection in the diagram's scope using the given selector
-     * and return the d3 selection. Roughly the same as
-     * ```js
-     * d3.select('#diagram-id').select(selector)
-     * ```
-     * Since this function returns a d3 selection, it is not chainable. (However, d3 selection
-     * calls can be chained after it.)
-     * @method select
-     * @memberof dc_graph.diagram
-     * @instance
-     * @param {String} [selector]
-     * @return {d3.selection}
-     * @return {dc_graph.diagram}
-     **/
-    _renderer.select = function (s) {
-        return _renderer.parent().root().select(s);
-    };
-
-    /**
-     * Standard dc.js
-     * {@link https://github.com/dc-js/dc.js/blob/develop/web/docs/api-latest.md#dc.baseMixin baseMixin}
-     * method. Selects all elements that match the d3 single selector in the diagram's scope,
-     * and return the d3 selection. Roughly the same as
-     *
-     * ```js
-     * d3.select('#diagram-id').selectAll(selector)
-     * ```
-     *
-     * Since this function returns a d3 selection, it is not chainable. (However, d3 selection
-     * calls can be chained after it.)
-     * @method selectAll
-     * @memberof dc_graph.diagram
-     * @instance
-     * @param {String} [selector]
-     * @return {d3.selection}
-     * @return {dc_graph.diagram}
-     **/
-    _renderer.selectAll = function (s) {
-        return _renderer.parent().root() ? _renderer.parent().root().selectAll(s) : null;
-    };
-
-    _renderer.selectNodePortsOfStyle = function(node, style) {
-        return node.selectAll('g.port').filter(function(p) {
-            return _renderer.parent().portStyleName.eval(p) === style;
-        });
-    };
-
-    _renderer.drawPorts = function(drawState) {
-        var nodePorts = _renderer.parent().nodePorts();
-        if(!nodePorts)
-            return;
-        _renderer.parent().portStyle.enum().forEach(function(style) {
-            var nodePorts2 = {};
-            for(var nid in nodePorts)
-                nodePorts2[nid] = nodePorts[nid].filter(function(p) {
-                    return _renderer.parent().portStyleName.eval(p) === style;
-                });
-            var port = _renderer.selectNodePortsOfStyle(drawState.node, style);
-            _renderer.parent().portStyle(style).drawPorts(port, nodePorts2, drawState.node);
-        });
-    };
-
-    _renderer.fireTSEvent = function(dispatch, drawState) {
-        dispatch.transitionsStarted(drawState.node, drawState.edge, drawState.edgeHover);
-    };
-
-    _renderer.calculateBounds = function(drawState) {
-        if(!drawState.node.size())
-            return null;
-        return _renderer.parent().calculateBounds(drawState.node.data(), drawState.edge.data());
-    };
-
-    /**
-     * Standard dc.js
-     * {@link https://github.com/dc-js/dc.js/blob/develop/web/docs/api-latest.md#dc.baseMixin baseMixin}
-     * method. Returns the top `svg` element for this specific diagram. You can also pass in a new
-     * svg element, but setting the svg element on a diagram may have unexpected consequences.
-     * @method svg
-     * @memberof dc_graph.diagram
-     * @instance
-     * @param {d3.selection} [selection]
-     * @return {d3.selection}
-     * @return {dc_graph.diagram}
-     **/
-    _renderer.svg = function (_) {
-        if (!arguments.length) {
-            return _svg;
-        }
-        _svg = _;
-        return _renderer;
-    };
-
-    /**
-     * Returns the top `g` element for this specific diagram. This method is usually used to
-     * retrieve the g element in order to overlay custom svg drawing
-     * programatically. **Caution**: The root g element is usually generated internally, and
-     * resetting it might produce unpredictable results.
-     * @method g
-     * @memberof dc_graph.diagram
-     * @instance
-     * @param {d3.selection} [selection]
-     * @return {d3.selection}
-     * @return {dc_graph.diagram}
-
-     **/
-    _renderer.g = function (_) {
-        if (!arguments.length) {
-            return _g;
-        }
-        _g = _;
-        return _renderer;
-    };
-
-
-    /**
-     * Standard dc.js
-     * {@link https://github.com/dc-js/dc.js/blob/develop/web/docs/api-latest.md#dc.baseMixin baseMixin}
-     * method. Remove the diagram's SVG elements from the dom and recreate the container SVG
-     * element.
-     * @method resetSvg
-     * @memberof dc_graph.diagram
-     * @instance
-     * @return {dc_graph.diagram}
-     **/
-    _renderer.resetSvg = function () {
-        // we might be re-initialized in a div, in which case
-        // we already have an <svg> element to delete
-        var svg = _svg || _renderer.select('svg');
-        svg.remove();
-        _svg = null;
-        //_renderer.parent().x(null).y(null);
-        return generateSvg();
-    };
-
-    _renderer.addOrRemoveDef = function(id, whether, tag, onEnter) {
-        var data = whether ? [0] : [];
-        var sel = _defs.selectAll('#' + id).data(data);
-
-        var selEnter = sel
-            .enter().append(tag)
-              .attr('id', id);
-        if(selEnter.size() && onEnter)
-            selEnter.call(onEnter);
-        sel.exit().remove();
-        return sel;
-    };
-
-    function enableZoom() {
-        _svg.call(_zoom);
-        _svg.on('dblclick.zoom', null);
-    }
-    function disableZoom() {
-        _svg.on('.zoom', null);
-    }
-
-    function generateSvg() {
-        _svg = _renderer.parent().root().append('svg');
-        _renderer.resize();
-
-        _defs = _svg.append('svg:defs');
-
-        _zoom = d3.behavior.zoom()
-            .on('zoom.diagram', _renderer.parent().doZoom)
-            .x(_renderer.parent().x()).y(_renderer.parent().y())
-            .scaleExtent(_renderer.parent().zoomExtent());
-        if(_renderer.parent().mouseZoomable()) {
-            var mod, mods;
-            var brush = _renderer.parent().child('brush');
-            if((mod = _renderer.parent().modKeyZoom())) {
-                if (Array.isArray (mod))
-                    mods = mod.slice ();
-                else if (typeof mod === "string")
-                    mods = [mod];
-                else
-                    mods = ['Alt'];
-                var mouseDown = false, modDown = false, zoomEnabled = false;
-                _svg.on('mousedown.modkey-zoom', function() {
-                    mouseDown = true;
-                }).on('mouseup.modkey-zoom', function() {
-                    mouseDown = false;
-                    if(!mouseDown && !modDown && zoomEnabled) {
-                        zoomEnabled = false;
-                        disableZoom();
-                        if(brush)
-                            brush.activate();
-                    }
-                });
-                d3.select(document)
-                    .on('keydown.modkey-zoom-' + _renderer.parent().anchorName(), function() {
-                        if(mods.indexOf (d3.event.key) > -1) {
-                            modDown = true;
-                            if(!mouseDown) {
-                                zoomEnabled = true;
-                                enableZoom();
-                                if(brush)
-                                    brush.deactivate();
-                            }
-                        }
-                    })
-                    .on('keyup.modkey-zoom-' + _renderer.parent().anchorName(), function() {
-                        if(mods.indexOf (d3.event.key) > -1) {
-                            modDown = false;
-                            if(!mouseDown) {
-                                zoomEnabled = false;
-                                disableZoom();
-                                if(brush)
-                                    brush.activate();
-                            }
-                        }
-                    });
-            }
-            else enableZoom();
-        }
-
-        return _svg;
-    }
-
-    _renderer.animating = function() {
-        return _animating;
-    };
-
-    return _renderer;
-};
-
-
-dc_graph.render_webgl = function() {
-    //var _svg = null, _defs = null, _g = null, _nodeLayer = null, _edgeLayer = null;
-    var _camera, _scene, _webgl_renderer;
-    var _directionalLight, _ambientLight;
-    var _controls;
-    var _sphereGeometry;
-    var _nodes = {}, _edges = {};
-    var _animating = false; // do not refresh during animations
-    var _renderer = {};
-
-    _renderer.rendererType = function() {
-        return 'webgl';
-    };
-
-    _renderer.parent = property(null);
-
-    _renderer.isRendered = function() {
-        return !!_camera;
-    };
-
-    _renderer.resize = function(w, h) {
-        return _renderer;
-    };
-
-    _renderer.rezoom = function(oldWidth, oldHeight, newWidth, newHeight) {
-        return _renderer;
-    };
-
-    _renderer.globalTransform = function(pos, scale, animate) {
-        return _renderer;
-    };
-
-    _renderer.translate = function(_) {
-        if(!arguments.length)
-            return [0,0];
-        return _renderer;
-    };
-
-    _renderer.scale = function(_) {
-        if(!arguments.length)
-            return 1;
-        return _renderer;
-    };
-
-    // argh
-    _renderer.commitTranslateScale = function() {
-    };
-
-    _renderer.initializeDrawing = function () {
-        if(_scene) // just treat it as a redraw
-            return _renderer;
-
-        _camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 10000);
-        _camera.up = new THREE.Vector3(0, 0, 1);
-
-        _scene = new THREE.Scene();
-
-        _sphereGeometry = new THREE.SphereBufferGeometry(10, 32, 32);
-
-        _directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-        _directionalLight.position.set(-1, -1, 1).normalize();
-        _scene.add(_directionalLight);
-
-        _ambientLight = new THREE.AmbientLight(0xaaaaaa);
-        _scene.add(_ambientLight);
-
-        _webgl_renderer = new THREE.WebGLRenderer({ antialias: true });
-        _webgl_renderer.setPixelRatio(window.devicePixelRatio);
-        var boundRect = _renderer.parent().root().node().getBoundingClientRect();
-        _webgl_renderer.setSize(boundRect.width, boundRect.height);
-        _renderer.parent().root().node().appendChild(_webgl_renderer.domElement);
-
-        _controls = new THREE.OrbitControls(_camera, _webgl_renderer.domElement);
-        _controls.minDistance = 300;
-        _controls.maxDistance = 1000;
-        return _renderer;
-    };
-
-    _renderer.startRedraw = function(dispatch, wnodes, wedges) {
-        wnodes.forEach(infer_shape(_renderer.parent()));
-        var rnodes = regenerate_objects(_nodes, wnodes, null, function(n) {
-            return _renderer.parent().nodeKey.eval(n);
-        }, function(rn, n) {
-            rn.wnode = n;
-        }, null, function(wnode, rnode) {
-            _scene.remove(rnode.mesh);
-            //rnode.mesh.dispose();
-            rnode.material.dispose();
-        });
-        var redges = regenerate_objects(_edges, wedges, null, function(e) {
-            return _renderer.parent().edgeKey.eval(e);
-        }, function(re, e) {
-            re.wedge = e;
-        }, null, function(wedge, redge) {
-            _scene.remove(redge.mesh);
-            //redge.mesh.dispose();
-            redge.geometry.dispose();
-            redge.material.dispose();
-        });
-        animate();
-        return {wnodes: wnodes, wedges: wedges, rnodes: rnodes, redges: redges};
-    };
-
-    function color_to_int(color) {
-        // it better be 6 byte hex RGB
-        if(color.length !== 7 || color[0] !== '#') {
-            console.warn("don't know how to use color " + color);
-            color = '#888888';
-        }
-        return parseInt(color.slice(1), 16);
-    }
-    _renderer.color_to_int = color_to_int;
-
-    _renderer.draw = function(drawState, animatePositions) {
-        drawState.wedges.forEach(function(e) {
-            if(!e.pos.old)
-                _renderer.parent().calcEdgePath(e, 'old', e.source.prevX || e.source.cola.x, e.source.prevY || e.source.cola.y,
-                                                e.target.prevX || e.target.cola.x, e.target.prevY || e.target.cola.y);
-            if(!e.pos.new)
-                _renderer.parent().calcEdgePath(e, 'new', e.source.cola.x, e.source.cola.y, e.target.cola.x, e.target.cola.y);
-        });
-
-        var MULT = _renderer.multiplier();
-        drawState.rnodes.forEach(function(rn) {
-            var color = _renderer.parent().nodeFill.eval(rn.wnode);
-            var add = false;
-            if(!rn.mesh) {
-                add = true;
-                if(_renderer.parent().nodeFillScale())
-                    color = _renderer.parent().nodeFillScale()(color);
-                var cint = color_to_int(color);
-                rn.material = new THREE.MeshLambertMaterial({color: cint});
-                rn.mesh = new THREE.Mesh(_sphereGeometry, rn.material);
-                rn.mesh.name = _renderer.parent().nodeKey.eval(rn.wnode);
-            }
-            rn.mesh.position.x = rn.wnode.cola.x * MULT;
-            rn.mesh.position.y = -rn.wnode.cola.y * MULT;
-            rn.mesh.position.z = rn.wnode.cola.z * MULT || 0;
-            if(add)
-                _scene.add(rn.mesh);
-        });
-
-        var xext = d3.extent(drawState.wnodes, function(n) { return n.cola.x * MULT; }),
-            yext = d3.extent(drawState.wnodes, function(n) { return -n.cola.y * MULT; }),
-            zext = d3.extent(drawState.wnodes, function(n) { return n.cola.z * MULT || 0; });
-        var cx = (xext[0] + xext[1])/2,
-            cy = (yext[0] + yext[1])/2,
-            cz = (zext[0] + zext[1])/2;
-
-        drawState.center = [cx, cy, cz];
-        drawState.extents = [xext, yext, zext];
-        _controls.target.set(cx, cy, cz);
-        _controls.update();
-
-        var vertices = [];
-        drawState.redges.forEach(function(re) {
-            if(!re.wedge.source || !re.wedge.target)
-                return;
-            var a = re.wedge.source.cola, b = re.wedge.target.cola;
-            var add = false;
-            var width = _renderer.parent().edgeStrokeWidth.eval(re.wedge);
-            if(!re.mesh) {
-                add = true;
-                var color = _renderer.parent().edgeStroke.eval(re.wedge);
-                var cint = color_to_int(color);
-                re.material = new THREE.MeshLambertMaterial({ color: cint });
-                re.curve = new THREE.LineCurve3(
-                    new THREE.Vector3(a.x*MULT, -a.y*MULT, a.z*MULT || 0),
-                    new THREE.Vector3(b.x*MULT, -b.y*MULT, b.z*MULT || 0));
-                re.geometry = new THREE.TubeBufferGeometry(re.curve, 20, width/2, 8, false);
-                re.mesh = new THREE.Mesh(re.geometry, re.material);
-                re.mesh.name = _renderer.parent().edgeKey.eval(re.wedge);
-            } else {
-                re.curve = new THREE.LineCurve3(
-                    new THREE.Vector3(a.x*MULT, -a.y*MULT, a.z*MULT || 0),
-                    new THREE.Vector3(b.x*MULT, -b.y*MULT, b.z*MULT || 0));
-                re.geometry.dispose();
-                re.geometry = new THREE.TubeBufferGeometry(re.curve, 20, width/2, 8, false);
-                re.mesh.geometry = re.geometry;
-            }
-            if(add)
-                _scene.add(re.mesh);
-        });
-        _animating = false;
-        _renderer.parent().layoutDone(true);
-        return _renderer;
-    };
-
-    function animate() {
-        window.requestAnimationFrame(animate);
-        render();
-    }
-
-    function render() {
-        _webgl_renderer.render(_scene, _camera);
-    }
-
-    _renderer.drawPorts = function(drawState) {
-        var nodePorts = _renderer.parent().nodePorts();
-        if(!nodePorts)
-            return;
-        _renderer.parent().portStyle.enum().forEach(function(style) {
-            var nodePorts2 = {};
-            for(var nid in nodePorts)
-                nodePorts2[nid] = nodePorts[nid].filter(function(p) {
-                    return _renderer.parent().portStyleName.eval(p) === style;
-                });
-            // not implemented
-            var port = _renderer.selectNodePortsOfStyle(drawState.node, style);
-            //_renderer.parent().portStyle(style).drawPorts(port, nodePorts2, drawState.node);
-        });
-    };
-
-    _renderer.fireTSEvent = function(dispatch, drawState) {
-        dispatch.transitionsStarted(_scene, drawState);
-    };
-
-    _renderer.calculateBounds = function(drawState) {
-        if(!drawState.wnodes.length)
-            return null;
-        return _renderer.parent().calculateBounds(drawState.wnodes, drawState.wedges);
-    };
-
-    _renderer.refresh = function(node, edge, edgeHover, edgeLabels, textPaths) {
-        if(_animating)
-            return _renderer; // but what about changed attributes?
-        return _renderer;
-    };
-
-    _renderer.reposition = function(node, edge) {
-        return _renderer;
-    };
-
-    function has_source_and_target(e) {
-        return !!e.source && !!e.target;
-    }
-
-    _renderer.animating = function() {
-        return _animating;
-    };
-
-    _renderer.multiplier = property(3);
-
-    return _renderer;
-};
-
-
 dc_graph.spawn_engine = function(layout, args, worker) {
     args = args || {};
     worker = worker && !!window.Worker;
@@ -6217,18 +5554,6 @@ dc_graph._engines = [
         name: 'manual',
         instantiate: function() {
             return dc_graph.manual_layout();
-        }
-    },
-    {
-        name: 'flexbox',
-        instantiate: function() {
-            return dc_graph.flexbox_layout();
-        }
-    },
-    {
-        name: 'layered',
-        instantiate: function() {
-            return dc_graph.layered_layout();
         }
     }
 ];
@@ -6306,7 +5631,6 @@ dc_graph.engines = {
 };
 
 var _workers = {};
-var NUMBER_RESULTS = 3;
 function create_worker(layoutAlgorithm) {
     if(!_workers[layoutAlgorithm]) {
         var worker = _workers[layoutAlgorithm] = {
@@ -6317,9 +5641,6 @@ function create_worker(layoutAlgorithm) {
             var layoutId = e.data.layoutId;
             if(!worker.layouts[layoutId])
                 throw new Error('layoutId "' + layoutId + '" unknown!');
-            var engine = worker.layouts[layoutId].getEngine();
-            if(e.data.args.length > NUMBER_RESULTS && engine.processExtraWorkerResults)
-                engine.processExtraWorkerResults.apply(engine, e.data.args.slice(NUMBER_RESULTS));
             worker.layouts[layoutId].dispatch()[e.data.response].apply(null, e.data.args);
         };
     }
@@ -6342,8 +5663,6 @@ dc_graph.webworker_layout = function(layoutEngine) {
                 options[option] = layoutEngine[option]();
                 return options;
             }, options);
-        if(layoutEngine.propagateOptions)
-            layoutEngine.propagateOptions(options);
         _worker.worker.postMessage({
             command: 'init',
             args: {
@@ -6353,7 +5672,7 @@ dc_graph.webworker_layout = function(layoutEngine) {
         });
         return this;
     };
-    engine.data = function(graph, nodes, edges, clusters, constraints) {
+    engine.data = function(graph, nodes, edges, constraints) {
         _worker.worker.postMessage({
             command: 'data',
             args: {
@@ -6361,7 +5680,6 @@ dc_graph.webworker_layout = function(layoutEngine) {
                 graph: graph,
                 nodes: nodes,
                 edges: edges,
-                clusters: clusters,
                 constraints: constraints
             }
         });
@@ -6390,8 +5708,7 @@ dc_graph.webworker_layout = function(layoutEngine) {
     // somewhat sketchy - do we want this object to be transparent or not?
     var passthroughs = ['layoutAlgorithm', 'populateLayoutNode', 'populateLayoutEdge',
                         'rankdir', 'ranksep'];
-    passthroughs.concat(layoutEngine.optionNames(),
-                        layoutEngine.passThru ? layoutEngine.passThru() : []).forEach(function(name) {
+    passthroughs.concat(layoutEngine.optionNames()).forEach(function(name) {
         engine[name] = function() {
             var ret = layoutEngine[name].apply(layoutEngine, arguments);
             return arguments.length ? this : ret;
@@ -6476,8 +5793,7 @@ dc_graph.apply_graphviz_accessors = function(diagram) {
         })
         .nodeLabelFill(function(n) { return nvalue(n).fontcolor || 'black'; })
         .nodeTitle(function(n) {
-            return (nvalue(n).htmltip || nvalue(n).jsontip) ? null :
-                nvalue(n).tooltip !== undefined ?
+            return nvalue(n).tooltip !== undefined ?
                 nvalue(n).tooltip :
                 diagram.nodeLabel()(n);
         })
@@ -6512,19 +5828,6 @@ dc_graph.apply_graphviz_accessors = function(diagram) {
             }
             return null;
         });
-    var draw_clusters = diagram.child('draw-clusters');
-    if(draw_clusters) {
-        draw_clusters
-            .clusterStroke(function(c) {
-                return c.value.color || 'black';
-            })
-            .clusterFill(function(c) {
-                return c.value.style === 'filled' ? c.value.fillcolor || c.value.color || c.value.bgcolor : null;
-            })
-            .clusterLabel(function(c) {
-                return c.value.label;
-            });
-    }
 };
 
 dc_graph.snapshot_graphviz = function(diagram) {
@@ -6588,21 +5891,18 @@ dc_graph.snapshot_graphviz = function(diagram) {
 dc_graph.cola_layout = function(id) {
     var _layoutId = id || uuid();
     var _d3cola = null;
-    var _setcola_nodes;
     var _dispatch = d3.dispatch('tick', 'start', 'end');
     var _flowLayout;
     // node and edge objects shared with cola.js, preserved from one iteration
     // to the next (as long as the object is still in the layout)
     var _nodes = {}, _edges = {};
-    var _options;
 
     function init(options) {
-        _options = options;
+        // width, height, handleDisconnected, lengthStrategy, baseLength, flowLayout, tickSize
         _d3cola = cola.d3adaptor()
             .avoidOverlaps(true)
             .size([options.width, options.height])
             .handleDisconnected(options.handleDisconnected);
-
         if(_d3cola.tickSize) // non-standard
             _d3cola.tickSize(options.tickSize);
 
@@ -6626,18 +5926,14 @@ dc_graph.cola_layout = function(id) {
         }
     }
 
-    function data(nodes, edges, clusters, constraints) {
+    function data(nodes, edges, constraints) {
         var wnodes = regenerate_objects(_nodes, nodes, null, function(v) {
             return v.dcg_nodeKey;
         }, function(v1, v) {
             v1.dcg_nodeKey = v.dcg_nodeKey;
-            v1.dcg_nodeParentCluster = v.dcg_nodeParentCluster;
             v1.width = v.width;
             v1.height = v.height;
             v1.fixed = !!v.dcg_nodeFixed;
-            _options.nodeAttrs.forEach(function(key) {
-                v1[key] = v[key];
-            });
 
             if(v1.fixed && typeof v.dcg_nodeFixed === 'object') {
                 v1.x = v.dcg_nodeFixed.x;
@@ -6660,9 +5956,6 @@ dc_graph.cola_layout = function(id) {
             e1.source = _nodes[e.dcg_edgeSource];
             e1.target = _nodes[e.dcg_edgeTarget];
             e1.dcg_edgeLength = e.dcg_edgeLength;
-            _options.edgeAttrs.forEach(function(key) {
-                e1[key] = e[key];
-            });
         });
 
         // cola needs each node object to have an index property
@@ -6674,59 +5967,16 @@ dc_graph.cola_layout = function(id) {
         if(engine.groupConnected()) {
             var components = cola.separateGraphs(wnodes, wedges);
             groups = components.map(function(g) {
-                return {
-                    dcg_autoGroup: true,
-                    leaves: g.array.map(function(n) { return n.index; })
-                };
-            });
-        } else if(clusters) {
-            var G = {};
-            groups = clusters.filter(function(c) {
-                return /^cluster/.test(c.dcg_clusterKey);
-            }).map(function(c, i) {
-                return G[c.dcg_clusterKey] = {
-                    dcg_clusterKey: c.dcg_clusterKey,
-                    index: i,
-                    groups: [],
-                    leaves: []
-                };
-            });
-            clusters.forEach(function(c) {
-                if(c.dcg_clusterParent && G[c.dcg_clusterParent])
-                    G[c.dcg_clusterParent].groups.push(G[c.dcg_clusterKey].index);
-            });
-            wnodes.forEach(function(n, i) {
-                if(n.dcg_nodeParentCluster && G[n.dcg_nodeParentCluster])
-                    G[n.dcg_nodeParentCluster].leaves.push(i);
+                return {leaves: g.array.map(function(n) { return n.index; })};
             });
         }
 
         function dispatchState(event) {
-            // clean up extra setcola annotations
-            wnodes.forEach(function(n) {
-                Object.keys(n).forEach(function(key) {
-                    if(/^get/.test(key) && typeof n[key] === 'function')
-                        delete n[key];
-                });
-            });
             _dispatch[event](
                 wnodes,
                 wedges.map(function(e) {
                     return {dcg_edgeKey: e.dcg_edgeKey};
-                }),
-                groups.filter(function(g) {
-                    return !g.dcg_autoGroup;
-                }).map(function(g) {
-                    g = Object.assign({}, g);
-                    g.bounds = {
-                        left: g.bounds.x,
-                        top: g.bounds.y,
-                        right: g.bounds.X,
-                        bottom: g.bounds.Y
-                    };
-                    return g;
-                }),
-                _setcola_nodes
+                })
             );
         }
         _d3cola.on('tick', /* _tick = */ function() {
@@ -6736,28 +5986,10 @@ dc_graph.cola_layout = function(id) {
         }).on('end', /* _done = */ function() {
             dispatchState('end');
         });
-
-        if(_options.setcolaSpec && typeof setcola !== 'undefined') {
-            console.log('generating setcola constrains');
-            var setcola_result = setcola
-                .nodes(wnodes)
-                .links(wedges)
-                .constraints(_options.setcolaSpec)
-                .gap(10) //default value is 10, can be customized in setcolaSpec
-                .layout();
-
-            _setcola_nodes = setcola_result.nodes.filter(function(n) { return n._cid; });
-            _d3cola.nodes(setcola_result.nodes)
-                .links(setcola_result.links)
-                .constraints(setcola_result.constraints)
-                .groups(groups);
-        } else {
-            _d3cola.nodes(wnodes)
-                .links(wedges)
-                .constraints(constraints)
-                .groups(groups);
-        }
-
+        _d3cola.nodes(wnodes)
+            .links(wedges)
+            .constraints(constraints)
+            .groups(groups);
     }
 
     function start() {
@@ -6796,12 +6028,11 @@ dc_graph.cola_layout = function(id) {
             this.optionNames().forEach(function(option) {
                 options[option] = options[option] || this[option]();
             }.bind(this));
-            this.propagateOptions(options);
             init(options);
             return this;
         },
-        data: function(graph, nodes, edges, clusters, constraints) {
-            data(nodes, edges, clusters, constraints);
+        data: function(graph, nodes, edges, constraints) {
+            data(nodes, edges, constraints);
         },
         start: function() {
             start();
@@ -6810,18 +6041,8 @@ dc_graph.cola_layout = function(id) {
             stop();
         },
         optionNames: function() {
-            return ['handleDisconnected', 'lengthStrategy', 'baseLength', 'flowLayout',
-                    'tickSize', 'groupConnected', 'setcolaSpec', 'setcolaNodes']
+            return ['handleDisconnected', 'lengthStrategy', 'baseLength', 'flowLayout', 'tickSize', 'groupConnected']
                 .concat(graphviz_keys);
-        },
-        passThru: function() {
-            return ['extractNodeAttrs', 'extractEdgeAttrs'];
-        },
-        propagateOptions: function(options) {
-            if(!options.nodeAttrs)
-                options.nodeAttrs = Object.keys(engine.extractNodeAttrs());
-            if(!options.edgeAttrs)
-                options.edgeAttrs = Object.keys(engine.extractEdgeAttrs());
         },
         populateLayoutNode: function() {},
         populateLayoutEdge: function() {},
@@ -6899,22 +6120,12 @@ dc_graph.cola_layout = function(id) {
         allConstraintsIterations: property(20),
         gridSnapIterations: property(0),
         tickSize: property(1),
-        groupConnected: property(false),
-        setcolaSpec: property(null),
-        setcolaNodes: function() {
-            return _setcola_nodes;
-        },
-        extractNodeAttrs: property({}), // {attr: function(node)}
-        extractEdgeAttrs: property({}),
-        processExtraWorkerResults: function(setcolaNodes) {
-            _setcola_nodes = setcolaNodes;
-        }
+        groupConnected: property(false)
     });
     return engine;
 };
 
 dc_graph.cola_layout.scripts = ['d3.js', 'cola.js'];
-dc_graph.cola_layout.optional_scripts = ['setcola.js'];
 
 /**
  * `dc_graph.dagre_layout` is an adaptor for dagre.js layouts in dc.graph.js
@@ -6936,7 +6147,7 @@ dc_graph.dagre_layout = function(id) {
 
     function init(options) {
         // Create a new directed graph
-        _dagreGraph = new dagre.graphlib.Graph({multigraph: true, compound: true});
+        _dagreGraph = new dagre.graphlib.Graph({multigraph: true});
 
         // Set an object for the graph label
         _dagreGraph.setGraph({rankdir: options.rankdir, nodesep: options.nodesep, ranksep: options.ranksep});
@@ -6945,7 +6156,7 @@ dc_graph.dagre_layout = function(id) {
         _dagreGraph.setDefaultEdgeLabel(function() { return {}; });
     }
 
-    function data(nodes, edges, clusters) {
+    function data(nodes, edges) {
         var wnodes = regenerate_objects(_nodes, nodes, null, function(v) {
             return v.dcg_nodeKey;
         }, function(v1, v) {
@@ -6975,36 +6186,12 @@ dc_graph.dagre_layout = function(id) {
         }, function(k, e) {
             _dagreGraph.removeEdge(e.dcg_edgeSource, e.dcg_edgeTarget, e.dcg_edgeKey);
         });
-        clusters = clusters.filter(function(c) {
-            return /^cluster/.test(c.dcg_clusterKey);
-        });
-        clusters.forEach(function(c) {
-            _dagreGraph.setNode(c.dcg_clusterKey, c);
-        });
-        clusters.forEach(function(c) {
-            if(c.dcg_clusterParent)
-                _dagreGraph.setParent(c.dcg_clusterKey, c.dcg_clusterParent);
-        });
-        nodes.forEach(function(n) {
-            if(n.dcg_nodeParentCluster)
-                _dagreGraph.setParent(n.dcg_nodeKey, n.dcg_nodeParentCluster);
-        });
 
         function dispatchState(event) {
             _dispatch[event](
                 wnodes,
                 wedges.map(function(e) {
                     return {dcg_edgeKey: e.dcg_edgeKey};
-                }),
-                clusters.map(function(c) {
-                    var c = Object.assign({}, _dagreGraph.node(c.dcg_clusterKey));
-                    c.bounds = {
-                        left: c.x - c.width/2,
-                        top: c.y - c.height/2,
-                        right: c.x + c.width/2,
-                        bottom: c.y + c.height/2
-                    };
-                    return c;
                 })
             );
         }
@@ -7049,8 +6236,8 @@ dc_graph.dagre_layout = function(id) {
             init(options);
             return this;
         },
-        data: function(graph, nodes, edges, clusters) {
-            data(nodes, edges, clusters);
+        data: function(graph, nodes, edges) {
+            data(nodes, edges);
         },
         start: function() {
             start();
@@ -7250,6 +6437,7 @@ dc_graph.graphviz_layout = function(id, layout, server) {
     var _layoutId = id || uuid();
     var _dispatch = d3.dispatch('tick', 'start', 'end');
     var _dotInput, _dotString;
+    var _clusters; // hack to get cluster data out
 
     function init(options) {
     }
@@ -7266,7 +6454,7 @@ dc_graph.graphviz_layout = function(id, layout, server) {
     function stringize_properties(props) {
         return '[' + props.join(', ') + ']';
     }
-    function data(nodes, edges, clusters) {
+    function data(nodes, edges) {
         if(_dotInput) {
             _dotString = _dotInput;
             return;
@@ -7279,33 +6467,6 @@ dc_graph.graphviz_layout = function(id, layout, server) {
             stringize_property('ranksep', graphviz.ranksep()/72),
             stringize_property('rankdir', graphviz.rankdir())
         ]));
-        var cluster_nodes = {};
-        nodes.forEach(function(n) {
-            var cl = n.dcg_nodeParentCluster;
-            if(cl) {
-                cluster_nodes[cl] = cluster_nodes[cl] || [];
-                cluster_nodes[cl].push(n.dcg_nodeKey);
-            }
-        });
-        var cluster_children = {}, tops = [];
-        clusters.forEach(function(c) {
-            var p = c.dcg_clusterParent;
-            if(p) {
-                cluster_children[p] = cluster_children[p] || [];
-                cluster_children[p].push(c.dcg_clusterKey);
-            } else tops.push(c.dcg_clusterKey);
-        });
-
-        function print_subgraph(i, c) {
-            var indent = ' '.repeat(i*2);
-            lines.push(indent + 'subgraph "' + c + '" {');
-            if(cluster_children[c])
-                cluster_children[c].forEach(print_subgraph.bind(null, i+1));
-            lines.push(indent + '  ' + cluster_nodes[c].join(' '));
-            lines.push(indent + '}');
-        }
-        tops.forEach(print_subgraph.bind(null, 1));
-
         lines = lines.concat(nodes.map(function(v) {
             var props = [
                 stringize_property('width', v.width/72),
@@ -7334,36 +6495,27 @@ dc_graph.graphviz_layout = function(id, layout, server) {
     }
 
     function process_response(error, result) {
-        if(error) {
-            console.warn("graphviz layout failed: ", error);
-            return;
-        }
         _dispatch.start();
         var bb = result.bb.split(',').map(function(x) { return +x; });
         var nodes = (result.objects || []).filter(function(n) {
             return n.pos; // remove non-nodes like clusters
         }).map(function(n) {
             var pos = n.pos.split(',');
-            if(isNaN(pos[0]) || isNaN(pos[1])) {
-                console.warn('got a NaN position from graphviz');
-                pos[0] = pos[1] = 0;
-            }
             return {
                 dcg_nodeKey: decode_name(n.name),
                 x: +pos[0],
                 y: bb[3] - pos[1]
             };
         });
-        var clusters = (result.objects || []).filter(function(n) {
+        _clusters = (result.objects || []).filter(function(n) {
             return /^cluster/.test(n.name);
         });
-        clusters.forEach(function(c) {
-            c.dcg_clusterKey = c.name;
-
-            // gv: llx, lly, urx, ury, up-positive
-            var cbb = c.bb.split(',').map(function(s) { return +s; });
-            c.bounds = {left: cbb[0], top: bb[3] - cbb[3],
-                        right: cbb[2], bottom: bb[3] - cbb[1]};
+        _clusters.forEach(function(c) {
+            // annotate with flipped cluster coords for convenience
+            c.bbflip = c.bb.split(',').map(function(s) { return +s; });
+            var t = bb[3] - c.bbflip[1];
+            c.bbflip[1] = bb[3] - c.bbflip[3];
+            c.bbflip[3] = t;
         });
         var edges = (result.edges || []).map(function(e) {
             var e2 = {
@@ -7375,7 +6527,7 @@ dc_graph.graphviz_layout = function(id, layout, server) {
             }
             return e2;
         });
-        _dispatch.end(nodes, edges, clusters);
+        _dispatch.end(nodes, edges);
     }
 
     function start() {
@@ -7418,12 +6570,16 @@ dc_graph.graphviz_layout = function(id, layout, server) {
             init(options);
             return this;
         },
-        data: function(graph, nodes, edges, clusters) {
-            data(nodes, edges, clusters);
+        data: function(graph, nodes, edges) {
+            data(nodes, edges);
         },
         dotInput: function(text) {
             _dotInput = text;
             return this;
+        },
+        clusters: function() {
+            // filter out clusters and return them separately, because dc.graph doesn't know how to draw them
+            return _clusters;
         },
         start: function() {
             start();
@@ -7754,7 +6910,7 @@ dc_graph.d3v4_force_layout = function(id) {
         );
     }
 
-    function data(nodes, edges) {
+    function data(nodes, edges, constraints) {
         var nodeIDs = {};
         nodes.forEach(function(d, i) {
             nodeIDs[d.dcg_nodeKey] = i;
@@ -7921,41 +7077,8 @@ dc_graph.d3v4_force_layout = function(id) {
 
 dc_graph.d3v4_force_layout.scripts = ['d3.js', 'd3v4-force.js'];
 
-/**
- * `dc_graph.flexbox_layout` lays out nodes in accordance with the
- * {@link https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Flexible_Box_Layout/Basic_Concepts_of_Flexbox flexbox layout algorithm}.
- * Nodes fit into a containment hierarchy based on their keys; edges do not affect the layout but
- * are drawn from node to node.
- *
- * Since the flexbox algorithm is not ordinarily available in SVG, this class uses the
- * {@link https://npmjs.com/package/css-layout css-layout}
- * package. (It does not currently support css-layout's successor
- * {@link https://github.com/facebook/yoga yoga} but that should be straightforward to add if
- * there is interest.)
- *
- * Unlike conventional graph layout, where positions are determined based on a few attributes and
- * the topological structure of the eedges, flexbox layout is determined based on the node hierarchy
- * and a large number of attributes on the nodes. See css-layout's
- * {@link https://npmjs.com/package/css-layout#supported-attributes Supported Attributes}
- * for a list of those attributes, and see below to understand how the hierarchy is inferred from
- * node keys.
- *
- * `flexbox_layout` does not require all internal nodes to be specified. The node keys are parsed as
- * "addresses" or paths (arrays of strings) and the tree is built from those paths. Wherever a
- * node's path terminates is where that node's data will be applied.
- *
- * Since flexbox supports a vast number of attributes, we don't attempt to create accessors for
- * every one. Instead, any attributes in the node data are copied which match the names of flexbox
- * attributes.
- *
- * @class flexbox_layout
- * @memberof dc_graph
- * @param {String} [id=uuid()] - Unique identifier
- * @return {dc_graph.flexbox_layout}
- **/
-dc_graph.flexbox_layout = function(id, options) {
+dc_graph.flexbox_layout = function(id) {
     var _layoutId = id || uuid();
-    options = options || {algo: 'yoga-layout'};
     var _dispatch = d3.dispatch('tick', 'start', 'end');
 
     var _graph, _tree, _nodes = {}, _wnodes;
@@ -7977,13 +7100,13 @@ dc_graph.flexbox_layout = function(id, options) {
     }
     function all_keys(tree) {
         var key = _engine.addressToKey()(tree.address);
-        return Array.prototype.concat.apply([key], Object.keys(tree.children || {}).map(function(k) {
+        return Array.prototype.concat.apply([key], Object.keys(tree.children).map(function(k) {
             return all_keys(tree.children[k]);
         }));
     }
     function data(graph, nodes) {
         _graph = graph;
-        _tree = {address: [], children: {}};
+        _tree = {};
         nodes.forEach(function(n) {
             var ad = _engine.keyToAddress()(n.dcg_nodeKey);
             add_node([], ad, n, _tree);
@@ -7991,75 +7114,10 @@ dc_graph.flexbox_layout = function(id, options) {
         var need = all_keys(_tree);
         _wnodes = nodes;
     }
-    function ensure_inner_nodes(tree) {
-        if(!tree.node)
-            tree.node = {dcg_nodeKey: tree.address.length ? tree.address[tree.address.length-1] : null};
-        Object.values(tree.children).forEach(ensure_inner_nodes);
-    }
-    var yoga_constants = {
-        alignItems: {
-            stretch: yogaLayout.ALIGN_STRETCH,
-            'flex-start': yogaLayout.ALIGN_FLEX_START,
-            center: yogaLayout.ALIGN_CENTER,
-            'flex-end': yogaLayout.ALIGN_FLEX_END,
-            baseline: yogaLayout.ALIGN_BASELINE
-        },
-        alignSelf: {
-            stretch: yogaLayout.ALIGN_STRETCH,
-            'flex-start': yogaLayout.ALIGN_FLEX_START,
-            center: yogaLayout.ALIGN_CENTER,
-            'flex-end': yogaLayout.ALIGN_FLEX_END,
-            baseline: yogaLayout.ALIGN_BASELINE
-        },
-        alignContent: {
-            'flex-start': yogaLayout.ALIGN_FLEX_START,
-            'flex-end': yogaLayout.ALIGN_FLEX_END,
-            stretch: yogaLayout.ALIGN_STRETCH,
-            center: yogaLayout.ALIGN_CENTER,
-            'space-between': yogaLayout.ALIGN_SPACE_BETWEEN,
-            'space-around': yogaLayout.ALIGN_SPACE_AROUND
-        },
-        flexDirection: {
-            column: yogaLayout.FLEX_DIRECTION_COLUMN,
-            'column-reverse': yogaLayout.FLEX_DIRECTION_COLUMN_REVERSE,
-            row: yogaLayout.FLEX_DIRECTION_ROW,
-            'row-reverse': yogaLayout.FLEX_DIRECTION_ROW_REVERSE
-        },
-        justifyContent: {
-            'flex-start': yogaLayout.JUSTIFY_FLEX_START,
-            center: yogaLayout.JUSTIFY_CENTER,
-            'flex-end': yogaLayout.JUSTIFY_FLEX_END,
-            'space-between': yogaLayout.JUSTIFY_SPACE_BETWEEN,
-            'space-around': yogaLayout.JUSTIFY_SPACE_AROUND,
-            'space-evenly': yogaLayout.JUSTIFY_SPACE_EVENLY
-        }
-    };
-    function set_yoga_attr(flexnode, attr, value) {
-        var fname = 'set' + attr.charAt(0).toUpperCase() + attr.slice(1);
-        if(typeof flexnode[fname] !== 'function')
-            throw new Error('Could not set yoga attr "' + attr + '" (' + fname + ')');
-        if(yoga_constants[attr])
-            value = yoga_constants[attr][value];
-        flexnode['set' + attr.charAt(0).toUpperCase() + attr.slice(1)](value);
-    }
-    function get_yoga_attr(flexnode, attr) {
-        var fname = 'getComputed' + attr.charAt(0).toUpperCase() + attr.slice(1);
-        if(typeof flexnode[fname] !== 'function')
-            throw new Error('Could not get yoga attr "' + attr + '" (' + fname + ')');
-        return flexnode[fname]();
-    }
-    var internal_attrs = ['sort', 'order', 'dcg_nodeKey', 'dcg_nodeParentCluster', 'shape', 'abstract', 'rx', 'ry', 'x', 'y', 'z'],
+    var internal_attrs = ['sort', 'dcg_nodeKey', 'x', 'y'],
         skip_on_parents = ['width', 'height'];
     function create_flextree(attrs, tree) {
-        var flexnode;
-        switch(options.algo) {
-        case 'css-layout':
-            flexnode = {name: _engine.addressToKey()(tree.address), style: {}};
-            break;
-        case 'yoga-layout':
-            flexnode = yogaLayout.Node.create();
-            break;
-        }
+        var flexnode = {name: _engine.addressToKey()(tree.address), style: {}};
         var attrs2 = Object.assign({}, attrs);
         var isParent = Object.keys(tree.children).length;
         if(tree.node)
@@ -8072,56 +7130,28 @@ dc_graph.flexbox_layout = function(id, options) {
             var value = attrs[attr];
             if(typeof value === 'function')
                 value = value(tree.node);
-            switch(options.algo) {
-            case 'css-layout':
-                flexnode.style[attr] = value;
-                break;
-            case 'yoga-layout':
-                set_yoga_attr(flexnode, attr, value);
-                break;
-            }
+            flexnode.style[attr] = value;
         }
         if(isParent) {
-            var children = Object.values(tree.children)
+            flexnode.children = Object.values(tree.children)
                 .sort(attrs.sort)
                 .map(function(c) { return c.address[c.address.length-1]; })
                 .map(function(key) {
                     return create_flextree(Object.assign({}, attrs2), tree.children[key]);
                 });
-            switch(options.algo) {
-            case 'css-layout':
-                flexnode.children = children;
-                break;
-            case 'yoga-layout':
-                children.forEach(function(child, i) {
-                    flexnode.insertChild(child, i);
-                });
-                break;
-            }
         }
         tree.flexnode = flexnode;
         return flexnode;
     }
     function apply_layout(offset, tree) {
-        var left, top, width, height;
-        switch(options.algo) {
-        case 'css-layout':
-            if(_engine.logStuff())
-                console.log(tree.node.dcg_nodeKey + ': '+ JSON.stringify(tree.flexnode.layout));
-            left = tree.flexnode.layout.left; width = tree.flexnode.layout.width;
-            top = tree.flexnode.layout.top; height = tree.flexnode.layout.height;
-            break;
-        case 'yoga-layout':
-            left = get_yoga_attr(tree.flexnode, 'left'); width = get_yoga_attr(tree.flexnode, 'width');
-            top = get_yoga_attr(tree.flexnode, 'top'); height = get_yoga_attr(tree.flexnode, 'height');
-            break;
-        }
-        tree.node.x = offset.x + left + width/2;
-        tree.node.y = offset.y + top + height/2;
+        if(_engine.logStuff())
+            console.log(tree.node.dcg_nodeKey + ': '+ JSON.stringify(tree.flexnode.layout));
+        tree.node.x = offset.x + tree.flexnode.layout.left + tree.flexnode.layout.width/2;
+        tree.node.y = offset.y + tree.flexnode.layout.top + tree.flexnode.layout.height/2;
         Object.keys(tree.children)
             .map(function(key) { return tree.children[key]; })
             .forEach(function(child) {
-                apply_layout({x: offset.x + left, y: offset.y + top}, child);
+                apply_layout({x: offset.x + tree.flexnode.layout.left, y: offset.y + tree.flexnode.layout.top}, child);
             });
     }
     function dispatchState(wnodes, wedges, event) {
@@ -8138,28 +7168,12 @@ dc_graph.flexbox_layout = function(id, options) {
                 return d3.ascending(a.node.dcg_nodeKey, b.node.dcg_nodeKey);
             }
         };
-        ensure_inner_nodes(_tree);
         var flexTree = create_flextree(defaults, _tree);
-        switch(options.algo) {
-        case 'css-layout':
-            flexTree.style.width = _graph.width;
-            flexTree.style.height = _graph.height;
-            break;
-        case 'yoga-layout':
-            set_yoga_attr(flexTree, 'width', _graph.width);
-            set_yoga_attr(flexTree, 'height', _graph.height);
-            break;
-        }
+        flexTree.style.width = _graph.width;
+        flexTree.style.height = _graph.height;
         if(_engine.logStuff())
             console.log(JSON.stringify(flexTree, null, 2));
-        switch(options.algo) {
-        case 'css-layout':
-            computeLayout(flexTree);
-            break;
-        case 'yoga-layout':
-            flexTree.calculateLayout();
-            break;
-        }
+        computeLayout(flexTree);
         apply_layout({x: 0, y: 0}, _tree);
         dispatchState(_wnodes, [], 'end');
     }
@@ -8229,37 +7243,8 @@ dc_graph.flexbox_layout = function(id, options) {
             });
         },
         populateLayoutEdge: function() {},
-        /**
-         * This function constructs a node key string from an "address". An address is an array of
-         * strings identifying the path from the root to the node.
-         *
-         * By default, it joins the address with commas.
-         * @method addressToKey
-         * @memberof dc_graph.flexbox_layout
-         * @instance
-         * @param {Function} [addressToKey = function(ad) { return ad.join(','); }]
-         * @return {Function}
-         * @return {dc_graph.flexbox_layout}
-         **/
         addressToKey: property(function(ad) { return ad.join(','); }),
-        /**
-         * This function constructs an "address" from a node key string. An address is an array of
-         * strings identifying the path from the root to the node.
-         *
-         * By default, it splits the key by its commas.
-         * @method keyToAddress
-         * @memberof dc_graph.flexbox_layout
-         * @instance
-         * @param {Function} [keyToAddress = function(nid) { return nid.split(','); }]
-         * @return {Function}
-         * @return {dc_graph.flexbox_layout}
-         **/
         keyToAddress: property(function(nid) { return nid.split(','); }),
-        yogaConstants: function() {
-            // in case any are missing, they can be added
-            // please file PRs for any missing constants!
-            return yoga_constants;
-        },
         logStuff: property(false)
     };
     return _engine;
@@ -8342,218 +7327,6 @@ dc_graph.manual_layout = function(id) {
 };
 
 dc_graph.manual_layout.scripts = ['css-layout.js'];
-
-/**
- * `dc_graph.layered_layout` produces 3D layered layouts, utilizing another layout
- * that supports fixed nodes and position hints for the layers
- * @class layered_layout
- * @memberof dc_graph
- * @param {String} [id=uuid()] - Unique identifier
- * @return {dc_graph.layered_layout}
- **/
-dc_graph.layered_layout = function(id) {
-    var _layoutId = id || uuid();
-    var _dispatch = d3.dispatch('tick', 'start', 'end');
-    var _supergraph, _subgraphs;
-    var _layers;
-    var _options = null;
-
-    function init(options) {
-        _options = options;
-
-    }
-
-    function data(nodes, edges, constraints) {
-        _supergraph = dc_graph.supergraph({nodes: nodes, edges: edges}, {
-            nodeKey: function(n) { return n.dcg_nodeKey; },
-            edgeKey: function(n) { return n.dcg_edgeKey; },
-            nodeValue: function(n) { return n; },
-            edgeValue: function(e) { return e; },
-            edgeSource: function(e) { return e.dcg_edgeSource; },
-            edgeTarget: function(e) { return e.dcg_edgeTarget; }
-        });
-
-        // every node belongs natively in one rank
-        var nranks = _supergraph.nodes().reduce(function(p, n) {
-            var rank = engine.layerAccessor()(n.value());
-            p[rank] = p[rank] || [];
-            p[rank].push(n);
-            return p;
-        }, {});
-        var eranks = Object.keys(nranks).reduce(function(p, r) {
-            p[r] = [];
-            return p;
-        }, {});
-
-        // nodes are shadowed into any layers to which they are adjacent
-        // edges are induced from the native&shadow nodes in each layer
-        _supergraph.edges().forEach(function(e) {
-            var srank = engine.layerAccessor()(e.source().value()),
-                trank = engine.layerAccessor()(e.target().value());
-            if(srank == trank) {
-                eranks[srank].push(e);
-                return;
-            }
-            nranks[trank].push(e.source());
-            eranks[trank].push(e);
-            nranks[srank].push(e.target());
-            eranks[srank].push(e);
-        });
-
-        // produce a subgraph for each layer
-        _subgraphs = Object.keys(nranks).reduce(function(p, r) {
-            p[r] = _supergraph.subgraph(
-                nranks[r].map(function(n) { return n.key(); }),
-                eranks[r].map(function(e) { return e.key(); }));
-            return p;
-        }, {});
-
-        // start from the most populous layer
-        var max = null;
-        Object.keys(nranks).forEach(function(r) {
-            if(max === null ||
-               _subgraphs[r].nodes().length > _subgraphs[max].nodes().length)
-                max = +r;
-        });
-
-        // travel up and down from there, each time fixing the nodes from the last layer
-        var ranks = Object.keys(nranks).map(function(r) { return +r; }).sort();
-        _layers = ranks.map(function(r) {
-            return {
-                rank: r,
-                z: -r * engine.layerSeparationZ()
-            };
-        });
-        var mi = ranks.indexOf(max);
-        var ups = ranks.slice(mi+1), downs = ranks.slice(0, mi).reverse();
-        layout_layer(max, -1).then(function(layout) {
-            Promise.all([
-                layout_layers(layout, max, ups),
-                layout_layers(layout, max, downs)
-            ]).then(function() {
-                _dispatch.end(
-                    _supergraph.nodes().map(function(n) { return n.value(); }),
-                    _supergraph.edges().map(function(e) { return e.value(); }));
-            });
-        });
-    }
-
-    function layout_layers(layout, last, layers) {
-        if(layers.length === 0)
-            return Promise.resolve(layout);
-        var curr = layers.shift();
-        return layout_layer(curr, last).then(function(layout) {
-            return layout_layers(layout, curr, layers);
-        });
-    }
-
-    function layout_layer(r, last) {
-        _subgraphs[r].nodes().forEach(function(n) {
-            if(engine.layerAccessor()(n.value()) !== r &&
-               n.value().x !== undefined &&
-               n.value().y !== undefined)
-                n.value().dcg_nodeFixed = {
-                    x: n.value().x,
-                    y: n.value().y
-                };
-            else n.value().dcg_nodeFixed = null;
-        });
-        var subengine = engine.engineFactory()();
-        subengine.init(_options);
-        subengine.data(
-            {},
-            _subgraphs[r].nodes().map(function(n) {
-                return n.value();
-            }),
-            _subgraphs[r].edges().map(function(e) {
-                return e.value();
-            }));
-        return promise_layout(r, subengine);
-    }
-
-    function promise_layout(r, subengine) {
-        // stopgap - engine.start() should return a promise
-        return new Promise(function(resolve, reject) {
-            subengine.on('end', function(nodes, edges) {
-                resolve({nodes: nodes, edges: edges});
-            });
-            subengine.start();
-        }).then(function(layout) {
-            // copy positions back into the subgraph (and hence supergraph)
-            layout.nodes.forEach(function(ln) {
-                var n = _subgraphs[r].node(ln.dcg_nodeKey);
-                // do not copy positions for shadow nodes
-                if(engine.layerAccessor()(n.value()) !== r)
-                    return;
-                n.value().x = ln.x;
-                n.value().y = ln.y;
-                n.value().z = -r * engine.layerSeparationZ(); // lowest rank at top
-            });
-            return layout;
-        });
-    }
-
-    function start() {
-        _dispatch.start();
-    }
-
-    function stop() {
-    }
-
-    var graphviz = dc_graph.graphviz_attrs(), graphviz_keys = Object.keys(graphviz);
-
-    var engine = Object.assign(graphviz, {
-        layoutAlgorithm: function() {
-            return 'layered';
-        },
-        layoutId: function() {
-            return _layoutId;
-        },
-        supportsWebworker: function() {
-            return false;
-        },
-        parent: property(null),
-        on: function(event, f) {
-            if(arguments.length === 1)
-                return _dispatch.on(event);
-            _dispatch.on(event, f);
-            return this;
-        },
-        init: function(options) {
-            this.optionNames().forEach(function(option) {
-                options[option] = options[option] || this[option]();
-            }.bind(this));
-            init(options);
-            return this;
-        },
-        data: function(graph, nodes, edges, constraints) {
-            data(nodes, edges, constraints);
-        },
-        start: function() {
-            start();
-        },
-        stop: function() {
-            stop();
-        },
-        optionNames: function() {
-            return []
-                .concat(graphviz_keys);
-        },
-        engineFactory: property(null),
-        layerAccessor: property(null),
-        layerSeparationZ: property(50),
-        layers: function() {
-            return _layers;
-        },
-        populateLayoutNode: function() {},
-        populateLayoutEdge: function() {},
-        extractNodeAttrs: property({}), // {attr: function(node)}
-        extractEdgeAttrs: property({})
-    });
-    return engine;
-};
-
-
 
 function port_name(nodeId, edgeId, portName) {
     if(!(nodeId || edgeId))
@@ -8832,108 +7605,6 @@ dc_graph.grid = function() {
 };
 
 
-
-dc_graph.annotate_layers = function() {
-    // svg-specific
-    var _drawLayer;
-    // wegl-specific
-    var _planes = [];
-    var _planeGeometry;
-    var _mode = dc_graph.mode('annotate-layers', {
-        laterDraw: true,
-        renderers: ['svg', 'webgl'],
-        draw: draw,
-        remove: remove
-    });
-    function draw(diagram) {
-        var rendererType = _mode.parent().renderer().rendererType();
-        var engine = _mode.parent().layoutEngine();
-        if(rendererType === 'svg') {
-            if(engine.layoutAlgorithm() === 'cola' &&
-               engine.setcolaSpec() && engine.setcolaNodes()) {
-                _drawLayer = _mode.parent().select('g.draw').selectAll('g.divider-layer').data([0]);
-                _drawLayer.enter().append('g').attr('class', 'divider-layer');
-                var boundary_nodes = engine.setcolaNodes().filter(function(n) {
-                    return /^sort_order_boundary/.test(n.name);
-                });
-                var lines = _drawLayer.selectAll('line.divider').data(boundary_nodes);
-                lines.exit().remove();
-                lines.enter().append('line')
-                    .attr('class', 'divider');
-                lines.attr({
-                    stroke: _mode.stroke(),
-                    'stroke-width': _mode.strokeWidth(),
-                    'stroke-dasharray': _mode.strokeDashArray(),
-                    x1: -5000,
-                    y1: function(n) {
-                        return n.y;
-                    },
-                    x2: 5000,
-                    y2:  function(n) {
-                        return n.y;
-                    }
-                });
-            }
-        } else if(rendererType === 'webgl') {
-            var MULT = _mode.parent().renderer().multiplier();
-            var scene = arguments[1], drawState = arguments[2];
-            if(engine.layoutAlgorithm() === 'layered' && engine.layers()) {
-                var width = drawState.extents[0][1] - drawState.extents[0][0] + _mode.planePadding()*MULT*2,
-                    height = drawState.extents[1][1] - drawState.extents[1][0] + _mode.planePadding()*MULT*2;
-                var delGeom;
-                var shape = new THREE.Shape();
-                shape.moveTo(0, 0);
-                shape.lineTo(0, height);
-                shape.lineTo(width, height);
-                shape.lineTo(width, 0);
-                shape.lineTo(0, 0);
-                if(_planeGeometry)
-                    delGeom = _planeGeometry;
-                _planeGeometry = new THREE.ShapeBufferGeometry(shape);
-
-                var layers = engine.layers();
-                if(layers.length < _planes.length) {
-                    for(var i = layers.length; i < _planes.length; ++i)
-                        scene.remove(_planes[i].mesh);
-                    _planes = _planes.slice(0, layers.length);
-                }
-                layers.forEach(function(layer, i) {
-                    if(!_planes[i])
-                        _planes[i] = Object.assign({}, layer);
-                    if(_planes[i].mesh)
-                        scene.remove(_planes[i].mesh);
-                    var mesh = _planes[i].mesh = new THREE.Mesh(_planeGeometry, new THREE.MeshStandardMaterial({
-                        opacity: _mode.planeOpacity(),
-                        transparent: true,
-                        color: _mode.parent().renderer().color_to_int(_mode.planeColor()),
-                        side: THREE.DoubleSide
-                    }));
-                    mesh.position.set(drawState.extents[0][0] - _mode.planePadding()*MULT,
-                                      drawState.extents[1][0] - _mode.planePadding()*MULT,
-                                      layer.z * MULT);
-                    scene.add(mesh);
-                });
-                if(delGeom)
-                    delGeom.dispose();
-            }
-        } else throw new Error("annotate_layers doesn't know how to work with renderer " + rendererType);
-    }
-    function remove() {
-        if(_drawLayer)
-            _drawLayer.remove();
-    }
-
-    // line properties for svg
-    _mode.stroke = property('black');
-    _mode.strokeWidth = property(2);
-    _mode.strokeDashArray = property([5,5]);
-
-    // plane properties
-    _mode.planePadding = property(5);
-    _mode.planeOpacity = property(0.2);
-    _mode.planeColor = property('#ffffdd');
-    return _mode;
-};
 
 dc_graph.troubleshoot = function() {
     var _debugLayer = null;
@@ -9336,27 +8007,16 @@ dc_graph.legend = function(legend_namespace) {
     var _dispatch = d3.dispatch('filtered');
     var _totals, _counts;
 
-    var _svg_renderer;
-
     function apply_filter() {
         if(_legend.dimension()) {
-            if(_legend.isTagDimension()) {
-                _legend.dimension().filterFunction(function(ks) {
-                    return !_included.length || ks.filter(function(k) {
-                        return _included.includes(k);
-                    }).length;
-                });
-            } else {
-                _legend.dimension().filterFunction(function(k) {
-                    return !_included.length || _included.includes(k);
-                });
-            }
+            _legend.dimension().filterFunction(function(k) {
+                return !_included.length || _included.includes(k);
+            });
             _legend.parent().redraw();
         }
     }
 
     var _legend = dc_graph.mode(legend_namespace, {
-        renderers: ['svg', 'webgl'],
         draw: redraw,
         remove: function() {},
         parent: function(p) {
@@ -9409,8 +8069,6 @@ dc_graph.legend = function(legend_namespace) {
     **/
     _legend.itemHeight = _legend.nodeHeight = property(40);
 
-    _legend.dyLabel = property('0.3em');
-
     _legend.omitEmpty = property(false);
 
     /**
@@ -9454,7 +8112,7 @@ dc_graph.legend = function(legend_namespace) {
 
     _legend.redraw = deprecate_function("dc_graph.legend is an ordinary mode now; redraw will go away soon", redraw);
     function redraw() {
-        var legend = (_svg_renderer || _legend.parent()).svg()
+        var legend = _legend.parent().svg()
                 .selectAll('g.dc-graph-legend.' + legend_namespace)
                 .data([0]);
         legend.enter().append('g')
@@ -9469,7 +8127,7 @@ dc_graph.legend = function(legend_namespace) {
         item.exit().remove();
         var itemEnter = _legend.type().create(_legend.parent(), item.enter(), _legend.itemWidth(), _legend.itemHeight());
         itemEnter.append('text')
-            .attr('dy', _legend.dyLabel())
+            .attr('dy', '0.3em')
             .attr('class', 'legend-label');
         item
             .attr('transform', function(n, i) {
@@ -9481,7 +8139,7 @@ dc_graph.legend = function(legend_namespace) {
             .text(function(d) {
                 return d.name + (_legend.counter() && _counts ? (' (' + (_counts[d.orig.key] || 0) + (_counts[d.orig.key] !== _totals[d.orig.key] ? '/' + (_totals[d.orig.key] || 0) : '') + ')') : '');
             });
-        _legend.type().draw(_svg_renderer || _legend.parent(), itemEnter, item);
+        _legend.type().draw(_legend.parent(), itemEnter, item);
         if(_legend.noLabel())
             item.selectAll(_legend.type().labelSelector()).remove();
 
@@ -9530,8 +8188,6 @@ dc_graph.legend = function(legend_namespace) {
                         _included.push(key);
                     apply_filter();
                     _dispatch.filtered(_legend, key);
-                    if(_svg_renderer)
-                        window.setTimeout(redraw, 250);
                 });
         } else {
             item.attr('cursor', 'auto')
@@ -9553,20 +8209,6 @@ dc_graph.legend = function(legend_namespace) {
 
     _legend.render = deprecate_function("dc_graph.legend is an ordinary mode now; render will go away soon", render);
     function render() {
-        if(_legend.parent().renderer().rendererType() !== 'svg') {
-            _svg_renderer = dc_graph.render_svg();
-            _svg_renderer.parent(_legend.parent())
-                .svg(_legend.parent().root().append('svg')
-                     .style({
-                         position: 'absolute',
-                         left: 0, top: 0,
-                         width: '100%', height: '100%',
-                         fill: 'wheat',
-                         'pointer-events': 'none'
-                     }));
-        }
-
-
         var exemplars = _legend.exemplars();
         _legend.countBaseline();
         if(exemplars instanceof Array) {
@@ -9581,7 +8223,7 @@ dc_graph.legend = function(legend_namespace) {
     };
 
     _legend.dropdown = property(null).react(function(v) {
-        if(!!v !== !!_legend.dropdown() && _legend.parent() && (_svg_renderer || _legend.parent()).svg())
+        if(!!v !== !!_legend.dropdown() && _legend.parent() && _legend.parent().svg())
             window.setTimeout(_legend.redraw, 0);
     });
 
@@ -9593,7 +8235,6 @@ dc_graph.legend = function(legend_namespace) {
                 apply_filter();
             }
         });
-    _legend.isTagDimension = property(false);
 
     return _legend;
 };
@@ -9611,10 +8252,10 @@ dc_graph.legend.node_legend = function() {
             return selection.append('g')
                 .attr('class', 'node');
         },
-        draw: function(renderer, itemEnter, item) {
-            renderer
-                .renderNode(itemEnter)
-                .redrawNode(item);
+        draw: function(diagram, itemEnter, item) {
+            diagram
+                ._enterNode(itemEnter)
+                ._updateNode(item);
         }
     };
 };
@@ -9669,34 +8310,11 @@ dc_graph.legend.edge_legend = function() {
         },
         fakeNodeRadius: property(10),
         length: property(50),
-        draw: function(renderer, itemEnter, item) {
-            renderer.redrawEdge(itemEnter.select('path.edge'), renderer.selectAllEdges('.edge-arrows'));
+        draw: function(diagram, itemEnter, item) {
+            diagram._updateEdge(itemEnter.select('path.edge'), diagram.selectAllEdges('.edge-arrows'));
         }
     };
     return _type;
-};
-
-dc_graph.legend.symbol_legend = function(symbolScale) {
-    return {
-        itemSelector: function() {
-            return '.symbol';
-        },
-        labelSelector: function() {
-            return '.symbol-label';
-        },
-        create: function(diagram, selection, w, h) {
-            var symbolEnter = selection.append('g')
-                .attr('class', 'symbol');
-            return symbolEnter;
-        },
-        draw: function(renderer, symbolEnter, symbol) {
-            symbolEnter.append('text')
-                .html(function(d) {
-                    return symbolScale(d.orig.key);
-                });
-            return symbolEnter;
-        }
-    };
 };
 
 /**
@@ -10034,15 +8652,14 @@ dc_graph.mode = function(event_namespace, options) {
     var _mode = {};
     var _eventName = options.laterDraw ? 'transitionsStarted' : 'drawn';
     var draw = options.draw, remove = options.remove;
-    var supported_renderers = options.renderers || ['svg'];
 
     if(!draw) {
-        console.warn('behavior.add_behavior has been replaced by mode.draw');
-        draw = options.add_behavior;
+        console.warn('behavior.draw has been replaced by mode.draw');
+        draw = options.draw;
     }
     if(!remove) {
-        console.warn('behavior.remove_behavior has been replaced by mode.remove');
-        remove = options.remove_behavior;
+        console.warn('behavior.remove has been replaced by mode.remove');
+        remove = options.remove;
     }
 
     /**
@@ -10055,22 +8672,17 @@ dc_graph.mode = function(event_namespace, options) {
             if(p) {
                 var first = true;
                 diagram = p;
-                p.on(_eventName + '.' + event_namespace, function() {
-                    var args2 = [diagram].concat(Array.prototype.slice.call(arguments));
-                    draw.apply(null, args2);
+                p.on(_eventName + '.' + event_namespace, function(node, edge, ehover) {
+                    draw(diagram, node, edge, ehover);
                     if(first && options.first) {
-                        options.first.apply(null, args2);
+                        options.first(diagram, node, edge, ehover);
                         first = false;
                     }
                     else if(options.rest)
-                        options.rest.apply(null, args2);
+                        options.rest(diagram, node, edge, ehover);
                 });
                 p.on('reset.' + event_namespace, function() {
-                    var rend = diagram.renderer(),
-                        node = rend.selectAllNodes ? rend.selectAllNodes() : null,
-                        edge = rend.selectAllEdges ? rend.selectAllEdges() : null,
-                        edgeHover = rend.selectAllEdges ? rend.selectAllEdges('.edge-hover') : null;
-                    remove(diagram, node, edge, edgeHover);
+                    remove(diagram, diagram.selectAllNodes(), diagram.selectAllEdges(), diagram.selectAllEdges('.edge-hover'));
                 });
             }
             else if(_mode.parent()) {
@@ -10082,11 +8694,6 @@ dc_graph.mode = function(event_namespace, options) {
             }
             options.parent && options.parent(p);
         });
-
-    _mode.supportsRenderer = function(rendererType) {
-        return supported_renderers.includes(rendererType);
-    };
-
     return _mode;
 };
 
@@ -12557,73 +11164,6 @@ dc_graph.spline_paths = function(pathreader, pathprops, hoverprops, selectprops,
 
 dc_graph.draw_spline_paths = deprecate_function("draw_spline_paths has been renamed spline_paths, please update", dc_graph.spline_paths);
 
-dc_graph.draw_clusters = function() {
-
-    function apply_bounds(rect) {
-        rect.attr({
-            x: function(c) {
-                return c.cola.bounds.left;
-            },
-            y: function(c) {
-                return c.cola.bounds.top;
-            },
-            width: function(c) {
-                return c.cola.bounds.right - c.cola.bounds.left;
-            },
-            height: function(c) {
-                return c.cola.bounds.bottom - c.cola.bounds.top;
-            }
-        });
-    }
-    function draw(diagram) {
-        if(!diagram.clusterGroup())
-            return;
-        var clayer = diagram.g().selectAll('g.cluster-layer').data([0]);
-        clayer.enter().insert('g', ':first-child')
-            .attr('class', 'cluster-layer');
-        var clusters = diagram.clusterGroup().all().map(function(kv) {
-            return _mode.parent().getWholeCluster(kv.key);
-        }).filter(function(c) {
-            return c && c.cola.bounds;
-        });
-        var rects = clayer.selectAll('rect.cluster')
-            .data(clusters, function(c) { return c.orig.key; });
-        rects.exit().remove();
-        rects.enter().append('rect')
-            .attr({
-                class: 'cluster',
-                opacity: 0,
-                stroke: _mode.clusterStroke.eval,
-                'stroke-width': _mode.clusterStrokeWidth.eval,
-                fill: function(c) {
-                    return _mode.clusterFill.eval(c) || 'none';
-                }
-            })
-            .call(apply_bounds);
-        rects.transition()
-            .duration(_mode.parent().stagedDuration())
-            .attr('opacity', _mode.clusterOpacity.eval)
-            .call(apply_bounds);
-    }
-    function remove(diagram, node, edge, ehover) {
-    }
-    var _mode = dc_graph.mode('draw-clusters', {
-        laterDraw: true,
-        draw: draw,
-        remove: remove
-    });
-    _mode.clusterOpacity = property(0.25);
-    _mode.clusterStroke = property('black');
-    _mode.clusterStrokeWidth = property(1);
-    _mode.clusterFill = property(null);
-    _mode.clusterLabel = property(null);
-    _mode.clusterLabelFill = property('black');
-    _mode.clusterLabelAlignment = property(['bottom','right']);
-
-    return _mode;
-};
-
-
 dc_graph.expand_collapse = function(options) {
     if(typeof options === 'function') {
         options = {
@@ -13957,11 +12497,11 @@ dc_graph.match_opposites = function(diagram, deleteProps, options) {
                 }
                 return Promise.resolve(true);
             }
-            reset_deletables(source, _validTargets || []);
+            reset_deletables(source, _validTargets);
             return Promise.resolve(false);
         },
         cancelDragEdge: function(source) {
-            reset_deletables(source, _validTargets || []);
+            reset_deletables(source, _validTargets);
             return true;
         },
         detectReversedEdge: function(edge, sourcePort, targetPort) {
@@ -14541,7 +13081,7 @@ function process_dot(callback, error, text) {
         callback(error, null);
         return;
     }
-    var nodes, edges, node_cluster = {}, clusters = [];
+    var nodes, edges;
     if(graphlibDot.parse) { // graphlib-dot 1.1.0 (where did i get it from?)
         var digraph = graphlibDot.parse(text);
 
@@ -14564,7 +13104,6 @@ function process_dot(callback, error, text) {
                 targetname: edge.v
             }));
         });
-        // TODO: if this version exists in the wild, look at how it does subgraphs/clusters
     } else { // graphlib-dot 0.6
         digraph = graphlibDot.read(text);
 
@@ -14578,34 +13117,15 @@ function process_dot(callback, error, text) {
 
         edges = [];
         digraph.edges().forEach(function(e) {
-            edges.push(Object.assign({}, digraph.edge(e.v, e.w), {
+            edges.push(Object.assign({}, e.value, {
                 source: digraph._nodes[e.v].id,
                 target: digraph._nodes[e.w].id,
                 sourcename: e.v,
                 targetname: e.w
             }));
         });
-
-        // iterative bfs for variety (recursion would work just as well)
-        var cluster_names = {};
-        var queue = digraph.children().map(function(c) { return Object.assign({parent: null, key: c}, digraph.node(c)); });
-        while(queue.length) {
-            var item = queue.shift(),
-                children = digraph.children(item.key);
-            if(children.length) {
-                clusters.push(item);
-                cluster_names[item.key] = true;
-            }
-            else
-                node_cluster[item.key] = item.parent;
-            queue = queue.concat(children.map(function(c) { return {parent: item.key, key: c}; }));
-        }
-        // clusters as nodes not currently supported
-        nodes = nodes.filter(function(n) {
-            return !cluster_names[n.name];
-        });
     }
-    var graph = {nodes: nodes, links: edges, node_cluster: node_cluster, clusters: clusters};
+    var graph = {nodes: nodes, links: edges};
     callback(null, graph);
 }
 
@@ -15068,25 +13588,17 @@ dc_graph.convert_adjacency_list = function(nodes, namesIn, namesOut) {
 
 
 // collapse edges between same source and target
-dc_graph.deparallelize = function(group, sourceTag, targetTag, options) {
-    options = options || {};
-    var both = options.both || false,
-        reduce = options.reduce || null;
+dc_graph.deparallelize = function(group, sourceTag, targetTag) {
     return {
         all: function() {
             var ST = {};
             group.all().forEach(function(kv) {
                 var source = kv.value[sourceTag],
                     target = kv.value[targetTag];
-                var dir = both ? true : source < target;
+                var dir = source < target;
                 var min = dir ? source : target, max = dir ? target : source;
                 ST[min] = ST[min] || {};
-                var entry;
-                if(ST[min][max]) {
-                    entry = ST[min][max];
-                    if(reduce)
-                        entry.original = reduce(entry.original, kv);
-                } else ST[min][max] = entry = {in: 0, out: 0, original: Object.assign({}, kv)};
+                var entry = ST[min][max] = ST[min][max] || {in: 0, out: 0, original: kv};
                 if(dir)
                     ++entry.in;
                 else
@@ -15526,33 +14038,6 @@ dc_graph.random_graph = function(options) {
             }
         }
     };
-};
-
-dc_graph.supergraph = function(data, options) {
-    if(!dc_graph.supergraph.pattern) {
-        var mg = metagraph;
-        var graph_and_subgraph = {
-            nodes: {
-                graph: mg.graph_pattern(options),
-                sg: mg.subgraph_pattern(options),
-                subgraph: mg.graph_pattern(options)
-            },
-            edges: {
-                to_sg: {
-                    source: 'graph',
-                    target: 'sg',
-                    input: 'parent'
-                },
-                from_sg: {
-                    source: 'subgraph',
-                    target: 'sg',
-                    input: 'child'
-                }
-            }
-        };
-        dc_graph.supergraph.pattern = mg.compose(mg.graph_detect(graph_and_subgraph));
-    }
-    return dc_graph.supergraph.pattern.node('graph.Graph').value().create(data);
 };
 
 var dont_use_key = deprecation_warning('dc_graph.line_breaks now takes a string - d.key behavior is deprecated and will be removed in a later version');

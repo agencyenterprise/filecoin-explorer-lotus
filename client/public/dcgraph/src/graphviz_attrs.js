@@ -65,8 +65,7 @@ dc_graph.apply_graphviz_accessors = function(diagram) {
         })
         .nodeLabelFill(function(n) { return nvalue(n).fontcolor || 'black'; })
         .nodeTitle(function(n) {
-            return (nvalue(n).htmltip || nvalue(n).jsontip) ? null :
-                nvalue(n).tooltip !== undefined ?
+            return nvalue(n).tooltip !== undefined ?
                 nvalue(n).tooltip :
                 diagram.nodeLabel()(n);
         })
@@ -101,19 +100,6 @@ dc_graph.apply_graphviz_accessors = function(diagram) {
             }
             return null;
         });
-    var draw_clusters = diagram.child('draw-clusters');
-    if(draw_clusters) {
-        draw_clusters
-            .clusterStroke(function(c) {
-                return c.value.color || 'black';
-            })
-            .clusterFill(function(c) {
-                return c.value.style === 'filled' ? c.value.fillcolor || c.value.color || c.value.bgcolor : null;
-            })
-            .clusterLabel(function(c) {
-                return c.value.label;
-            });
-    }
 };
 
 dc_graph.snapshot_graphviz = function(diagram) {

@@ -89,15 +89,6 @@ function named_children() {
     var f = function(id, object) {
         if(arguments.length === 1)
             return _children[id];
-        if(f.reject) {
-            var reject = f.reject(id, object);
-            if(reject) {
-                console.groupCollapsed(reject);
-                console.trace();
-                console.groupEnd();
-                return this;
-            }
-        }
         // do not notify unnecessarily
         if(_children[id] === object)
             return this;
@@ -136,35 +127,22 @@ function deprecated_property(message, defaultValue) {
     return ret;
 }
 
-function onetime_trace(level, message) {
+function deprecation_warning(message) {
     var said = false;
     return function() {
         if(said)
             return;
-        if(level === 'trace') {
-            console.groupCollapsed(message);
-            console.trace();
-            console.groupEnd();
-        }
-        else
-            console[level](message);
+        console.warn(message);
         said = true;
     };
 }
 
-function deprecation_warning(message) {
-    return onetime_trace('warn', message);
-}
-
-function trace_function(level, message, f) {
-    var dep = onetime_trace(level, message);
+function deprecate_function(message, f) {
+    var dep = deprecation_warning(message);
     return function() {
         dep();
         return f.apply(this, arguments);
     };
-}
-function deprecate_function(message, f) {
-    return trace_function('warn', message, f);
 }
 
 // http://stackoverflow.com/questions/105034/create-guid-uuid-in-javascript

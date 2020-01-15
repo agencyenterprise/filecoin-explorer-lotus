@@ -164,6 +164,7 @@ module.exports = function (grunt) {
                             '<%= conf.pkg.name %>.css',
                             'node_modules/bootstrap/dist/css/bootstrap.css',
                             'node_modules/dc/dc.css',
+                            'node_modules/font-awesome/css/font-awesome.css',
                             'node_modules/jquery-ui-dist/jquery-ui.css',
                             'node_modules/x-editable/dist/jqueryui-editable/css/jqueryui-editable.css'
                         ],
@@ -217,7 +218,6 @@ module.exports = function (grunt) {
                             'dc.graph.tracker.domain.js',
                             'd3v4-force.js',
                             'lysenko-interval-tree.js',
-                            'yoga-layout.js',
                             'querystring.js',
                             'sync-url-options.js',
                             'chart.registry.js',
@@ -227,7 +227,6 @@ module.exports = function (grunt) {
                             'node_modules/css-layout/dist/css-layout.js',
                             'node_modules/d3/d3.js',
                             'node_modules/dc/dc.js',
-                            'node_modules/graphlib-dot/dist/graphlib-dot.js',
                             'node_modules/jquery/dist/jquery.js',
                             'node_modules/jquery-ui-dist/jquery-ui.js',
                             'node_modules/lodash/lodash.js',
@@ -251,17 +250,12 @@ module.exports = function (grunt) {
                         dest: '<%= conf.web %>/js/classlist-polyfill.js'
                     },
                     {
-                        nonull: true,
-                        src: 'node_modules/@fortawesome/fontawesome-free/css/all.css',
-                        dest: '<%= conf.web %>/css/fontawesome-all.css'
-                    },
-                    {
                         expand: true,
                         flatten: true,
                         src: [
-                            'node_modules/@fortawesome/fontawesome-free/webfonts/*'
+                            'node_modules/font-awesome/fonts/*'
                         ],
-                        dest: '<%= conf.web %>/webfonts/'
+                        dest: '<%= conf.web %>/fonts/'
                     },
                     {
                         nonull: true,
@@ -358,8 +352,6 @@ module.exports.jsFiles = [
     'src/arrows.js',
     'src/node_contents.js',
     'src/diagram.js',
-    'src/render_svg.js',
-    'src/render_webgl.js',
     'src/engine.js',
     'src/webworker_layout.js',
     'src/graphviz_attrs.js',
@@ -371,10 +363,8 @@ module.exports.jsFiles = [
     'src/d3v4_force_layout.js',
     'src/flexbox_layout.js',
     'src/manual_layout.js',
-    'src/layered_layout.js',
     'src/place_ports.js',
     'src/grid.js',
-    'src/annotate_layers.js',
     'src/troubleshoot.js',
     'src/validate.js',
     'src/legend.js',
@@ -407,7 +397,6 @@ module.exports.jsFiles = [
     'src/highlight_paths_group.js',
     'src/highlight_paths.js',
     'src/spline_paths.js',
-    'src/draw_clusters.js',
     'src/expand_collapse.js',
     'src/shown_hidden.js',
     'src/expanded_hidden.js',
@@ -424,7 +413,6 @@ module.exports.jsFiles = [
     'src/path_reader.js',
     'src/path_selector.js',
     'src/generate.js',
-    'src/supergraph.js',
     'src/line_breaks.js',
     'src/type_graph.js',
     'src/footer.js'  // NOTE: keep this last

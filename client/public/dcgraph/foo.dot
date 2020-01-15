@@ -1,0 +1,6 @@
+digraph g {
+  a -> b [arrowhead=teediamond]
+  a -> c [arrowhead=teeinvtee]
+  c -> d [arrowhead=teenormal]
+  b -> d [arrowhead=vee]
+}

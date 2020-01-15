@@ -8,21 +8,18 @@
 dc_graph.cola_layout = function(id) {
     var _layoutId = id || uuid();
     var _d3cola = null;
-    var _setcola_nodes;
     var _dispatch = d3.dispatch('tick', 'start', 'end');
     var _flowLayout;
     // node and edge objects shared with cola.js, preserved from one iteration
     // to the next (as long as the object is still in the layout)
     var _nodes = {}, _edges = {};
-    var _options;
 
     function init(options) {
-        _options = options;
+        // width, height, handleDisconnected, lengthStrategy, baseLength, flowLayout, tickSize
         _d3cola = cola.d3adaptor()
             .avoidOverlaps(true)
             .size([options.width, options.height])
             .handleDisconnected(options.handleDisconnected);
-
         if(_d3cola.tickSize) // non-standard
             _d3cola.tickSize(options.tickSize);
 
@@ -46,18 +43,14 @@ dc_graph.cola_layout = function(id) {
         }
     }
 
-    function data(nodes, edges, clusters, constraints) {
+    function data(nodes, edges, constraints) {
         var wnodes = regenerate_objects(_nodes, nodes, null, function(v) {
             return v.dcg_nodeKey;
         }, function(v1, v) {
             v1.dcg_nodeKey = v.dcg_nodeKey;
-            v1.dcg_nodeParentCluster = v.dcg_nodeParentCluster;
             v1.width = v.width;
             v1.height = v.height;
             v1.fixed = !!v.dcg_nodeFixed;
-            _options.nodeAttrs.forEach(function(key) {
-                v1[key] = v[key];
-            });
 
             if(v1.fixed && typeof v.dcg_nodeFixed === 'object') {
                 v1.x = v.dcg_nodeFixed.x;
@@ -80,9 +73,6 @@ dc_graph.cola_layout = function(id) {
             e1.source = _nodes[e.dcg_edgeSource];
             e1.target = _nodes[e.dcg_edgeTarget];
             e1.dcg_edgeLength = e.dcg_edgeLength;
-            _options.edgeAttrs.forEach(function(key) {
-                e1[key] = e[key];
-            });
         });
 
         // cola needs each node object to have an index property
@@ -94,59 +84,16 @@ dc_graph.cola_layout = function(id) {
         if(engine.groupConnected()) {
             var components = cola.separateGraphs(wnodes, wedges);
             groups = components.map(function(g) {
-                return {
-                    dcg_autoGroup: true,
-                    leaves: g.array.map(function(n) { return n.index; })
-                };
-            });
-        } else if(clusters) {
-            var G = {};
-            groups = clusters.filter(function(c) {
-                return /^cluster/.test(c.dcg_clusterKey);
-            }).map(function(c, i) {
-                return G[c.dcg_clusterKey] = {
-                    dcg_clusterKey: c.dcg_clusterKey,
-                    index: i,
-                    groups: [],
-                    leaves: []
-                };
-            });
-            clusters.forEach(function(c) {
-                if(c.dcg_clusterParent && G[c.dcg_clusterParent])
-                    G[c.dcg_clusterParent].groups.push(G[c.dcg_clusterKey].index);
-            });
-            wnodes.forEach(function(n, i) {
-                if(n.dcg_nodeParentCluster && G[n.dcg_nodeParentCluster])
-                    G[n.dcg_nodeParentCluster].leaves.push(i);
+                return {leaves: g.array.map(function(n) { return n.index; })};
             });
         }
 
         function dispatchState(event) {
-            // clean up extra setcola annotations
-            wnodes.forEach(function(n) {
-                Object.keys(n).forEach(function(key) {
-                    if(/^get/.test(key) && typeof n[key] === 'function')
-                        delete n[key];
-                });
-            });
             _dispatch[event](
                 wnodes,
                 wedges.map(function(e) {
                     return {dcg_edgeKey: e.dcg_edgeKey};
-                }),
-                groups.filter(function(g) {
-                    return !g.dcg_autoGroup;
-                }).map(function(g) {
-                    g = Object.assign({}, g);
-                    g.bounds = {
-                        left: g.bounds.x,
-                        top: g.bounds.y,
-                        right: g.bounds.X,
-                        bottom: g.bounds.Y
-                    };
-                    return g;
-                }),
-                _setcola_nodes
+                })
             );
         }
         _d3cola.on('tick', /* _tick = */ function() {
@@ -156,28 +103,10 @@ dc_graph.cola_layout = function(id) {
         }).on('end', /* _done = */ function() {
             dispatchState('end');
         });
-
-        if(_options.setcolaSpec && typeof setcola !== 'undefined') {
-            console.log('generating setcola constrains');
-            var setcola_result = setcola
-                .nodes(wnodes)
-                .links(wedges)
-                .constraints(_options.setcolaSpec)
-                .gap(10) //default value is 10, can be customized in setcolaSpec
-                .layout();
-
-            _setcola_nodes = setcola_result.nodes.filter(function(n) { return n._cid; });
-            _d3cola.nodes(setcola_result.nodes)
-                .links(setcola_result.links)
-                .constraints(setcola_result.constraints)
-                .groups(groups);
-        } else {
-            _d3cola.nodes(wnodes)
-                .links(wedges)
-                .constraints(constraints)
-                .groups(groups);
-        }
-
+        _d3cola.nodes(wnodes)
+            .links(wedges)
+            .constraints(constraints)
+            .groups(groups);
     }
 
     function start() {
@@ -216,12 +145,11 @@ dc_graph.cola_layout = function(id) {
             this.optionNames().forEach(function(option) {
                 options[option] = options[option] || this[option]();
             }.bind(this));
-            this.propagateOptions(options);
             init(options);
             return this;
         },
-        data: function(graph, nodes, edges, clusters, constraints) {
-            data(nodes, edges, clusters, constraints);
+        data: function(graph, nodes, edges, constraints) {
+            data(nodes, edges, constraints);
         },
         start: function() {
             start();
@@ -230,18 +158,8 @@ dc_graph.cola_layout = function(id) {
             stop();
         },
         optionNames: function() {
-            return ['handleDisconnected', 'lengthStrategy', 'baseLength', 'flowLayout',
-                    'tickSize', 'groupConnected', 'setcolaSpec', 'setcolaNodes']
+            return ['handleDisconnected', 'lengthStrategy', 'baseLength', 'flowLayout', 'tickSize', 'groupConnected']
                 .concat(graphviz_keys);
-        },
-        passThru: function() {
-            return ['extractNodeAttrs', 'extractEdgeAttrs'];
-        },
-        propagateOptions: function(options) {
-            if(!options.nodeAttrs)
-                options.nodeAttrs = Object.keys(engine.extractNodeAttrs());
-            if(!options.edgeAttrs)
-                options.edgeAttrs = Object.keys(engine.extractEdgeAttrs());
         },
         populateLayoutNode: function() {},
         populateLayoutEdge: function() {},
@@ -319,19 +237,9 @@ dc_graph.cola_layout = function(id) {
         allConstraintsIterations: property(20),
         gridSnapIterations: property(0),
         tickSize: property(1),
-        groupConnected: property(false),
-        setcolaSpec: property(null),
-        setcolaNodes: function() {
-            return _setcola_nodes;
-        },
-        extractNodeAttrs: property({}), // {attr: function(node)}
-        extractEdgeAttrs: property({}),
-        processExtraWorkerResults: function(setcolaNodes) {
-            _setcola_nodes = setcolaNodes;
-        }
+        groupConnected: property(false)
     });
     return engine;
 };
 
 dc_graph.cola_layout.scripts = ['d3.js', 'cola.js'];
-dc_graph.cola_layout.optional_scripts = ['setcola.js'];

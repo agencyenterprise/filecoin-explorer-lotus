@@ -20,7 +20,6 @@ var options = {
     remedge: 0.75,
     interval: 500,
     opacity: 0.7,
-    arrows: false,
     ports: false,
     shape: 'ellipse',
     content: 'text',
@@ -135,11 +134,11 @@ run();
 
 d3.select('#play-stop').on('click', function() {
     if(interval) {
-        d3.select('#play-stop').attr('class', 'fas fa-play');
+        d3.select('#play-stop').attr('class', 'fa fa-play');
         window.clearInterval(interval);
         interval = null;
     } else {
-        d3.select('#play-stop').attr('class', 'fas fa-pause');
+        d3.select('#play-stop').attr('class', 'fa fa-pause');
         run();
     }
 });

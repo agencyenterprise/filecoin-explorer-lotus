@@ -37,6 +37,7 @@ app.get("/api/chain", async (req, res) => {
     inner join
       blocks p on block_parents.parent = p.cid
     where b.height > $1 and b.height < $2`,
+    // TODO: update query.end
     [req.query.start || 0, req.query.end || 13840]
   );
   //console.log(query.rows[0].message)
@@ -57,6 +58,7 @@ app.get("/api/chain/graph.json", async (req, res) => {
     inner join
       blocks b on block_parents.block = b.cid
     where b.height > $1 and b.height < $2`,
+    // TODO: update query.end
     [req.query.start || 0, req.query.end || 13840]
   );
 

@@ -24,14 +24,6 @@ onmessage = function(e) {
         if(!_layouts) {
             _layouts = {};
             importScripts.apply(null, dc_graph[layout_name].scripts);
-            if(dc_graph[layout_name].optional_scripts) {
-                try {
-                    importScripts.apply(null, dc_graph[layout_name].optional_scripts);
-                }
-                catch(xep) {
-                    console.log(xep);
-                }
-            }
         }
 
         _layouts[args.layoutId] = dc_graph[layout_name]()
@@ -42,7 +34,7 @@ onmessage = function(e) {
         break;
     case 'data':
         if(_layouts)
-            _layouts[args.layoutId].data(args.graph, args.nodes, args.edges, args.clusters, args.constraints);
+            _layouts[args.layoutId].data(args.graph, args.nodes, args.edges, args.constraints);
         break;
     case 'start':
         // if(args.initialOnly) {

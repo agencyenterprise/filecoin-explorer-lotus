@@ -2,7 +2,6 @@ var qs = querystring.parse();
 var options = Object.assign({
     min: 3,
     max: 10,
-    algo: 'yoga-layout',
     log: false
 }, qs);
 
@@ -47,13 +46,13 @@ var data = d3.range(Math.round(+options.min + Math.random()*(options.max-options
     return {
         id: 'a' + i,
         label: [String.fromCharCode(97+i) + '.', phrase()],
-        flex: 1
+        flex: 0
     };
 }).concat(d3.range(Math.round(+options.min + Math.random()*(options.max-options.min))).map(function(i) {
     return {
         id: 'b' + i,
         label: [String.fromCharCode(48+i) + '.', phrase()],
-        flex: 1
+        flex: 0
     };
 }));
 
@@ -84,7 +83,7 @@ var node_flat = dc_graph.flat_group.make(parentNodes.concat(data), function (n) 
     return p.nodeId + '/' + p.side;
 });
 
-var layout = dc_graph.flexbox_layout(null, {algo: options.algo})
+var layout = dc_graph.flexbox_layout()
     .logStuff(qs.log && qs.log !== 'false')
     .addressToKey(function(ad) {
         switch(ad.length) {
@@ -119,7 +118,6 @@ var matchDiagram = dc_graph.diagram('#graph')
         })
         .nodeStrokeWidth(0)
         .nodeTitle(null)
-        .nodeFill('none')
         .edgesInFront(true)
         .edgeSourcePortName('out')
         .edgeTargetPortName('in')
@@ -142,7 +140,6 @@ var circlePorts = dc_graph.symbol_port_style()
         .portSymbol(null)
         .displacement(0)
         .smallRadius(2).mediumRadius(4).largeRadius(6)
-        .outlineFill('white')
         .outlineStroke('black').outlineStrokeWidth(1);
 matchDiagram.portStyle('circle-ports', circlePorts)
     .portStyleName('circle-ports');
