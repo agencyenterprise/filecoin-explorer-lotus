@@ -19,28 +19,61 @@ db.connect();
 app.use(express.static(path.join(__dirname, "../build")));
 
 app.get("/api/chain", async (req, res) => {
-  console.log("params are", req.query);
+  const { startBlock, endBlock, startDate, endDate, miner } = req.query;
+
+  // note: this is unsafe and susceptible to sql injection
+  let wheres = []
+  let whereArgs = []
+
+  if (startBlock) {
+    whereArgs.push(startBlock)
+    wheres.push(`b.height > $${whereArgs.length}`)
+  }
+  if (endBlock) {
+    whereArgs.push(endBlock)
+    wheres.push(`b.height < $${whereArgs.length}`)
+  }
+  if (startDate) {
+    let date = new Date(startDate);
+    let seconds = date.getTime() / 1000;
+    whereArgs.push(seconds)
+    wheres.push(`b.timestamp > $${whereArgs.length}`)
+  }
+  if (endDate) {
+    let date = new Date(endDate);
+    let seconds = date.getTime() / 1000;
+    whereArgs.push(seconds)
+    wheres.push(`b.timestamp < $${whereArgs.length}`)
+  }
+  if (miner) {
+    whereArgs.push(miner)
+    wheres.push(`b.miner = $${whereArgs.length}`)
+  }
+
   const query = await db.query(
     `
-    select
-      block,
-      parent,
-      b.miner,
-      b.height,
-      b.parentweight,
-      b.timestamp,
-      p.timestamp as parenttimestamp
-    from
-      block_parents
-    inner join
-      blocks b on block_parents.block = b.cid
-    inner join
-      blocks p on block_parents.parent = p.cid
-    where b.height > $1 and b.height < $2`,
-    // TODO: update query.end
-    [req.query.start || 0, req.query.end || 13840]
+      SELECT
+        block,
+        parent,
+        b.miner,
+        b.height,
+        b.parentweight,
+        b.timestamp,
+        p.timestamp as parenttimestamp
+
+      FROM
+        block_parents
+      INNER JOIN
+        blocks b on block_parents.block = b.cid
+      INNER JOIN
+        blocks p on block_parents.parent = p.cid
+
+      ${wheres.length ? `WHERE` : ``}
+        ${wheres.join(' AND ')}
+    `,
+    whereArgs
   );
-  //console.log(query.rows[0].message)
+
   res.json(query.rows);
 });
 

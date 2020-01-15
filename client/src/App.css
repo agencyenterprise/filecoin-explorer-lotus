@@ -89,3 +89,7 @@ body {
 #graph {
   flex: 1;
 }
+
+#graph svg {
+  height: 100%;
+}

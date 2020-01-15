@@ -29,24 +29,31 @@ export class Charts extends React.Component {
   }
 
   async componentDidUpdate(prevProps, prevState, snapshot) {
-    const { blockRange: prevBlockRange } = prevProps;
-    const { blockRange } = this.props;
+    const { blockRange: prevBlockRange, startDate: prevStartDate, endDate: prevEndDate, miner: prevMiner } = prevProps;
+    const { blockRange, startDate, endDate, miner } = this.props;
 
-    if (prevBlockRange[0] !== blockRange[0] || prevBlockRange[1] !== blockRange[1]) {
+    if (
+      (prevBlockRange[0] !== blockRange[0] || prevBlockRange[1] !== blockRange[1]) ||
+      (prevStartDate !== startDate) ||
+      (prevEndDate !== endDate) ||
+      (prevMiner !== miner)
+    ) {
+      console.log('getting chain')
       await this.getChain(blockRange[0], blockRange[1]);
       this.redrawGraph();
     }
   }
 
   async getChain(bhRangeStart, bhRangeEnd) {
-    const res = await getChainData(bhRangeStart, bhRangeEnd);
+    const { startDate, endDate, miner } = this.props;
+    const blocksArr = await getChainData({blockRange: [bhRangeStart, bhRangeEnd], startDate, endDate, miner});
     const chain = {
       nodes: [],
       edges: []
     };
     const blocks = {};
 
-    res.data.forEach((block, index) => {
+    blocksArr.forEach((block, index) => {
       blocks[block.block] = chain.nodes.length;
       const timeToReceive =
         parseInt(block.timestamp) - parseInt(block.parenttimestamp);
@@ -404,7 +411,8 @@ export class Charts extends React.Component {
 
     return (
       <div id="content">
-        <div id="charts">
+        <div id="charts" className="uk-card uk-card-default uk-card-body" style={{ alignItems: 'flex-start' }}>
+          <h3 className="uk-card-title">Charts</h3>
           <div style={{ float: "left", width: 300, margin: 10 }}>
             <div style={{ float: "left", paddingBottom: 10 }}>
               Block Received After Parent
@@ -430,8 +438,10 @@ export class Charts extends React.Component {
             />
           </div>
         </div>
-        <div id="graph"></div>
-        <div>press alt key to enable zoom and pan</div>
+        <div id="graph" className="uk-card uk-card-default uk-card-body">
+          <h3 className="uk-card-title">Graph</h3>
+          <span>press alt key to enable zoom and pan</span>
+        </div>
       </div>
     );
   }
