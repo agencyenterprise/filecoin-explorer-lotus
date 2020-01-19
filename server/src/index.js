@@ -21,7 +21,6 @@ app.use(express.static(path.join(__dirname, "../build")));
 app.get("/api/chain", async (req, res) => {
   const { startBlock, endBlock, startDate, endDate, miner } = req.query;
 
-  // note: this is unsafe and susceptible to sql injection
   let wheres = []
   let whereArgs = []
 
