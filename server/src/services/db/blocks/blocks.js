@@ -23,3 +23,19 @@ export const getBlockById = async id => {
   if (!rows.length) return [];
   return rows[0];
 }
+
+export const getBlockRange = async () => {
+  const { rows } = await db.query(
+    `
+    SELECT
+      MIN(height) AS "minHeight",
+      MAX(height) AS "maxHeight"
+
+    FROM
+      blocks
+    `, []
+  );
+
+  if (!rows || !rows.length) return {}
+  return rows[0];
+}

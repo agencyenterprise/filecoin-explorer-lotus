@@ -13,12 +13,13 @@ app.use(cors());
 app.use(bodyParser.json())
 app.use(nocache())
 app.use(express.static(path.join(__dirname, "../build")));
-app.use('/api', routes)
 
 connect();
 
 if (process.env.NODE_ENV !== 'test') {
   initializeRequestLogger(app)
 }
+
+app.use('/api', routes)
 
 export { app }

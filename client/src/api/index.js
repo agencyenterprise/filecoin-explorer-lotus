@@ -17,3 +17,9 @@ export const getChainData = async ({ blockRange, startDate, endDate, miner }) =>
 
   return data
 }
+
+export const getBlockRange = async () => {
+  const { data } = await axios.get(`${REACT_APP_API_URL}/api/blocks/range`);
+
+  return data
+}

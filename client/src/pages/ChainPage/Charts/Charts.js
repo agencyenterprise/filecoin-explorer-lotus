@@ -20,27 +20,27 @@ export class Charts extends React.Component {
       nodes: [],
       links: []
     },
-    nodeLabel: "height"
+    nodeLabel: "height",
+    graphDidRender: false,
   };
-
-  async componentDidMount() {
-    await this.getChain();
-    this.renderGraph();
-  }
 
   async componentDidUpdate(prevProps, prevState, snapshot) {
     const { blockRange: prevBlockRange, startDate: prevStartDate, endDate: prevEndDate, miner: prevMiner } = prevProps;
     const { blockRange, startDate, endDate, miner } = this.props;
 
     if (
-      (prevBlockRange[0] !== blockRange[0] || prevBlockRange[1] !== blockRange[1]) ||
+      (blockRange.length === 2 && blockRange[1]) && (
+      ((prevBlockRange.length !== 2 || prevBlockRange[0] !== blockRange[0]) || (prevBlockRange.length !== 2 || prevBlockRange[1] !== blockRange[1])) ||
       (prevStartDate !== startDate) ||
       (prevEndDate !== endDate) ||
       (prevMiner !== miner)
-    ) {
-      console.log('getting chain')
+    )) {
       await this.getChain(blockRange[0], blockRange[1]);
-      this.redrawGraph();
+      if (!this.state.graphDidRender) {
+        this.renderGraph();
+      } else {
+        this.redrawGraph();
+      }
     }
   }
 
@@ -83,7 +83,6 @@ export class Charts extends React.Component {
 
       chain.edges.push(edge);
     });
-    console.log("chain", chain);
     this.setState({ chain });
   }
 
@@ -389,6 +388,7 @@ export class Charts extends React.Component {
     this.populate(this.sync_url.vals.n);
 
     dc.renderAll();
+    this.setState({ graphDidRender: true });
   }
 
   redrawGraph = () => {

@@ -5,33 +5,54 @@ import {
 import debounce from "lodash/debounce";
 import { Controls } from './Controls';
 import { Charts } from './Charts';
+import { getBlockRange } from '../../api';
+import { maxBlockRange } from '../../utils';
 
 class ChainPage extends React.Component {
   state = {
-    blockRange: [0, 13840],
+    blockRange: [],
+    minBlock: 0,
+    maxBlock: 0,
     startDate: '',
     endDate: '',
     miner: ''
   };
 
-  updateBlockHeightFilter = async blockRange => {
-    console.log(blockRange);
-    this.setState({ blockRange });
-  };
+  async componentDidMount() {
+    const res = await getBlockRange()
+    let blockRange = []
+    let minBlock = this.state.minBlock
+    let maxBlock = this.state.maxBlock
+
+    if (res && res.minHeight) {
+      minBlock = Number(res.minHeight)
+    }
+    if (res && res.maxHeight) {
+      maxBlock = Number(res.maxHeight)
+      blockRange = [Math.max(0, maxBlock - maxBlockRange), maxBlock]
+    }
+
+    this.setState({ 
+      blockRange,
+      minBlock,
+      maxBlock
+    })
+  }
 
   render() {
-    const { blockRange, startDate, endDate, miner } = this.state;
+    const { blockRange, startDate, endDate, miner, minBlock, maxBlock } = this.state;
 
     return (
       <div id="main" style={{ padding: 20, overflow: 'auto' }}>
         <Controls 
-          blockRange={blockRange} 
-          debouncedUpdateBlockHeightFilter={debounce(this.updateBlockHeightFilter, 500)}
+          minBlock={minBlock}
+          maxBlock={maxBlock}
+          debouncedUpdateBlockHeightFilter={debounce((blockRange) => { this.setState({ blockRange }) }, 500)}
           startDate={startDate}
           endDate={endDate}
-          setStartDate={startDate => { console.log('setting start date');this.setState({ startDate }) }}
-          setEndDate={endDate => { console.log('setting end date');this.setState({ endDate }) }}
-          setMiner={miner => { console.log('setting miner');this.setState({ miner }) }}
+          setStartDate={startDate => { this.setState({ startDate }) }}
+          setEndDate={endDate => { this.setState({ endDate }) }}
+          setMiner={miner => { this.setState({ miner }) }}
         />
         <Charts 
           blockRange={blockRange} 

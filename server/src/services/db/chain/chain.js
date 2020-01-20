@@ -14,13 +14,14 @@ export const getChain = async ({
   let wheres = []
   let whereArgs = []
 
+  console.log('start block / end block', startBlock, endBlock)
   if (startBlock) {
-    whereArgs.push(startBlock)
-    wheres.push(`b.height > $${whereArgs.length}`)
+    whereArgs.push(Number(startBlock))
+    wheres.push(`b.height >= $${whereArgs.length}`)
   }
   if (endBlock) {
-    whereArgs.push(endBlock)
-    wheres.push(`b.height < $${whereArgs.length}`)
+    whereArgs.push((endBlock))
+    wheres.push(`b.height <= $${whereArgs.length}`)
   }
   if (startDate) {
     let date = new Date(startDate);
@@ -39,13 +40,18 @@ export const getChain = async ({
     wheres.push(`b.miner = $${whereArgs.length}`)
   }
 
-  if (!skip || isNan(skip)) {
+  skip = Number(skip)
+  if (!skip || isNaN(skip)) {
     skip = 0;
   }
-  if (!limit || isNan(limit) || limit > maxLimit) {
+  limit = Number(limit)
+  if (isNaN(limit)) {
+    limit = 0;
+  }
+  if (limit > maxLimit) {
     limit = maxLimit
   }
-  if (!sortOrder || (sortOrder.toUppercase() !== 'ASC' && sortOrder.toUppercase() !== 'DESC')) {
+  if (sortOrder && sortOrder.toUppercase() !== 'ASC' && sortOrder.toUppercase() !== 'DESC') {
     sortOrder = 'DESC'
   }
 
@@ -70,14 +76,11 @@ export const getChain = async ({
       ${wheres.length ? 'WHERE' : ''}
         ${wheres.join(' AND ')}
 
-      ORDER BY
-        timestamp ${sortOrder}
+      ${sortOrder ? `ORDER BY timestamp ${sortOrder}` : ''}
 
-      OFFSET
-        ${skip}
+      ${skip ? `OFFSET ${skip}` : ''}
 
-      LIMIT
-        ${limit}
+      ${limit ? `LIMIT ${limit}` : ''}
     `,
     whereArgs
   );

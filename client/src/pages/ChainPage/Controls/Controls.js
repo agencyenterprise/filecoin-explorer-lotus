@@ -3,14 +3,23 @@ import Slider from "rc-slider";
 import DatePicker from "react-datepicker";
 import "rc-slider/assets/index.css";
 import "react-datepicker/dist/react-datepicker.css";
+import { maxBlockRange } from '../../../utils';
 
 const createSliderWithTooltip = Slider.createSliderWithTooltip;
 const Range = createSliderWithTooltip(Slider.Range);
 
 export class Controls extends React.Component {
   state = {
-    internalBlockRange: [0, 13840],
+    internalBlockRange: [],
   };
+
+  componentDidUpdate(prevProps, prevState, snapshot) {
+    if (this.props.maxBlock && this.props.maxBlock !== prevProps.maxBlock) {
+      this.setState({
+        internalBlockRange: [Math.max(0, this.props.maxBlock - maxBlockRange), this.props.maxBlock]
+      })
+    }
+  }
 
   render() {
     const { 
@@ -19,7 +28,9 @@ export class Controls extends React.Component {
       endDate,
       setStartDate,
       setEndDate,
-      setMiner
+      setMiner,
+      minBlock,
+      maxBlock,
     } = this.props;
     const { internalBlockRange } = this.state;
 
@@ -29,12 +40,26 @@ export class Controls extends React.Component {
         <div>
           Block Range
           <Range
-            min={0}
-            max={13840}
+            min={minBlock}
+            max={maxBlock}
             value={internalBlockRange}
             step={5}
             allowCross={false}
-            onChange={internalBlockRange => { this.setState({ internalBlockRange })}}
+            onChange={newInternalBlockRange => { 
+              const { internalBlockRange } = this.state;
+              if (internalBlockRange[0] !== newInternalBlockRange[0]) {
+                // note: min is moving
+                if (newInternalBlockRange[1] - newInternalBlockRange[0] > maxBlockRange) {
+                  newInternalBlockRange[1] = newInternalBlockRange[0] + maxBlockRange
+                }
+              } else {
+                // note: max is moving
+                if (newInternalBlockRange[1] - newInternalBlockRange[0] > maxBlockRange) {
+                  newInternalBlockRange[0] = newInternalBlockRange[1] - maxBlockRange
+                }
+              }
+              this.setState({ internalBlockRange: newInternalBlockRange })
+            }}
             onAfterChange={debouncedUpdateBlockHeightFilter}
           />
           <select id="layout"></select>
