@@ -43,9 +43,10 @@ services:
       - dockerhost
     environment:
       NODE_ENV: development
+      HOST: 0.0.0.0
+      PORT: 8888
       VIRTUAL_HOST: server.localtest.me
       VIRTUAL_PORT: 8888
       DATABASE_URL: postgres://postgres:@dockerhost:5432/lotus?sslmode=disable
       DATABASE_POOL_MIN: 0
       DATABASE_POOL_MAX: 10
-      ENABLE_NODE_CLUSTER: 'false'

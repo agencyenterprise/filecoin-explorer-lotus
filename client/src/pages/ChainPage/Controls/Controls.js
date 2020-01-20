@@ -14,7 +14,6 @@ export class Controls extends React.Component {
 
   render() {
     const { 
-      blockRange, 
       debouncedUpdateBlockHeightFilter,
       startDate,
       endDate,
