@@ -28,7 +28,6 @@
   "scripts": {
     "start": "babel-node src/index.js",
     "dev": "nodemon --exec babel-node src/index.js",
-    "heroku-postbuild": "yarn build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Agency Enterprise",

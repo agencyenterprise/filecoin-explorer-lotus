@@ -16,8 +16,7 @@
     "test": "yarn test-client && yarn test-server",
     "install-client": "yarn --cwd 'client' install",
     "install-server": "yarn --cwd 'server' install",
-    "install": "yarn install-client && yarn install-server",
-    "heroku-postbuild": "yarn build"
+    "install": "yarn install-client && yarn install-server"
   },
   "devDependencies": {
     "yarn": "^1.21.1"
