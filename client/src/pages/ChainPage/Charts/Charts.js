@@ -1,6 +1,6 @@
 import React from "react";
-import Select from "react-select";
 import { getChainData } from "../../../api";
+import { Loader } from '../../../components/Loader';
 
 const nodeLabelOptions = [
   { value: "heightLabel", label: "height" },
@@ -23,7 +23,8 @@ export class Charts extends React.Component {
     nodeLabel: "height",
     graphDidRender: false,
     heightLabel: true,
-    parentWeightLabel: false
+    parentWeightLabel: false,
+    loading: false,
   };
 
   async componentDidUpdate(prevProps, prevState, snapshot) {
@@ -56,6 +57,9 @@ export class Charts extends React.Component {
   }
 
   async getChain(bhRangeStart, bhRangeEnd) {
+    let loading = true;
+    this.setState({ loading });
+
     const { startDate, endDate, miner } = this.props;
     const blocksArr = await getChainData({
       blockRange: [bhRangeStart, bhRangeEnd],
@@ -443,7 +447,9 @@ export class Charts extends React.Component {
     this.populate(this.sync_url.vals.n);
 
     dc.renderAll();
-    this.setState({ graphDidRender: true });
+
+    let loading = false;
+    this.setState({ graphDidRender: true, loading });
   }
 
   redrawGraph = () => {
@@ -453,6 +459,9 @@ export class Charts extends React.Component {
     this.minerPie.redraw();
     this.blockHeightPie.redraw();
     this.weirdTimeBar.redraw();
+
+    let loading = false;
+    this.setState({ loading });
   };
 
   changeNodeLabel = async event => {
@@ -462,8 +471,11 @@ export class Charts extends React.Component {
   };
 
   render() {
+    const { loading } = this.state;
+
     return (
       <div id="content">
+        {loading && <Loader />}
         <div
           id="charts"
           className="uk-card uk-card-default uk-card-body"
