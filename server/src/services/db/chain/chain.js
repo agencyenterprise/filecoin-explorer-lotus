@@ -14,7 +14,6 @@ export const getChain = async ({
   let wheres = [];
   let whereArgs = [];
 
-  console.log("start block / end block", startBlock, endBlock);
   if (startBlock) {
     whereArgs.push(Number(startBlock));
     wheres.push(`b.height >= $${whereArgs.length}`);
@@ -42,13 +41,13 @@ export const getChain = async ({
 
   skip = Number(skip);
   if (!skip || isNaN(skip)) {
-    skip = 0;
+    skip = null;
   }
   limit = Number(limit);
   if (isNaN(limit)) {
-    limit = 0;
+    limit = null;
   }
-  if (limit > maxLimit) {
+  if (limit && limit > maxLimit) {
     limit = maxLimit;
   }
   if (
@@ -80,7 +79,7 @@ export const getChain = async ({
       ${wheres.length ? "WHERE" : ""}
         ${wheres.join(" AND ")}
 
-      ${sortOrder ? `ORDER BY timestamp ${sortOrder}` : "ORDER BY b.height ASC"}
+      ${sortOrder ? `ORDER BY b.height ${sortOrder}` : "ORDER BY b.height ASC"}
 
       ${skip ? `OFFSET ${skip}` : ""}
 
