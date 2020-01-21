@@ -90,7 +90,6 @@ export class Charts extends React.Component {
         height: block.height,
         miner: block.miner,
         parentWeight: block.parentweight,
-        parentWeight: block.parentweight,
         timeToReceive: `${timeToReceive}s`,
         weirdTime: isWeirdTime(timeToReceive)
       });

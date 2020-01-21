@@ -68,8 +68,8 @@ export const getChain = async ({
         b.height,
         b.parentweight,
         b.timestamp,
-        p.timestamp as parenttimestamp
-
+        p.timestamp as parenttimestamp,
+        p.height as parentheight
       FROM
         block_parents
       INNER JOIN
