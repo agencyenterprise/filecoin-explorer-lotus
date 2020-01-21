@@ -112,7 +112,7 @@ export class Charts extends React.Component {
         chain.edges.push({
           sourcename: `${blocks[block.block]}-empty`,
           targetname: blocks[block.parent],
-          key: `${blocks[block.block]}-e`,
+          key: `${blocks[block.block]}-eb`,
           time: 0,
           dash: 0
         });
@@ -516,7 +516,11 @@ export class Charts extends React.Component {
             </div>
           </div>
         </div>
-        <div id="graph" className="uk-card uk-card-default uk-card-body">
+        <div
+          id="graph"
+          className="uk-card uk-card-default uk-card-body"
+          style={{ flex: 1 }}
+        >
           <h3 className="uk-card-title">Graph</h3>
           <span>press alt key to enable zoom and pan</span>
         </div>
