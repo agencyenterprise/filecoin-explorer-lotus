@@ -52,3 +52,10 @@ p#hint {
   left: 1em;
   top: 0.5em;
 }
+div.d3-tip {
+  background-color: black;
+  color: white;
+}
+input[type="checkbox"] {
+  margin-left: 10px;
+}
