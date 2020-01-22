@@ -1,4 +1,4 @@
-version: '3.7'
+version: "3.7"
 
 services:
   proxy:
@@ -10,7 +10,7 @@ services:
 
   dockerhost:
     image: qoomon/docker-host
-    cap_add: [ 'NET_ADMIN', 'NET_RAW' ]
+    cap_add: ["NET_ADMIN", "NET_RAW"]
     restart: on-failure
 
   site:
@@ -23,7 +23,7 @@ services:
     links:
       - server
     ports:
-      - '3000:3000'
+      - "3000:3000"
     environment:
       NODE_ENV: development
       VIRTUAL_HOST: site.localtest.me
@@ -36,17 +36,39 @@ services:
       - ./server:/usr/src/app
       - /usr/src/app/node_modules/
     ports:
-      - '8888:8888'
+      - "8888:8888"
     depends_on:
       - dockerhost
+      - db
     links:
       - dockerhost
+      - db
     environment:
       NODE_ENV: development
       HOST: 0.0.0.0
       PORT: 8888
       VIRTUAL_HOST: server.localtest.me
       VIRTUAL_PORT: 8888
-      DATABASE_URL: postgres://postgres:@dockerhost:5432/lotus?sslmode=disable
+      DATABASE_URL: postgres://user:password@db/lotus
       DATABASE_POOL_MIN: 0
       DATABASE_POOL_MAX: 10
+
+  db:
+    image: postgres:10.4
+    ports:
+      - "5432:5432"
+    command: postgres -D /run/pgsql-10.4-data -c logging_collector=on
+    volumes:
+      - ./api/db/local_database_volume:/run/pgsql-10.4-data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    environment:
+      COMPOSE_HTTP_TIMEOUT: 200
+      LOGGING_COLLECTOR: "on"
+      PGDATA: /run/pgsql-10.4-data
+      POSTGRES_DB: lotus
+      POSTGRES_PASSWORD: password
+      POSTGRES_USER: user
