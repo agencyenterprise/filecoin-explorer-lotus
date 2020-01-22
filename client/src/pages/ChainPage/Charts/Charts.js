@@ -471,7 +471,7 @@ export class Charts extends React.Component {
             </div>
           </div>
         </div>
-        <div id="graph" className="uk-card uk-card-default uk-card-body" style={{ flex: 1 }}>
+        <div id="graph" className="uk-card uk-card-default uk-card-body" style={{ flex: 1, overflow: 'hidden' }}>
           <h3 className="uk-card-title">Graph</h3>
           <span>press alt key to enable zoom and pan</span>
         </div>
