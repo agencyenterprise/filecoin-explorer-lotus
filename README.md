@@ -14,6 +14,11 @@ $ ./lotus sync wait
 
 # in yet another terminal
 $ ./chainwatch --db='postgres://postgres:@localhost:5432/lotus?sslmode=disable' run
+
+or
+
+$ go run ./cmd/lotus-chainwatch --db postgres://user:password@localhost:5434/lotus?sslmode=disable run
+
 ```
 
 Finally, inside of this repo's directory, run the following commands:
