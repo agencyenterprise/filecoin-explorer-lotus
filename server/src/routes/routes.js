@@ -1,7 +1,7 @@
-import errorMiddleware from 'error-middleware';
-import express from 'express';
-import { blocks } from './blocks';
-import { chain } from './chain';
+import errorMiddleware from 'error-middleware'
+import express from 'express'
+import { blocks } from './blocks'
+import { chain } from './chain'
 
 const router = express.Router()
 

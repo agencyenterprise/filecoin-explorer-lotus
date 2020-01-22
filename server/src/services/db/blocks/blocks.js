@@ -1,6 +1,6 @@
 import { db } from '../'
 
-export const getBlockById = async id => {
+export const getBlockById = async (id) => {
   const { rows } = await db.query(
     `
     SELECT
@@ -15,13 +15,13 @@ export const getBlockById = async id => {
     INNER JOIN
       blocks b on block_parents.block = b.cid
 
-    WHERE 
+    WHERE
       block = $1`,
-    [id]
-  );
+    [id],
+  )
 
-  if (!rows.length) return [];
-  return rows[0];
+  if (!rows.length) return []
+  return rows[0]
 }
 
 export const getBlockRange = async () => {
@@ -33,9 +33,10 @@ export const getBlockRange = async () => {
 
     FROM
       blocks
-    `, []
-  );
+    `,
+    [],
+  )
 
   if (!rows || !rows.length) return {}
-  return rows[0];
+  return rows[0]
 }

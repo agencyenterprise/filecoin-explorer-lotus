@@ -1,12 +1,12 @@
-import React from "react";
-import { BrowserRouter as Router, Route, Switch } from "react-router-dom";
-import ChainPage from "./pages/ChainPage";
-import "./App.css";
-import "dotenv/config";
+import React from 'react'
+import { BrowserRouter as Router, Route, Switch } from 'react-router-dom'
+import ChainPage from './pages/ChainPage'
+import './App.css'
+import 'dotenv/config'
 
 const BlockPage = () => {
-  return <div></div>;
-};
+  return <div></div>
+}
 
 class App extends React.Component {
   render() {
@@ -25,8 +25,8 @@ class App extends React.Component {
           </Switch>
         </div>
       </Router>
-    );
+    )
   }
 }
 
-export default App;
+export default App

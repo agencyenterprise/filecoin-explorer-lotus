@@ -1,28 +1,28 @@
-import React from 'react';
-import Slider from "rc-slider";
-import DatePicker from "react-datepicker";
-import "rc-slider/assets/index.css";
-import "react-datepicker/dist/react-datepicker.css";
-import { maxBlockRange } from '../../../utils';
+import React from 'react'
+import Slider from 'rc-slider'
+import DatePicker from 'react-datepicker'
+import 'rc-slider/assets/index.css'
+import 'react-datepicker/dist/react-datepicker.css'
+import { maxBlockRange } from '../../../utils'
 
-const createSliderWithTooltip = Slider.createSliderWithTooltip;
-const Range = createSliderWithTooltip(Slider.Range);
+const createSliderWithTooltip = Slider.createSliderWithTooltip
+const Range = createSliderWithTooltip(Slider.Range)
 
 export class Controls extends React.Component {
   state = {
     internalBlockRange: [],
-  };
+  }
 
   componentDidUpdate(prevProps, prevState, snapshot) {
     if (this.props.maxBlock && this.props.maxBlock !== prevProps.maxBlock) {
       this.setState({
-        internalBlockRange: [Math.max(0, this.props.maxBlock - maxBlockRange), this.props.maxBlock]
+        internalBlockRange: [Math.max(0, this.props.maxBlock - maxBlockRange), this.props.maxBlock],
       })
     }
   }
 
   render() {
-    const { 
+    const {
       debouncedUpdateBlockHeightFilter,
       startDate,
       endDate,
@@ -31,8 +31,8 @@ export class Controls extends React.Component {
       setMiner,
       minBlock,
       maxBlock,
-    } = this.props;
-    const { internalBlockRange } = this.state;
+    } = this.props
+    const { internalBlockRange } = this.state
 
     return (
       <div id="controls" className="uk-card uk-card-default uk-card-body">
@@ -45,8 +45,8 @@ export class Controls extends React.Component {
             value={internalBlockRange}
             step={5}
             allowCross={false}
-            onChange={newInternalBlockRange => { 
-              const { internalBlockRange } = this.state;
+            onChange={(newInternalBlockRange) => {
+              const { internalBlockRange } = this.state
               if (internalBlockRange[0] !== newInternalBlockRange[0]) {
                 // note: min is moving
                 if (newInternalBlockRange[1] - newInternalBlockRange[0] > maxBlockRange) {
@@ -64,41 +64,33 @@ export class Controls extends React.Component {
           />
           <select id="layout"></select>
         </div>
-        <label className="uk-search uk-search-default" style={{marginTop: '15px' }}>
+        <label className="uk-search uk-search-default" style={{ marginTop: '15px' }}>
           Miner
-          <input 
-            className="uk-search-input" 
-            type="search" 
-            placeholder="" 
-            onBlur={(e) => { 
-              setMiner(e.target.value) 
-            }} 
-            onKeyPress={e => {
+          <input
+            className="uk-search-input"
+            type="search"
+            placeholder=""
+            onBlur={(e) => {
+              setMiner(e.target.value)
+            }}
+            onKeyPress={(e) => {
               if (e.key === 'Enter') {
-                e.target.blur();
+                e.target.blur()
               }
             }}
           />
         </label>
-        <div style={{marginTop: '15px' }}>
+        <div style={{ marginTop: '15px' }}>
           <label className="uk-search uk-search-default">
             Start Date
-            <DatePicker
-              selected={startDate}
-              onChange={setStartDate}
-              className="uk-search-input" 
-            />
+            <DatePicker selected={startDate} onChange={setStartDate} className="uk-search-input" />
           </label>
           <label className="uk-search uk-search-default" style={{ marginLeft: '10px' }}>
             End Date
-            <DatePicker
-              selected={endDate}
-              onChange={setEndDate}
-              className="uk-search-input" 
-            />
+            <DatePicker selected={endDate} onChange={setEndDate} className="uk-search-input" />
           </label>
         </div>
       </div>
-    );
+    )
   }
 }

@@ -1,61 +1,48 @@
-import { db } from "../";
+import { db } from '../'
 
-export const getChain = async ({
-  startBlock,
-  endBlock,
-  startDate,
-  endDate,
-  miner,
-  skip,
-  limit,
-  sortOrder
-}) => {
-  const maxLimit = 500;
-  let wheres = [];
-  let whereArgs = [];
+export const getChain = async ({ startBlock, endBlock, startDate, endDate, miner, skip, limit, sortOrder }) => {
+  const maxLimit = 500
+  let wheres = []
+  let whereArgs = []
 
   if (startBlock) {
-    whereArgs.push(Number(startBlock));
-    wheres.push(`b.height >= $${whereArgs.length}`);
+    whereArgs.push(Number(startBlock))
+    wheres.push(`b.height >= $${whereArgs.length}`)
   }
   if (endBlock) {
-    whereArgs.push(endBlock);
-    wheres.push(`b.height <= $${whereArgs.length}`);
+    whereArgs.push(endBlock)
+    wheres.push(`b.height <= $${whereArgs.length}`)
   }
   if (startDate) {
-    let date = new Date(startDate);
-    let seconds = date.getTime() / 1000;
-    whereArgs.push(seconds);
-    wheres.push(`b.timestamp > $${whereArgs.length}`);
+    let date = new Date(startDate)
+    let seconds = date.getTime() / 1000
+    whereArgs.push(seconds)
+    wheres.push(`b.timestamp > $${whereArgs.length}`)
   }
   if (endDate) {
-    let date = new Date(endDate);
-    let seconds = date.getTime() / 1000;
-    whereArgs.push(seconds);
-    wheres.push(`b.timestamp < $${whereArgs.length}`);
+    let date = new Date(endDate)
+    let seconds = date.getTime() / 1000
+    whereArgs.push(seconds)
+    wheres.push(`b.timestamp < $${whereArgs.length}`)
   }
   if (miner) {
-    whereArgs.push(miner);
-    wheres.push(`b.miner = $${whereArgs.length}`);
+    whereArgs.push(miner)
+    wheres.push(`b.miner = $${whereArgs.length}`)
   }
 
-  skip = Number(skip);
+  skip = Number(skip)
   if (!skip || isNaN(skip)) {
-    skip = null;
+    skip = null
   }
-  limit = Number(limit);
+  limit = Number(limit)
   if (isNaN(limit)) {
-    limit = null;
+    limit = null
   }
   if (limit && limit > maxLimit) {
-    limit = maxLimit;
+    limit = maxLimit
   }
-  if (
-    sortOrder &&
-    sortOrder.toUppercase() !== "ASC" &&
-    sortOrder.toUppercase() !== "DESC"
-  ) {
-    sortOrder = "DESC";
+  if (sortOrder && sortOrder.toUppercase() !== 'ASC' && sortOrder.toUppercase() !== 'DESC') {
+    sortOrder = 'DESC'
   }
 
   const { rows } = await db.query(
@@ -76,20 +63,20 @@ export const getChain = async ({
       INNER JOIN
         blocks p on block_parents.parent = p.cid
 
-      ${wheres.length ? "WHERE" : ""}
-        ${wheres.join(" AND ")}
+      ${wheres.length ? 'WHERE' : ''}
+        ${wheres.join(' AND ')}
 
-      ${sortOrder ? `ORDER BY b.height ${sortOrder}` : "ORDER BY b.height ASC"}
+      ${sortOrder ? `ORDER BY b.height ${sortOrder}` : 'ORDER BY b.height ASC'}
 
-      ${skip ? `OFFSET ${skip}` : ""}
+      ${skip ? `OFFSET ${skip}` : ''}
 
-      ${limit ? `LIMIT ${limit}` : ""}
+      ${limit ? `LIMIT ${limit}` : ''}
     `,
-    whereArgs
-  );
+    whereArgs,
+  )
 
-  return rows;
-};
+  return rows
+}
 
 export const getGraph = async ({ start, end }) => {
   const { rows } = await db.query(
@@ -106,10 +93,10 @@ export const getGraph = async ({ start, end }) => {
     INNER JOIN
       blocks b on block_parents.block = b.cid
 
-    WHERE 
+    WHERE
       b.height > $1 and b.height < $2`,
-    [start, end]
-  );
+    [start, end],
+  )
 
-  return rows;
-};
+  return rows
+}

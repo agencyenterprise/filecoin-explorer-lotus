@@ -1,7 +1,7 @@
-import { getChain as getChainData } from '../../services/db/chain';
+import { getChain as getChainData } from '../../services/db/chain'
 
 export const getChain = async (req, res) => {
-  const { startBlock, endBlock, startDate, endDate, miner, skip, limit, sortOrder } = req.query;
+  const { startBlock, endBlock, startDate, endDate, miner, skip, limit, sortOrder } = req.query
 
   const chain = await getChainData({
     startBlock,
@@ -12,6 +12,6 @@ export const getChain = async (req, res) => {
     skip,
     limit,
     sortOrder,
-  });
+  })
   res.json(chain)
 }
