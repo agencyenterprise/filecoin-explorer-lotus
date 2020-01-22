@@ -1,15 +1,14 @@
 import { Client } from "pg";
+import { chalk } from "../../services/chalk";
 
 const dbParams = {
   connectionString: process.env.DATABASE_URL
 };
 
-console.log(dbParams.connectionString);
-
 export const db = new Client(dbParams);
 
 export const connect = () =>
   new Promise(resolve => {
-    console.log("Connected to database.");
+    chalk.success(`Connected to database at ${dbParams.connectionString}`);
     db.connect(resolve);
   });

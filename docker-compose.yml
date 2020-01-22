@@ -26,6 +26,7 @@ services:
       - "3000:3000"
     environment:
       NODE_ENV: development
+      FORCE_COLOR: 1
       VIRTUAL_HOST: site.localtest.me
       VIRTUAL_PORT: 3000
       REACT_APP_API_URL: http://server.localtest.me
@@ -45,6 +46,7 @@ services:
       - db
     environment:
       NODE_ENV: development
+      FORCE_COLOR: 1
       HOST: 0.0.0.0
       PORT: 8888
       VIRTUAL_HOST: server.localtest.me

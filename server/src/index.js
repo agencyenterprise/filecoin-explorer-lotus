@@ -1,22 +1,22 @@
 import { app } from "./app";
-import { logger } from "./services/logger";
 import { connect } from "./services/db";
+import { chalk } from "./services/chalk";
 
 const port = process.env.PORT || 8888;
 const host = process.env.HOST || "localhost";
 
 const startServer = () => {
   app.listen(+port, host, () => {
-    logger.info(`Server started at [ http://${host}:${port} ]`);
-    logger.info(`Environment ${process.pid}: ${process.env.NODE_ENV}`);
+    chalk.success(`Server started at [ http://${host}:${port} ]`);
+    chalk.success(`Environment ${process.pid}: ${process.env.NODE_ENV}`);
   });
 };
 
 (async () => {
-  console.log("Connecting to database...");
+  chalk.pending("Connecting to database...");
 
   await connect();
 
-  console.log("Starting server...");
+  chalk.pending("Starting server...");
   startServer();
 })();
