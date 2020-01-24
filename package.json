@@ -2,7 +2,13 @@
   "name": "filecoin-explorer-lotus",
   "version": "1.0.0",
   "private": true,
-  "dependencies": {},
+  "dependencies": {
+    "@babel/core": "^7.7.5",
+    "@babel/node": "^7.7.4",
+    "@babel/preset-env": "^7.7.6",
+    "babel-node": "^0.0.1-security",
+    "nodemon": "^2.0.2"
+  },
   "scripts": {
     "start": "yarn client & yarn server-dev",
     "server": "yarn --cwd 'server' start",
