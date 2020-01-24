@@ -9,8 +9,7 @@
     "server-dev": "yarn --cwd 'server' dev",
     "client": "yarn --cwd 'client' start",
     "build-client": "yarn --cwd 'client' build",
-    "build-server": "yarn --cwd 'server' build",
-    "build": "yarn build-client && yarn build-server",
+    "build": "yarn build-client",
     "test-client": "yarn --cwd 'client' test",
     "test-server": "yarn --cwd 'server' test",
     "test": "yarn test-client && yarn test-server",
@@ -20,6 +19,9 @@
   },
   "devDependencies": {
     "yarn": "^1.21.1"
+  },
+  "engines": {
+    "node": "12"
   },
   "author": "Agency Enterprise",
   "license": "MIT"
