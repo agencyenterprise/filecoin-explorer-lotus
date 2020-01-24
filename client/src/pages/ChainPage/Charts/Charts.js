@@ -21,7 +21,6 @@ export class Charts extends React.Component {
       links: [],
     },
     nodeLabel: 'height',
-    graphDidRender: false,
     heightLabel: true,
     parentWeightLabel: false,
     loading: false,
@@ -43,11 +42,8 @@ export class Charts extends React.Component {
         prevMiner !== miner)
     ) {
       await this.getChain(blockRange[0], blockRange[1])
-      if (!this.state.graphDidRender) {
-        this.renderGraph()
-      } else {
-        this.redrawGraph()
-      }
+      // rerender graph on new db info
+      this.renderGraph()
     }
   }
 
@@ -90,6 +86,7 @@ export class Charts extends React.Component {
         parentWeight: block.parentweight,
         timeToReceive: `${timeToReceive}s`,
         weirdTime: isWeirdTime(timeToReceive),
+        blockCid: block.block,
       })
       if (block.parentheight && block.height && parseInt(block.parentheight) !== parseInt(block.height) - 1) {
         chain.nodes.push({
@@ -244,7 +241,7 @@ export class Charts extends React.Component {
       .transitionDuration(this.sync_url.vals.transition_duration)
       .fitStrategy(this.sync_url.vals.fit || 'default')
       .zoomExtent([0.1, 1.5])
-      .restrictPan(true)
+      .restrictPan(false)
       .margins({ top: 5, left: 5, right: 5, bottom: 5 })
       .autoZoom('always')
       .zoomDuration(this.sync_url.vals.transition_duration)
@@ -252,9 +249,7 @@ export class Charts extends React.Component {
       .width('auto')
       .height('auto')
       .mouseZoomable(true)
-      .nodeFixed(function(n) {
-        return n.value.fixed
-      })
+      .nodeOrdering((n) => n.value.height)
       .nodeStrokeWidth(0) // turn off outlines
       .nodeLabel((n) => {
         const { heightLabel, parentWeightLabel } = this.state
@@ -304,9 +299,8 @@ export class Charts extends React.Component {
 
     var tip = dc_graph.tip()
     var json_table = dc_graph.tip.html_or_json_table().json(function(d) {
-      console.log('d is', d)
-      const { height, parentWeight, timeToReceive } = d.orig.value
-      const toolTipInfo = { height, parentWeight, timeToReceive }
+      const { height, parentWeight, timeToReceive, miner, blockCid } = d.orig.value
+      const toolTipInfo = { height, parentWeight, timeToReceive, miner, blockCid }
       return JSON.stringify(toolTipInfo)
     })
     tip.showDelay(250).content(json_table)
@@ -410,23 +404,20 @@ export class Charts extends React.Component {
     dc.renderAll()
 
     let loading = false
-    this.setState({ graphDidRender: true, loading })
+    this.setState({ loading })
   }
 
   redrawGraph = () => {
-    console.log('redraw graph')
     this.populate(this.sync_url.vals.n)
     this.selectionDiagram.redraw()
     this.minerPie.redraw()
     this.blockHeightPie.redraw()
     this.weirdTimeBar.redraw()
-
     let loading = false
     this.setState({ loading })
   }
 
   changeNodeLabel = async (event) => {
-    console.log('set true', event.target.value)
     await this.setState({ [event.target.value]: event.target.checked })
     this.selectionDiagram.redraw()
   }

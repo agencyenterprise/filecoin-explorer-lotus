@@ -36,6 +36,9 @@ body {
 #graph {
   flex: 1;
 }
+#graph.uk-card svg {
+  height: calc(100% - 50px);
+}
 #charts {
   flex: 0 300px;
   display: flex;

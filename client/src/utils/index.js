@@ -1,1 +1,1 @@
-export const maxBlockRange = 100
+export const maxBlockRange = 50
