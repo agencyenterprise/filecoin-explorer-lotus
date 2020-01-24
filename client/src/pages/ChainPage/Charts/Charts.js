@@ -75,19 +75,25 @@ export class Charts extends React.Component {
       }
     }
 
+    // block.block may appear multiple times
+    const blockInfo = {}
     blocksArr.forEach((block, index) => {
-      blocks[block.block] = index
       const timeToReceive = parseInt(block.timestamp) - parseInt(block.parenttimestamp)
-      chain.nodes.push({
-        id: blocks[block.block],
-        key: blocks[block.block].toString(),
-        height: block.height,
-        miner: block.miner,
-        parentWeight: block.parentweight,
-        timeToReceive: `${timeToReceive}s`,
-        weirdTime: isWeirdTime(timeToReceive),
-        blockCid: block.block,
-      })
+      if (!blocks[block.block]) {
+        blocks[block.block] = index
+        blockInfo[block.block] = block
+        chain.nodes.push({
+          id: blocks[block.block],
+          key: blocks[block.block].toString(),
+          height: block.height,
+          miner: block.miner,
+          parentWeight: block.parentweight,
+          timeToReceive: `${timeToReceive}s`,
+          weirdTime: isWeirdTime(timeToReceive),
+          blockCid: block.block,
+        })
+      }
+
       if (block.parentheight && block.height && parseInt(block.parentheight) !== parseInt(block.height) - 1) {
         chain.nodes.push({
           key: `${blocks[block.block]}-empty`,
@@ -114,7 +120,7 @@ export class Charts extends React.Component {
         const edge = {
           sourcename: blocks[block.block],
           targetname: blocks[block.parent],
-          key: `${blocks[block.block]}-e`,
+          key: `${index}-e`,
           time: timeToReceive,
         }
         edge.dash = isWeirdTime(timeToReceive)
@@ -299,8 +305,8 @@ export class Charts extends React.Component {
 
     var tip = dc_graph.tip()
     var json_table = dc_graph.tip.html_or_json_table().json(function(d) {
-      const { height, parentWeight, timeToReceive, miner, blockCid } = d.orig.value
-      const toolTipInfo = { height, parentWeight, timeToReceive, miner, blockCid }
+      const { height, parentWeight, timeToReceive, miner, blockCid, id } = d.orig.value
+      const toolTipInfo = { height, parentWeight, timeToReceive, miner, blockCid, id }
       return JSON.stringify(toolTipInfo)
     })
     tip.showDelay(250).content(json_table)
