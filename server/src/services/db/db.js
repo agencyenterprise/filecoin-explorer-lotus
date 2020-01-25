@@ -2,14 +2,12 @@ import { Client } from 'pg'
 import { config } from '../../../config'
 import { chalk } from '../../services/chalk'
 
-let finalUrl = config.databaseUrl
-
-if (!finalUrl.includes('sslmode')) {
-  finalUrl = `${finalUrl}?ssl=true&sslfactory=org.postgresql.ssl.NonValidatingFactory`
+const dbParams = {
+  connectionString: config.databaseUrl,
 }
 
-const dbParams = {
-  connectionString: finalUrl,
+if (config.env && config.env !== 'development') {
+  dbParams.ssl = true
 }
 
 export const db = new Client(dbParams)
