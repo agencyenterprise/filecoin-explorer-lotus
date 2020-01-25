@@ -2,8 +2,14 @@ import { Client } from 'pg'
 import { config } from '../../../config'
 import { chalk } from '../../services/chalk'
 
+let finalUrl = config.databaseUrl
+
+if (!finalUrl.includes('sslmode')) {
+  finalUrl = `${finalUrl}?sslmode=require`
+}
+
 const dbParams = {
-  connectionString: config.databaseUrl,
+  connectionString: finalUrl,
 }
 
 export const db = new Client(dbParams)
