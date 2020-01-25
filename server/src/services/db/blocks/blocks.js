@@ -25,7 +25,6 @@ export const getBlockById = async (id) => {
 }
 
 export const getBlockRange = async () => {
-  console.log('making query')
   const { rows } = await db.query(
     `
     SELECT
@@ -38,11 +37,7 @@ export const getBlockRange = async () => {
     [],
   )
 
-  console.log('query ok')
-
   if (!rows || !rows.length) {
-    console.log('empty')
-
     return {}
   }
 
