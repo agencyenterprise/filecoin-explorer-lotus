@@ -1,8 +1,9 @@
 import { Client } from 'pg'
+import { config } from '../../../config'
 import { chalk } from '../../services/chalk'
 
 const dbParams = {
-  connectionString: process.env.DATABASE_URL,
+  connectionString: config.databaseUrl,
 }
 
 export const db = new Client(dbParams)

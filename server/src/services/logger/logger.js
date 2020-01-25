@@ -1,6 +1,7 @@
 import { dump } from 'dumper.js'
 import winston from 'winston'
 import Transport from 'winston-transport'
+import { config } from '../../../config'
 
 class ObjectDumpTransport extends Transport {
   log(info, callback) {
@@ -16,7 +17,7 @@ class ObjectDumpTransport extends Transport {
 
 const logger = winston.createLogger({
   format: winston.format.json(),
-  level: process.env.LOG_LEVEL || 'debug',
+  level: config.logLevel || 'debug',
   transports: [
     new winston.transports.Console({
       format: winston.format.simple(),
@@ -24,7 +25,7 @@ const logger = winston.createLogger({
   ],
 })
 
-if (process.env.NODE_ENV !== 'production') {
+if (config.env !== 'production') {
   logger.add(new ObjectDumpTransport())
 }
 

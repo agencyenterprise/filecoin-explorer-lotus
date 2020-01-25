@@ -1,20 +1,18 @@
-import express from 'express'
-import path from 'path'
-import cors from 'cors'
-import nocache from 'nocache'
 import bodyParser from 'body-parser'
-import { initializeRequestLogger } from './services/logger'
-
+import cors from 'cors'
+import express from 'express'
+import nocache from 'nocache'
+import { config } from '../config'
 import { routes } from './routes'
+import { initializeRequestLogger } from './services/logger'
 
 const app = express()
 
 app.use(cors())
 app.use(bodyParser.json())
 app.use(nocache())
-app.use(express.static(path.join(__dirname, '../build')))
 
-if (process.env.NODE_ENV !== 'test') {
+if (config.env !== 'test') {
   initializeRequestLogger(app)
 }
 
