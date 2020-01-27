@@ -91,6 +91,7 @@ export class Charts extends React.Component {
           timeToReceive: `${timeToReceive}s`,
           weirdTime: isWeirdTime(timeToReceive),
           blockCid: block.block,
+          minerPower: block.power,
         })
       }
 
@@ -304,12 +305,35 @@ export class Charts extends React.Component {
       .edgeArrowtail(this.sync_url.vals.arrows === 'tail' || this.sync_url.vals.arrows === 'both' ? 'crow' : null)
 
     var tip = dc_graph.tip()
-    var json_table = dc_graph.tip.html_or_json_table().json(function(d) {
-      const { height, parentWeight, timeToReceive, miner, blockCid, id } = d.orig.value
-      const toolTipInfo = { height, parentWeight, timeToReceive, miner, blockCid, id }
+
+    const toSentence = (camelCase) => {
+      const withSpace = camelCase.replace(/([A-Z])/g, ' $1').toLowerCase()
+      const withFirstCharUppercase = withSpace.charAt(0).toUpperCase() + withSpace.slice(1)
+
+      return withFirstCharUppercase
+    }
+
+    var tooltipContent = dc_graph.tip.html_or_json_table().json((d) => {
+      const data = d.orig.value
+
+      let toolTipInfo = {}
+
+      let hasValues = false
+
+      ;['height', 'parentWeight', 'timeToReceive', 'miner', 'blockCid', 'id', 'minerPower'].forEach((key) => {
+        if (data[key] !== undefined) {
+          hasValues = true
+          toolTipInfo[toSentence(key)] = data[key]
+        }
+      })
+
+      if (!hasValues) return null
+
       return JSON.stringify(toolTipInfo)
     })
-    tip.showDelay(250).content(json_table)
+
+    tip.showDelay(250).content(tooltipContent)
+
     this.selectionDiagram.child('tip', tip)
 
     this.selectionDiagram.child(
