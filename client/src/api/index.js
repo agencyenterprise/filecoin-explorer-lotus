@@ -1,8 +1,5 @@
 import axios from 'axios'
-
-const { REACT_APP_API_URL } = process.env
-
-let apiUrl = REACT_APP_API_URL || `${window.location.origin}/api`
+import { apiUrl } from '../config'
 
 export const getChainData = async ({ blockRange, startDate, endDate, miner }) => {
   const { data } = await axios.get(`${apiUrl}/chain`, {
