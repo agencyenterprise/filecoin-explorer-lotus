@@ -1,6 +1,6 @@
 import React from 'react'
 import { getChainData } from '../../../api'
-import { Loader } from '../../../components/Loader'
+import { Loader } from '../../shared/Loader'
 
 const nodeLabelOptions = [
   { value: 'heightLabel', label: 'height' },

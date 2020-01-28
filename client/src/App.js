@@ -1,6 +1,6 @@
 import React from 'react'
 import { BrowserRouter as Router, Redirect, Route, Switch } from 'react-router-dom'
-import { ChainPage } from './pages/ChainPage'
+import { ChainPage } from './components/ChainPage'
 
 class App extends React.Component {
   render() {
