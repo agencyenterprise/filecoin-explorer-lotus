@@ -51,7 +51,9 @@ services:
       PORT: 8888
       VIRTUAL_HOST: server.localtest.me
       VIRTUAL_PORT: 8888
-      DATABASE_URL: postgres://user:password@db/lotus
+      # DATABASE_URL: postgres://user:password@db/lotus
+      DATABASE_URL: postgres://u1uctel078otia:pc9971b37ea081163da68744741770ea218ffc98ac459c2de03fffc00e7eaacb2@ec2-3-224-134-18.compute-1.amazonaws.com:5432/d7j8iof2h9bdi
+      DATABASE_SSL: 'true'
       DATABASE_POOL_MIN: 0
       DATABASE_POOL_MAX: 10
 
