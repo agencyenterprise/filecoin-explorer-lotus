@@ -4,7 +4,7 @@ import debounce from 'lodash/debounce'
 import { Controls } from './Controls'
 import { Charts } from './Charts'
 import { getBlockRange } from '../../api'
-import { maxBlockRange } from '../../utils'
+import { constants } from '../../utils'
 
 class ChainPage extends React.Component {
   state = {
@@ -27,7 +27,7 @@ class ChainPage extends React.Component {
     }
     if (res && res.maxHeight) {
       maxBlock = Number(res.maxHeight)
-      blockRange = [Math.max(0, maxBlock - maxBlockRange), maxBlock]
+      blockRange = [Math.max(0, maxBlock - constants.maxBlockRange), maxBlock]
     }
 
     this.setState({

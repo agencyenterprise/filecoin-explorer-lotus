@@ -1,1 +1,1 @@
-export const maxBlockRange = 50
+export { constants } from './constants'

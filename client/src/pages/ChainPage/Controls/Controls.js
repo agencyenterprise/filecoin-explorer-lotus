@@ -1,9 +1,9 @@
-import React from 'react'
 import Slider from 'rc-slider'
-import DatePicker from 'react-datepicker'
 import 'rc-slider/assets/index.css'
+import React from 'react'
+import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
-import { maxBlockRange } from '../../../utils'
+import { constants } from '../../../utils'
 
 const createSliderWithTooltip = Slider.createSliderWithTooltip
 const Range = createSliderWithTooltip(Slider.Range)
@@ -16,7 +16,7 @@ export class Controls extends React.Component {
   componentDidUpdate(prevProps, prevState, snapshot) {
     if (this.props.maxBlock && this.props.maxBlock !== prevProps.maxBlock) {
       this.setState({
-        internalBlockRange: [Math.max(0, this.props.maxBlock - maxBlockRange), this.props.maxBlock],
+        internalBlockRange: [Math.max(0, this.props.maxBlock - constants.maxBlockRange), this.props.maxBlock],
       })
     }
   }
@@ -49,13 +49,13 @@ export class Controls extends React.Component {
               const { internalBlockRange } = this.state
               if (internalBlockRange[0] !== newInternalBlockRange[0]) {
                 // note: min is moving
-                if (newInternalBlockRange[1] - newInternalBlockRange[0] > maxBlockRange) {
-                  newInternalBlockRange[1] = newInternalBlockRange[0] + maxBlockRange
+                if (newInternalBlockRange[1] - newInternalBlockRange[0] > constants.maxBlockRange) {
+                  newInternalBlockRange[1] = newInternalBlockRange[0] + constants.maxBlockRange
                 }
               } else {
                 // note: max is moving
-                if (newInternalBlockRange[1] - newInternalBlockRange[0] > maxBlockRange) {
-                  newInternalBlockRange[0] = newInternalBlockRange[1] - maxBlockRange
+                if (newInternalBlockRange[1] - newInternalBlockRange[0] > constants.maxBlockRange) {
+                  newInternalBlockRange[0] = newInternalBlockRange[1] - constants.maxBlockRange
                 }
               }
               this.setState({ internalBlockRange: newInternalBlockRange })
