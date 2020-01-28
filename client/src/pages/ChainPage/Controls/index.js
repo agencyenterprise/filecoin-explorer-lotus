@@ -1,1 +1,1 @@
-export * from './Controls'
+export { Controls } from './Controls'

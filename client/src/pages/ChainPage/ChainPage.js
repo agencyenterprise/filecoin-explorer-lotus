@@ -1,12 +1,12 @@
+import debounce from 'lodash/debounce'
 import React from 'react'
 import { withRouter } from 'react-router-dom'
-import debounce from 'lodash/debounce'
-import { Controls } from './Controls'
-import { Charts } from './Charts'
 import { getBlockRange } from '../../api'
 import { constants } from '../../utils'
+import { Charts } from './Charts'
+import { Controls } from './Controls'
 
-class ChainPage extends React.Component {
+class ChainPageComponent extends React.Component {
   state = {
     blockRange: [],
     minBlock: 0,
@@ -67,4 +67,4 @@ class ChainPage extends React.Component {
   }
 }
 
-export default withRouter(ChainPage)
+export const ChainPage = withRouter(ChainPageComponent)

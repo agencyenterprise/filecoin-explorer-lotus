@@ -1,23 +1,16 @@
 import 'dotenv/config'
-
 import React from 'react'
-import { BrowserRouter as Router, Route, Switch } from 'react-router-dom'
-import ChainPage from './pages/ChainPage'
-
-const BlockPage = () => {
-  return <div></div>
-}
+import { BrowserRouter as Router, Redirect, Route, Switch } from 'react-router-dom'
+import { ChainPage } from './pages/ChainPage'
 
 class App extends React.Component {
   render() {
     return (
       <Router>
-        <div className="app">
-          <Switch>
-            <Route exact path="/block/:id" component={BlockPage} />
-            <Route exact path="/" component={ChainPage} />
-          </Switch>
-        </div>
+        <Switch>
+          <Route exact path="/" component={ChainPage} />
+          <Redirect to="/" />
+        </Switch>
       </Router>
     )
   }

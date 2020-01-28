@@ -1,2 +1,1 @@
-export { default } from './ChainPage'
-export * from './ChainPage'
+export { ChainPage } from './ChainPage'

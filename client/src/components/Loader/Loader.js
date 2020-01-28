@@ -1,20 +1,12 @@
 import React from 'react'
+import { Loader } from './loader.styled'
 
-export const Loader = ({ loading }) => {
+const LoaderComponent = () => {
   return (
-    <div
-      style={{
-        position: 'absolute',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100%',
-        width: '100%',
-        backgroundColor: 'rgba(0,0,0, 0.2)',
-        zIndex: 9999,
-      }}
-    >
+    <Loader>
       <span uk-spinner="ratio: 4.5"></span>
-    </div>
+    </Loader>
   )
 }
+
+export { LoaderComponent as Loader }
