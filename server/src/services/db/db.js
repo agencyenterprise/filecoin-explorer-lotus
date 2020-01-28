@@ -6,7 +6,7 @@ const dbParams = {
   connectionString: config.databaseUrl,
 }
 
-if (config.env && config.env !== 'development') {
+if ((config.env && config.env !== 'development') || config.databaseSSL === 'true') {
   dbParams.ssl = true
 }
 

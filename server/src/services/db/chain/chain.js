@@ -7,27 +7,27 @@ export const getChain = async ({ startBlock, endBlock, startDate, endDate, miner
 
   if (startBlock) {
     whereArgs.push(Number(startBlock))
-    wheres.push(`b.height >= $${whereArgs.length}`)
+    wheres.push(`block.height >= $${whereArgs.length}`)
   }
   if (endBlock) {
     whereArgs.push(endBlock)
-    wheres.push(`b.height <= $${whereArgs.length}`)
+    wheres.push(`block.height <= $${whereArgs.length}`)
   }
   if (startDate) {
     let date = new Date(startDate)
     let seconds = date.getTime() / 1000
     whereArgs.push(seconds)
-    wheres.push(`b.timestamp > $${whereArgs.length}`)
+    wheres.push(`block.timestamp > $${whereArgs.length}`)
   }
   if (endDate) {
     let date = new Date(endDate)
     let seconds = date.getTime() / 1000
     whereArgs.push(seconds)
-    wheres.push(`b.timestamp < $${whereArgs.length}`)
+    wheres.push(`block.timestamp < $${whereArgs.length}`)
   }
   if (miner) {
     whereArgs.push(miner)
-    wheres.push(`b.miner = $${whereArgs.length}`)
+    wheres.push(`block.miner = $${whereArgs.length}`)
   }
 
   skip = Number(skip)
@@ -45,35 +45,40 @@ export const getChain = async ({ startBlock, endBlock, startDate, endDate, miner
     sortOrder = 'DESC'
   }
 
-  const { rows } = await db.query(
+  const query = `
+    SELECT
+      block,
+      parent,
+      block.miner,
+      block.height,
+      block.parentweight,
+      block.timestamp,
+      parent.timestamp as parenttimestamp,
+      parent.height as parentheight,
+      heads.power as power
+    FROM
+      block_parents
+    INNER JOIN
+      blocks block ON block_parents.block = block.cid
+    INNER JOIN
+      blocks parent ON block_parents.parent = parent.cid
+    LEFT JOIN
+      miner_heads heads ON heads.stateroot = block.parentstateroot and heads.addr = block.miner
+
+
+    ${wheres.length ? 'WHERE' : ''}
+    ${wheres.join(' AND ')}
+
+    ${sortOrder ? `ORDER BY block.height ${sortOrder}` : 'ORDER BY block.height ASC'}
+
+    ${skip ? `OFFSET ${skip}` : ''}
+
+    ${limit ? `LIMIT ${limit}` : ''}
     `
-      SELECT
-        block,
-        parent,
-        b.miner,
-        b.height,
-        b.parentweight,
-        b.timestamp,
-        p.timestamp as parenttimestamp,
-        p.height as parentheight
-      FROM
-        block_parents
-      INNER JOIN
-        blocks b on block_parents.block = b.cid
-      INNER JOIN
-        blocks p on block_parents.parent = p.cid
 
-      ${wheres.length ? 'WHERE' : ''}
-        ${wheres.join(' AND ')}
+  const { rows } = await db.query(query, whereArgs)
 
-      ${sortOrder ? `ORDER BY b.height ${sortOrder}` : 'ORDER BY b.height ASC'}
-
-      ${skip ? `OFFSET ${skip}` : ''}
-
-      ${limit ? `LIMIT ${limit}` : ''}
-    `,
-    whereArgs,
-  )
+  console.log('length', rows.length)
 
   return rows
 }

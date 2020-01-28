@@ -5,6 +5,7 @@ import { Loader } from '../../../components/Loader'
 const nodeLabelOptions = [
   { value: 'heightLabel', label: 'height' },
   { value: 'parentWeightLabel', label: 'parent weight' },
+  { value: 'weight', label: 'weight contributed by the block' },
 ]
 
 const dc_graph = window.dc_graph
@@ -23,6 +24,7 @@ export class Charts extends React.Component {
     nodeLabel: 'height',
     heightLabel: true,
     parentWeightLabel: false,
+    weight: false,
     loading: false,
   }
 
@@ -92,6 +94,7 @@ export class Charts extends React.Component {
           weirdTime: isWeirdTime(timeToReceive),
           blockCid: block.block,
           minerPower: block.power,
+          weight: block.weight,
         })
       }
 
@@ -145,7 +148,6 @@ export class Charts extends React.Component {
   }
 
   populate(n) {
-    console.log('populate!')
     const data = this.build_data(this.state.chain.nodes, this.state.chain.edges),
       minerDimension = data.nodef.crossfilter.dimension(function(n) {
         return n.miner
@@ -259,14 +261,21 @@ export class Charts extends React.Component {
       .nodeOrdering((n) => n.value.height)
       .nodeStrokeWidth(0) // turn off outlines
       .nodeLabel((n) => {
-        const { heightLabel, parentWeightLabel } = this.state
+        const { heightLabel, parentWeightLabel, weight } = this.state
+
         let label = ``
         if (heightLabel && n.value.height) {
           label += ` ${n.value.height}`
         }
+
         if (parentWeightLabel && n.value.parentWeight) {
-          label += ` ${n.value.parentWeight}`
+          label += `\n ${n.value.parentWeight}`
         }
+
+        if (weight && n.value.weight) {
+          label += `\n ${n.value.weight}`
+        }
+
         return label
       })
       .edgeLabel(function(n) {
@@ -320,7 +329,7 @@ export class Charts extends React.Component {
 
       let hasValues = false
 
-      ;['height', 'parentWeight', 'timeToReceive', 'miner', 'blockCid', 'id', 'minerPower'].forEach((key) => {
+      ;['height', 'parentWeight', 'timeToReceive', 'miner', 'blockCid', 'id', 'minerPower', 'weight'].forEach((key) => {
         if (data[key] !== undefined) {
           hasValues = true
           toolTipInfo[toSentence(key)] = data[key]

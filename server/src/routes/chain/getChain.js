@@ -13,5 +13,6 @@ export const getChain = async (req, res) => {
     limit,
     sortOrder,
   })
+
   res.json(chain)
 }
