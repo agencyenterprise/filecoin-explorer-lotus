@@ -78,8 +78,6 @@ export const getChain = async ({ startBlock, endBlock, startDate, endDate, miner
 
   const { rows } = await db.query(query, whereArgs)
 
-  console.log('length', rows.length)
-
   return rows
 }
 
