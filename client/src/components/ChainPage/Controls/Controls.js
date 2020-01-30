@@ -9,6 +9,7 @@ import { DatePicker } from '../../shared/DatePicker'
 import { Input } from '../../shared/Input'
 import { Controls, DashedLine, Description, Heading, Title } from './controls.styled'
 import { store } from '../../../context/store'
+import { ReceivedBlocks } from './ReceivedBlocks'
 
 const Range = Slider.createSliderWithTooltip(Slider.Range)
 
@@ -128,6 +129,8 @@ const ControlsComponent = ({
       <Block>{options}</Block>
       <Block>
         <Title>Time block received after parent</Title>
+        <ReceivedBlocks amount={562} kind="less than 48s" percentage={97.4} />
+        <ReceivedBlocks amount={12} kind="between 48 - 51" percentage={2.1} />
       </Block>
     </Controls>
   )
