@@ -1,96 +1,93 @@
 import Slider from 'rc-slider'
 import 'rc-slider/assets/index.css'
-import React from 'react'
-import DatePicker from 'react-datepicker'
+import React, { useEffect, useState } from 'react'
+
 import 'react-datepicker/dist/react-datepicker.css'
 import { constants } from '../../../utils'
+import { Block } from '../../shared/Block'
+import { Input } from '../../shared/Input'
+import { DatePicker } from '../../shared/DatePicker'
 
-const createSliderWithTooltip = Slider.createSliderWithTooltip
-const Range = createSliderWithTooltip(Slider.Range)
+import { Controls, Heading, Title } from './controls.styled'
 
-export class Controls extends React.Component {
-  state = {
-    internalBlockRange: [],
-  }
+const Range = Slider.createSliderWithTooltip(Slider.Range)
 
-  componentDidUpdate(prevProps, prevState, snapshot) {
-    if (this.props.maxBlock && this.props.maxBlock !== prevProps.maxBlock) {
-      this.setState({
-        internalBlockRange: [Math.max(0, this.props.maxBlock - constants.maxBlockRange), this.props.maxBlock],
-      })
-    }
-  }
+const ControlsComponent = ({
+  debouncedUpdateBlockHeightFilter,
+  startDate,
+  endDate,
+  setStartDate,
+  setEndDate,
+  setMiner,
+  minBlock,
+  maxBlock,
+}) => {
+  const [internalBlockRange, setInternalBlockRange] = useState([])
 
-  render() {
-    const {
-      debouncedUpdateBlockHeightFilter,
-      startDate,
-      endDate,
-      setStartDate,
-      setEndDate,
-      setMiner,
-      minBlock,
-      maxBlock,
-    } = this.props
-    const { internalBlockRange } = this.state
+  useEffect(() => {
+    setInternalBlockRange([Math.max(0, maxBlock - constants.maxBlockRange), maxBlock])
+  }, [maxBlock])
 
-    return (
-      <div id="controls" className="uk-card uk-card-default uk-card-body">
-        <h3 className="uk-card-title">Controls</h3>
-        <div>
-          Block Range
-          <Range
-            min={minBlock}
-            max={maxBlock}
-            value={internalBlockRange}
-            step={5}
-            allowCross={false}
-            onChange={(newInternalBlockRange) => {
-              const { internalBlockRange } = this.state
-              if (internalBlockRange[0] !== newInternalBlockRange[0]) {
-                // note: min is moving
-                if (newInternalBlockRange[1] - newInternalBlockRange[0] > constants.maxBlockRange) {
-                  newInternalBlockRange[1] = newInternalBlockRange[0] + constants.maxBlockRange
-                }
-              } else {
-                // note: max is moving
-                if (newInternalBlockRange[1] - newInternalBlockRange[0] > constants.maxBlockRange) {
-                  newInternalBlockRange[0] = newInternalBlockRange[1] - constants.maxBlockRange
-                }
+  return (
+    <Controls>
+      <Block>
+        <Heading>Filecoin Block Explorer</Heading>
+      </Block>
+      <Block>
+        <Title>Block Height</Title>
+        <Range
+          min={minBlock}
+          max={maxBlock}
+          value={internalBlockRange}
+          step={5}
+          allowCross={false}
+          onChange={(newInternalBlockRange) => {
+            if (internalBlockRange[0] !== newInternalBlockRange[0]) {
+              // note: min is moving
+              if (newInternalBlockRange[1] - newInternalBlockRange[0] > constants.maxBlockRange) {
+                newInternalBlockRange[1] = newInternalBlockRange[0] + constants.maxBlockRange
               }
-              this.setState({ internalBlockRange: newInternalBlockRange })
-            }}
-            onAfterChange={debouncedUpdateBlockHeightFilter}
-          />
-          <select id="layout"></select>
-        </div>
-        <label className="uk-search uk-search-default" style={{ marginTop: '15px' }}>
-          Miner
-          <input
-            className="uk-search-input"
-            type="search"
-            placeholder=""
-            onBlur={(e) => {
-              setMiner(e.target.value)
-            }}
-            onKeyPress={(e) => {
-              if (e.key === 'Enter') {
-                e.target.blur()
+            } else {
+              // note: max is moving
+              if (newInternalBlockRange[1] - newInternalBlockRange[0] > constants.maxBlockRange) {
+                newInternalBlockRange[0] = newInternalBlockRange[1] - constants.maxBlockRange
               }
-            }}
-          />
-        </label>
-        <div style={{ marginTop: '15px' }}>
-          <label className="uk-search uk-search-default">
-            Start Date
-            <DatePicker selected={startDate} onChange={setStartDate} className="uk-search-input" />
-          </label>
-          <label className="uk-search uk-search-default" style={{ marginLeft: '10px' }}>
-            End Date
-            <DatePicker selected={endDate} onChange={setEndDate} className="uk-search-input" />
-          </label>
-        </div>
-      </div>
-    )
-  }
+            }
+
+            setInternalBlockRange(newInternalBlockRange)
+          }}
+          onAfterChange={debouncedUpdateBlockHeightFilter}
+        />
+      </Block>
+      <Block>
+        <Title>Find Miner</Title>
+        <Input
+          placeholder="Miner Address"
+          onBlur={(e) => {
+            setMiner(e.target.value)
+          }}
+          onKeyPress={(e) => {
+            if (e.key === 'Enter') {
+              e.target.blur()
+            }
+          }}
+        />
+      </Block>
+      <Block>
+        <Title>Narrow date range</Title>
+        <DatePicker
+          selected={startDate}
+          onChange={setStartDate}
+          placeholderText="Start date, mm/dd/yyyy"
+          style={{ width: '100%' }}
+        />
+        <DatePicker selected={endDate} onChange={setEndDate} placeholderText="End date, mm/dd/yyyy" />
+      </Block>
+      <Block>
+        <Title>Time block received after parent</Title>
+      </Block>
+    </Controls>
+  )
 }
+
+export { ControlsComponent as Controls }

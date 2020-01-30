@@ -37,6 +37,7 @@ const ChainPageComponent = () => {
 
   return (
     <ChainPage id="main">
+      <Charts blockRange={blockRange} startDate={startDate} endDate={endDate} miner={miner} />
       <Controls
         minBlock={minBlock}
         maxBlock={maxBlock}
@@ -49,7 +50,6 @@ const ChainPageComponent = () => {
         setEndDate={setEndDate}
         setMiner={setMiner}
       />
-      <Charts blockRange={blockRange} startDate={startDate} endDate={endDate} miner={miner} />
     </ChainPage>
   )
 }

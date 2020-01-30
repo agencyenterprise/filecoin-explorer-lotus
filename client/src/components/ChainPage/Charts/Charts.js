@@ -1,12 +1,13 @@
 import React from 'react'
 import { getChainData } from '../../../api'
 import { Loader } from '../../shared/Loader'
+import { Graph } from './charts.styled'
 
-const nodeLabelOptions = [
-  { value: 'heightLabel', label: 'height' },
-  { value: 'parentWeightLabel', label: 'parent weight' },
-  { value: 'weight', label: 'weight contributed by the block' },
-]
+// const nodeLabelOptions = [
+//   { value: 'heightLabel', label: 'height' },
+//   { value: 'parentWeightLabel', label: 'parent weight' },
+//   { value: 'weight', label: 'weight contributed by the block' },
+// ]
 
 const dc_graph = window.dc_graph
 const dc = window.dc
@@ -180,17 +181,6 @@ export class Charts extends React.Component {
     this.weirdTimeBar = dc.rowChart('#weirdTimeBar')
 
     this.options = {
-      layout: {
-        default: 'dagre',
-        values: dc_graph.engines.available(),
-        selector: '#layout',
-        needs_relayout: true,
-        exert: function(val, diagram) {
-          var engine = dc_graph.spawn_engine(val)
-          apply_engine_parameters(engine)
-          diagram.layoutEngine(engine).autoZoom('once')
-        },
-      },
       worker: {
         default: false,
       },
@@ -465,23 +455,23 @@ export class Charts extends React.Component {
     const { loading } = this.state
 
     return (
-      <div id="content">
+      <>
         {loading && <Loader />}
-        <div id="charts" className="uk-card uk-card-default uk-card-body" style={{ alignItems: 'flex-start' }}>
-          <h3 className="uk-card-title">Charts</h3>
-          <div style={{ float: 'left', width: 300, margin: 10 }}>
+        {/* <div id="charts" className="uk-card uk-card-default uk-card-body" style={{ alignItems: 'flex-start' }}> */}
+        {/* <h3 className="uk-card-title">Charts</h3> */}
+        {/* <div style={{ float: 'left', width: 300, margin: 10 }}>
             <div style={{ float: 'left', paddingBottom: 10 }}>Block Received After Parent</div>
             <div id="weirdTimeBar"></div>
-          </div>
-          <div style={{ float: 'left', width: 155, margin: 10 }}>
+          </div> */}
+        {/* <div style={{ float: 'left', width: 155, margin: 10 }}>
             <div style={{ float: 'left', paddingBottom: 10 }}>Miners</div>
             <div id="minerPie"></div>
           </div>
           <div style={{ float: 'left', width: 155, margin: 10 }}>
             <div style={{ float: 'left', paddingBottom: 10 }}>Block Height</div>
             <div id="blockHeightPie"></div>
-          </div>
-          <div style={{ float: 'left', width: 155, margin: 10 }}>
+          </div> */}
+        {/* <div style={{ float: 'left', width: 155, margin: 10 }}>
             <div>Node Labels</div>
             <div style={{ float: 'left', width: 155, margin: 10 }}>
               {nodeLabelOptions.map((nodeLabelOption) => {
@@ -500,12 +490,9 @@ export class Charts extends React.Component {
               })}
             </div>
           </div>
-        </div>
-        <div id="graph" className="uk-card uk-card-default uk-card-body" style={{ flex: 1, overflow: 'hidden' }}>
-          <h3 className="uk-card-title">Graph</h3>
-          <span>press alt key to enable zoom and pan</span>
-        </div>
-      </div>
+        </div> */}
+        <Graph id="graph" style={{ flex: 1, overflow: 'hidden' }} />
+      </>
     )
   }
 }
