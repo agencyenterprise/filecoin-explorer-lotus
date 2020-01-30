@@ -238,11 +238,12 @@ export class Charts extends React.Component {
       { color: '#F70000', ray: null, label: '> 60s' },
       { color: '#000000', ray: null, label: 'skipped' },
     ]
+
     this.selectionDiagram
       .layoutEngine(engine)
       .timeLimit(5000)
       .transitionDuration(this.sync_url.vals.transition_duration)
-      .fitStrategy(this.sync_url.vals.fit || 'default')
+      .fitStrategy(this.sync_url.vals.fit || 'horizontal')
       .zoomExtent([0.1, 1.5])
       .restrictPan(false)
       .margins({ top: 5, left: 5, right: 5, bottom: 5 })
