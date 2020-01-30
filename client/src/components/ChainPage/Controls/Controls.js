@@ -1,15 +1,16 @@
 import Slider from 'rc-slider'
 import 'rc-slider/assets/index.css'
-import React, { Fragment, useEffect, useState, useContext } from 'react'
+import React, { Fragment, useContext, useEffect, useState } from 'react'
 import 'react-datepicker/dist/react-datepicker.css'
+import { store } from '../../../context/store'
 import { constants } from '../../../utils'
 import { Block } from '../../shared/Block'
 import { Checkbox } from '../../shared/Checkbox'
 import { DatePicker } from '../../shared/DatePicker'
 import { Input } from '../../shared/Input'
 import { Controls, DashedLine, Description, Heading, Title } from './controls.styled'
-import { store } from '../../../context/store'
 import { ReceivedBlocks } from './ReceivedBlocks'
+import { RangeInputs } from './RangeInputs'
 
 const Range = Slider.createSliderWithTooltip(Slider.Range)
 
@@ -58,6 +59,47 @@ const ControlsComponent = ({
     </Fragment>
   ))
 
+  const resolveRangeInterval = (newInternalBlockRange) => {
+    if (newInternalBlockRange[0] > newInternalBlockRange[1]) {
+      let tmp = newInternalBlockRange[1]
+
+      newInternalBlockRange[1] = newInternalBlockRange[0]
+      newInternalBlockRange[0] = tmp
+    }
+
+    if (internalRange[0] !== newInternalBlockRange[0]) {
+      // note: min is moving
+      if (newInternalBlockRange[1] - newInternalBlockRange[0] > constants.maxBlockRange) {
+        newInternalBlockRange[1] = newInternalBlockRange[0] + constants.maxBlockRange
+      }
+    } else {
+      // note: max is moving
+      if (newInternalBlockRange[1] - newInternalBlockRange[0] > constants.maxBlockRange) {
+        newInternalBlockRange[0] = newInternalBlockRange[1] - constants.maxBlockRange
+      }
+    }
+
+    if (newInternalBlockRange[1] === 0) {
+      newInternalBlockRange[0] = 0
+      newInternalBlockRange[1] = constants.maxBlockRange
+    }
+
+    return newInternalBlockRange
+  }
+
+  const onChangeRange = (newInternalBlockRange) => {
+    const resolvedRangeInterval = resolveRangeInterval(newInternalBlockRange)
+
+    setInternalRange(resolvedRangeInterval)
+  }
+
+  const onChanRangeInput = (newInternalBlockRange) => {
+    const resolvedRangeInterval = resolveRangeInterval(newInternalBlockRange)
+
+    setInternalRange(resolvedRangeInterval)
+    debouncedUpdateBlockHeightFilter(resolvedRangeInterval)
+  }
+
   return (
     <Controls>
       <Block>
@@ -66,6 +108,7 @@ const ControlsComponent = ({
       <Block>
         <Title>Block Height</Title>
         <DashedLine />
+        <RangeInputs rangeIntervals={internalRange} onChange={onChanRangeInput} />
         <DashedLine />
         {internalRange[1] && (
           <Range
@@ -74,26 +117,7 @@ const ControlsComponent = ({
             value={internalRange}
             step={5}
             allowCross={false}
-            onChange={(newInternalBlockRange) => {
-              if (internalRange[0] !== newInternalBlockRange[0]) {
-                // note: min is moving
-                if (newInternalBlockRange[1] - newInternalBlockRange[0] > constants.maxBlockRange) {
-                  newInternalBlockRange[1] = newInternalBlockRange[0] + constants.maxBlockRange
-                }
-              } else {
-                // note: max is moving
-                if (newInternalBlockRange[1] - newInternalBlockRange[0] > constants.maxBlockRange) {
-                  newInternalBlockRange[0] = newInternalBlockRange[1] - constants.maxBlockRange
-                }
-              }
-
-              if (newInternalBlockRange[1] === 0) {
-                newInternalBlockRange[0] = 0
-                newInternalBlockRange[1] = constants.maxBlockRange
-              }
-
-              setInternalRange(newInternalBlockRange)
-            }}
+            onChange={onChangeRange}
             onAfterChange={debouncedUpdateBlockHeightFilter}
           />
         )}
@@ -130,7 +154,7 @@ const ControlsComponent = ({
       <Block>
         <Title>Time block received after parent</Title>
         <ReceivedBlocks amount={562} kind="less than 48s" percentage={97.4} />
-        <ReceivedBlocks amount={12} kind="between 48 - 51" percentage={2.1} />
+        <ReceivedBlocks amount={12} kind="between 48 - 51s" percentage={2.1} />
       </Block>
     </Controls>
   )
