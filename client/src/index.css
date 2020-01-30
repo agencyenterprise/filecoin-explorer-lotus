@@ -17,12 +17,12 @@ body {
 
 .d3-tip {
   line-height: 1;
-  font-weight: bold;
   padding: 12px;
   background: rgba(0, 0, 0, 0.8);
   color: #fff;
   border-radius: 2px;
   margin-top: -9px;
+  overflow: hidden;
 }
 
 .d3-tip:after {
@@ -41,6 +41,17 @@ body {
   margin: -1px 0 0 0;
   top: 100%;
   left: 0;
+}
+
+.d3-tip table tr td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.d3-tip td:first-child {
+  font-weight: bold;
+  padding-right: 25px;
 }
 
 .react-datepicker-wrapper {

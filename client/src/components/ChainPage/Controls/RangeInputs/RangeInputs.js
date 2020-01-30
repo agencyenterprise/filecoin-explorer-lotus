@@ -8,6 +8,8 @@ const RangeInputsComponent = ({ rangeIntervals, onChange }) => {
   useEffect(() => {
     setMin(rangeIntervals[0])
     setMax(rangeIntervals[1])
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, rangeIntervals)
 
   const onKeyPress = (e) => {

@@ -1,7 +1,9 @@
 import React, { createContext, useReducer } from 'react'
 
 const initialState = {
-  nodeCheckbox: {},
+  nodeCheckbox: {
+    heightLabel: true,
+  },
 }
 const store = createContext(initialState)
 

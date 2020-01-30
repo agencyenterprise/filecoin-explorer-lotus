@@ -297,9 +297,7 @@ export class Charts extends React.Component {
       .edgeStrokeDashArray(function(e) {
         return timeReceivedDecorations[e.value.dash].ray
       })
-      .edgeStroke(function(e) {
-        return timeReceivedDecorations[e.value.dash].color
-      })
+      .edgeStroke('#c4c4c4')
       .nodeStroke(function(kv) {
         return timeReceivedDecorations[kv.value.weirdTime].color
       })
@@ -326,7 +324,9 @@ export class Charts extends React.Component {
       ;['height', 'parentWeight', 'timeToReceive', 'miner', 'blockCid', 'id', 'minerPower', 'weight'].forEach((key) => {
         if (data[key] !== undefined) {
           hasValues = true
-          toolTipInfo[toSentence(key)] = data[key]
+
+          const value = Number(data[key])
+          toolTipInfo[toSentence(key)] = isNaN(value) ? data[key] : value
         }
       })
 
