@@ -6,7 +6,7 @@ export const Loader = styled.div`
   display: flex;
   height: 100%;
   justify-content: center;
-  position: absolute;
+  position: fixed;
   width: 100%;
   z-index: 9999;
 `

@@ -1,14 +1,21 @@
 import Slider from 'rc-slider'
 import 'rc-slider/assets/index.css'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, Fragment } from 'react'
 import 'react-datepicker/dist/react-datepicker.css'
 import { constants } from '../../../utils'
 import { Block } from '../../shared/Block'
 import { DatePicker } from '../../shared/DatePicker'
 import { Input } from '../../shared/Input'
+import { Checkbox } from '../../shared/Checkbox'
 import { Controls, DashedLine, Description, Heading, Title } from './controls.styled'
 
 const Range = Slider.createSliderWithTooltip(Slider.Range)
+
+const nodeLabelOptions = [
+  { value: 'heightLabel', label: 'height' },
+  { value: 'parentWeightLabel', label: 'parent weight' },
+  { value: 'weight', label: 'weight contributed by the block' },
+]
 
 const ControlsComponent = ({
   debouncedUpdateBlockHeightFilter,
@@ -21,12 +28,28 @@ const ControlsComponent = ({
   maxBlock,
 }) => {
   const [internalRange, setInternalRange] = useState([Math.max(0, maxBlock - constants.maxBlockRange), maxBlock])
+  const [checkbox, changeCheckbox] = useState({})
 
   useEffect(() => {
     if (maxBlock !== internalRange[0]) {
       setInternalRange([Math.max(0, maxBlock - constants.maxBlockRange), maxBlock])
     }
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [maxBlock])
+
+  const changeNodeLabel = (event) => {
+    changeCheckbox({ ...checkbox, [event.target.value]: event.target.checked })
+  }
+
+  const options = nodeLabelOptions.map((item, i) => (
+    <Fragment key={item.value}>
+      <Checkbox checked={checkbox[item.value]} onChange={changeNodeLabel} value={item.value}>
+        Show {item.label}
+      </Checkbox>
+      {i < nodeLabelOptions.length - 1 && <DashedLine />}
+    </Fragment>
+  ))
 
   return (
     <Controls>
@@ -96,6 +119,7 @@ const ControlsComponent = ({
         />
         <DatePicker selected={endDate} onChange={setEndDate} placeholderText="End date, mm/dd/yyyy" />
       </Block>
+      <Block>{options}</Block>
       <Block>
         <Title>Time block received after parent</Title>
       </Block>
