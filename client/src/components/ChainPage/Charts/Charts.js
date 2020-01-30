@@ -173,14 +173,15 @@ export class Charts extends React.Component {
   }
 
   renderGraph() {
-    console.log('render graph')
-
     this.selectionDiagram = dc_graph.diagram('#graph')
     this.minerPie = dc.pieChart('#minerPie')
     this.blockHeightPie = dc.pieChart('#blockHeightPie')
     this.weirdTimeBar = dc.rowChart('#weirdTimeBar')
 
     this.options = {
+      layout: {
+        default: 'dagre',
+      },
       worker: {
         default: false,
       },
@@ -215,10 +216,14 @@ export class Charts extends React.Component {
         case 'd3-force':
           engine.gravityStrength(0.1).initialCharge(-1000)
           break
+        case 'dagre':
+          break
         default:
           console.warn(`unknown algorithm: ${engine.layoutAlgorithm()}`)
       }
+
       this.selectionDiagram.initLayoutOnRedraw(engine.layoutAlgorithm() === 'cola')
+
       return engine
     }
 

@@ -1,14 +1,12 @@
 import Slider from 'rc-slider'
 import 'rc-slider/assets/index.css'
 import React, { useEffect, useState } from 'react'
-
 import 'react-datepicker/dist/react-datepicker.css'
 import { constants } from '../../../utils'
 import { Block } from '../../shared/Block'
-import { Input } from '../../shared/Input'
 import { DatePicker } from '../../shared/DatePicker'
-
-import { Controls, Heading, Title } from './controls.styled'
+import { Input } from '../../shared/Input'
+import { Controls, DashedLine, Description, Heading, Title } from './controls.styled'
 
 const Range = Slider.createSliderWithTooltip(Slider.Range)
 
@@ -22,10 +20,12 @@ const ControlsComponent = ({
   minBlock,
   maxBlock,
 }) => {
-  const [internalBlockRange, setInternalBlockRange] = useState([])
+  const [internalRange, setInternalRange] = useState([Math.max(0, maxBlock - constants.maxBlockRange), maxBlock])
 
   useEffect(() => {
-    setInternalBlockRange([Math.max(0, maxBlock - constants.maxBlockRange), maxBlock])
+    if (maxBlock !== internalRange[0]) {
+      setInternalRange([Math.max(0, maxBlock - constants.maxBlockRange), maxBlock])
+    }
   }, [maxBlock])
 
   return (
@@ -35,29 +35,42 @@ const ControlsComponent = ({
       </Block>
       <Block>
         <Title>Block Height</Title>
-        <Range
-          min={minBlock}
-          max={maxBlock}
-          value={internalBlockRange}
-          step={5}
-          allowCross={false}
-          onChange={(newInternalBlockRange) => {
-            if (internalBlockRange[0] !== newInternalBlockRange[0]) {
-              // note: min is moving
-              if (newInternalBlockRange[1] - newInternalBlockRange[0] > constants.maxBlockRange) {
-                newInternalBlockRange[1] = newInternalBlockRange[0] + constants.maxBlockRange
+        <DashedLine />
+        <DashedLine />
+        {internalRange[1] && (
+          <Range
+            min={minBlock}
+            max={maxBlock}
+            value={internalRange}
+            step={5}
+            allowCross={false}
+            onChange={(newInternalBlockRange) => {
+              if (internalRange[0] !== newInternalBlockRange[0]) {
+                // note: min is moving
+                if (newInternalBlockRange[1] - newInternalBlockRange[0] > constants.maxBlockRange) {
+                  newInternalBlockRange[1] = newInternalBlockRange[0] + constants.maxBlockRange
+                }
+              } else {
+                // note: max is moving
+                if (newInternalBlockRange[1] - newInternalBlockRange[0] > constants.maxBlockRange) {
+                  newInternalBlockRange[0] = newInternalBlockRange[1] - constants.maxBlockRange
+                }
               }
-            } else {
-              // note: max is moving
-              if (newInternalBlockRange[1] - newInternalBlockRange[0] > constants.maxBlockRange) {
-                newInternalBlockRange[0] = newInternalBlockRange[1] - constants.maxBlockRange
-              }
-            }
 
-            setInternalBlockRange(newInternalBlockRange)
-          }}
-          onAfterChange={debouncedUpdateBlockHeightFilter}
-        />
+              if (newInternalBlockRange[1] === 0) {
+                newInternalBlockRange[0] = 0
+                newInternalBlockRange[1] = constants.maxBlockRange
+              }
+
+              setInternalRange(newInternalBlockRange)
+            }}
+            onAfterChange={debouncedUpdateBlockHeightFilter}
+          />
+        )}
+        <Description>
+          The slider has a max range of 50 blocks due to lorem ipsum dolor amet pitchfork raw denim thundercats butcher
+          flexitarian.
+        </Description>
       </Block>
       <Block>
         <Title>Find Miner</Title>
