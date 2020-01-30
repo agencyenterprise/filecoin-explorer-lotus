@@ -1,13 +1,8 @@
 import React from 'react'
 import { getChainData } from '../../../api'
+import { store } from '../../../context/store'
 import { Loader } from '../../shared/Loader'
 import { Graph } from './charts.styled'
-
-// const nodeLabelOptions = [
-//   { value: 'heightLabel', label: 'height' },
-//   { value: 'parentWeightLabel', label: 'parent weight' },
-//   { value: 'weight', label: 'weight contributed by the block' },
-// ]
 
 const dc_graph = window.dc_graph
 const dc = window.dc
@@ -17,6 +12,8 @@ const dcgraph_domain = window.dcgraph_domain
 const querystring = window.querystring
 
 export class Charts extends React.Component {
+  static contextType = store
+
   state = {
     chain: {
       nodes: [],
@@ -174,6 +171,8 @@ export class Charts extends React.Component {
 
   renderGraph() {
     this.selectionDiagram = dc_graph.diagram('#graph')
+    window.selectionDiagram = this.selectionDiagram
+
     this.minerPie = dc.pieChart('#minerPie')
     this.blockHeightPie = dc.pieChart('#blockHeightPie')
     this.weirdTimeBar = dc.rowChart('#weirdTimeBar')
@@ -256,7 +255,7 @@ export class Charts extends React.Component {
       .nodeOrdering((n) => n.value.height)
       .nodeStrokeWidth(0) // turn off outlines
       .nodeLabel((n) => {
-        const { heightLabel, parentWeightLabel, weight } = this.state
+        const { heightLabel, parentWeightLabel, weight } = this.context.state.nodeCheckbox
 
         let label = ``
         if (heightLabel && n.value.height) {
@@ -462,40 +461,6 @@ export class Charts extends React.Component {
     return (
       <>
         {loading && <Loader />}
-        {/* <div id="charts" className="uk-card uk-card-default uk-card-body" style={{ alignItems: 'flex-start' }}> */}
-        {/* <h3 className="uk-card-title">Charts</h3> */}
-        {/* <div style={{ float: 'left', width: 300, margin: 10 }}>
-            <div style={{ float: 'left', paddingBottom: 10 }}>Block Received After Parent</div>
-            <div id="weirdTimeBar"></div>
-          </div> */}
-        {/* <div style={{ float: 'left', width: 155, margin: 10 }}>
-            <div style={{ float: 'left', paddingBottom: 10 }}>Miners</div>
-            <div id="minerPie"></div>
-          </div>
-          <div style={{ float: 'left', width: 155, margin: 10 }}>
-            <div style={{ float: 'left', paddingBottom: 10 }}>Block Height</div>
-            <div id="blockHeightPie"></div>
-          </div> */}
-        {/* <div style={{ float: 'left', width: 155, margin: 10 }}>
-            <div>Node Labels</div>
-            <div style={{ float: 'left', width: 155, margin: 10 }}>
-              {nodeLabelOptions.map((nodeLabelOption) => {
-                return (
-                  <label>
-                    {nodeLabelOption.label}
-                    <input
-                      type="checkbox"
-                      checked={this.state[nodeLabelOption.value]}
-                      onChange={this.changeNodeLabel}
-                      value={nodeLabelOption.value}
-                      placeholder="Change node label..."
-                    />
-                  </label>
-                )
-              })}
-            </div>
-          </div>
-        </div> */}
         <Graph id="graph" style={{ flex: 1, overflow: 'hidden' }} />
       </>
     )

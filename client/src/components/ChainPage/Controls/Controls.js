@@ -1,13 +1,14 @@
 import Slider from 'rc-slider'
 import 'rc-slider/assets/index.css'
-import React, { useEffect, useState, Fragment } from 'react'
+import React, { Fragment, useEffect, useState, useContext } from 'react'
 import 'react-datepicker/dist/react-datepicker.css'
 import { constants } from '../../../utils'
 import { Block } from '../../shared/Block'
+import { Checkbox } from '../../shared/Checkbox'
 import { DatePicker } from '../../shared/DatePicker'
 import { Input } from '../../shared/Input'
-import { Checkbox } from '../../shared/Checkbox'
 import { Controls, DashedLine, Description, Heading, Title } from './controls.styled'
+import { store } from '../../../context/store'
 
 const Range = Slider.createSliderWithTooltip(Slider.Range)
 
@@ -28,7 +29,7 @@ const ControlsComponent = ({
   maxBlock,
 }) => {
   const [internalRange, setInternalRange] = useState([Math.max(0, maxBlock - constants.maxBlockRange), maxBlock])
-  const [checkbox, changeCheckbox] = useState({})
+  const { state, dispatch } = useContext(store)
 
   useEffect(() => {
     if (maxBlock !== internalRange[0]) {
@@ -39,12 +40,17 @@ const ControlsComponent = ({
   }, [maxBlock])
 
   const changeNodeLabel = (event) => {
-    changeCheckbox({ ...checkbox, [event.target.value]: event.target.checked })
+    const { value, checked } = event.target
+    dispatch({ type: 'CHANGE_NODE_CHECKBOX', payload: { key: value, value: checked } })
+
+    setTimeout(() => {
+      window.selectionDiagram.redraw()
+    }, 100)
   }
 
   const options = nodeLabelOptions.map((item, i) => (
     <Fragment key={item.value}>
-      <Checkbox checked={checkbox[item.value]} onChange={changeNodeLabel} value={item.value}>
+      <Checkbox checked={state.nodeCheckbox[item.value]} onChange={changeNodeLabel} value={item.value}>
         Show {item.label}
       </Checkbox>
       {i < nodeLabelOptions.length - 1 && <DashedLine />}
