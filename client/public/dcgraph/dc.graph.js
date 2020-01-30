@@ -4228,7 +4228,6 @@ dc_graph.diagram = function (parent, chartGroup) {
                 check_zoom(node, edge);
             })
             .on('start.diagram', function() {
-                console.log('algo ' + _diagram.layoutEngine().layoutAlgorithm() + ' started.');
                 _dispatch.start();
             });
 

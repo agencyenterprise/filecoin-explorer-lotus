@@ -17,7 +17,6 @@ services:
     build: ./client
     volumes:
       - ./client:/usr/src/app
-      - /usr/src/app/node_modules/
     depends_on:
       - server
     links:
@@ -35,7 +34,6 @@ services:
     build: ./server
     volumes:
       - ./server:/usr/src/app
-      - /usr/src/app/node_modules/
     ports:
       - '8888:8888'
     depends_on:

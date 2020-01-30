@@ -5,6 +5,8 @@ import { chain } from './chain'
 
 const router = express.Router()
 
+router.get('/', (req, res) => res.sendStatus(418))
+
 router.use('/blocks', blocks)
 router.use('/chain', chain)
 

@@ -1,68 +1,28 @@
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans',
-    'Droid Sans', 'Helvetica Neue', sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+html,
+body,
+#root,
+#main {
+  min-height: 100%;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
-}
 body {
-  overflow: hidden;
-  margin: 0;
-  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-family: Arco Perpetuo Pro;
+  color: #212121;
 }
-#main {
-  position: absolute;
-  left: 0;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  flex-direction: column;
-}
-#canvas {
-  flex: 1;
-  position: relative;
-}
-#content {
-  position: relative;
-  flex: 1;
-  display: flex;
-  flex-direction: row;
-}
-#graph {
-  flex: 1;
-}
-#graph.uk-card svg {
-  height: calc(100% - 50px);
-}
-#charts {
-  flex: 0 300px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
+
 .dc-chart .selected path,
 .dc-chart .selected circle {
   stroke-width: 0;
 }
-p#hint {
-  position: absolute;
-  left: 1em;
-  top: 0.5em;
-}
 
 .d3-tip {
   line-height: 1;
-  font-weight: bold;
   padding: 12px;
   background: rgba(0, 0, 0, 0.8);
   color: #fff;
   border-radius: 2px;
   margin-top: -9px;
+  overflow: hidden;
 }
 
 .d3-tip:after {
@@ -83,6 +43,17 @@ p#hint {
   left: 0;
 }
 
-input[type='checkbox'] {
-  margin-left: 10px;
+.d3-tip table tr td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.d3-tip td:first-child {
+  font-weight: bold;
+  padding-right: 25px;
+}
+
+.react-datepicker-wrapper {
+  width: 100%;
 }
