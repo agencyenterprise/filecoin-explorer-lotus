@@ -10,6 +10,17 @@ body {
   color: #212121;
 }
 
+div.dc-chart {
+  float: none;
+}
+
+#minerPie,
+#blockHeightPie,
+#weirdTimeBar {
+  margin: 26px 0;
+  text-align: center;
+}
+
 .dc-chart .selected path,
 .dc-chart .selected circle {
   stroke-width: 0;
