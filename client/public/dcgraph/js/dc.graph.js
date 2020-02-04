@@ -12030,6 +12030,7 @@ dc_graph.draw_graphs = function(options) {
     }
 
     function check_invalid_drag(coords) {
+      return false
         var msg;
         if(!(d3.event.buttons & 1)) {
             // mouse button was released but we missed it
