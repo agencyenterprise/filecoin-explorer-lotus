@@ -28,6 +28,7 @@ export const Controls = styled.div`
   width: 305px;
   border-left: 1px solid #d7d7d7;
   position: relative;
+  overflow-y: scroll;
 
   /* rc-slider */
   ${rcSlider}
