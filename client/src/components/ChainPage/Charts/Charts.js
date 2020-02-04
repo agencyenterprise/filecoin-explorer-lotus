@@ -328,6 +328,7 @@ export class Charts extends React.Component {
     const selectNodes = dc_graph
       .select_nodes({ nodeOpacity: 1 })
       .noneIsAll(true)
+      .multipleSelect(false)
       .autoCropSelection(false)
 
     this.selectionDiagram.child('select-nodes', selectNodes)
@@ -347,6 +348,7 @@ export class Charts extends React.Component {
         edgeOpacity: 1,
       })
       .noneIsAll(true)
+      .multipleSelect(false)
       .autoCropSelection(false)
 
     this.selectionDiagram.child('select-edges', selectEdges)
