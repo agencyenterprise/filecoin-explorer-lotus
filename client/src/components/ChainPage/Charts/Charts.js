@@ -237,7 +237,7 @@ export class Charts extends React.Component {
       .transitionDuration(this.sync_url.vals.transition_duration)
       .fitStrategy(this.sync_url.vals.fit || 'vertical')
       .zoomExtent([0.1, 1.5])
-      .restrictPan(true)
+      .restrictPan(false)
       .margins({ top: 20, left: 20, right: 20, bottom: 20 })
       .autoZoom('once-noanim')
       .zoomDuration(this.sync_url.vals.transition_duration)
