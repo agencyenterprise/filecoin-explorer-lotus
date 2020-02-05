@@ -46,22 +46,25 @@ export const getChain = async ({ startBlock, endBlock, startDate, endDate, miner
   }
 
   const query = `
-    SELECT
-      block,
-      parent,
-      block.miner,
-      block.height,
-      block.parentweight,
-      block.timestamp,
-      parent.timestamp as parenttimestamp,
-      parent.height as parentheight,
-      heads.power as power
+  SELECT
+    block,
+    parent,
+    block.miner,
+    block.height,
+    block.parentweight,
+    block.timestamp,
+    parent.timestamp as parenttimestamp,
+    parent.height as parentheight,
+    heads.power as power,
+    synced.add_ts as syncedtimestamp
     FROM
       block_parents
     INNER JOIN
       blocks block ON block_parents.block = block.cid
     INNER JOIN
       blocks parent ON block_parents.parent = parent.cid
+    INNER JOIN
+    blocks_synced synced ON synced.cid = block.cid
     LEFT JOIN
       miner_heads heads ON heads.stateroot = block.parentstateroot and heads.addr = block.miner
 
