@@ -78,7 +78,8 @@ export class Charts extends React.Component {
     // block.block may appear multiple times
     const blockInfo = {}
     blocksArr.forEach((block, index) => {
-      const timeToReceive = parseInt(block.timestamp) - parseInt(block.parenttimestamp)
+      // @todo: check if should be comparing parent timestamp or parent synced timestamp
+      const timeToReceive = parseInt(block.syncedtimestamp) - parseInt(block.parenttimestamp)
       if (!blocks[block.block]) {
         blocks[block.block] = index
         blockInfo[block.block] = block
