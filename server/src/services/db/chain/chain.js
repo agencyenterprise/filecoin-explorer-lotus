@@ -46,27 +46,27 @@ export const getChain = async ({ startBlock, endBlock, startDate, endDate, miner
   }
 
   const query = `
-    SELECT
-      main_block.cid as block,
-      block_parent.cid as parent,
-      main_block.miner,
-      main_block.height,
-      main_block.parentweight,
-      main_block.timestamp,
-      block_parent.timestamp as parenttimestamp,
-      block_parent.height as parentheight,
-      heads.power as parentpower,
-      synced.add_ts as syncedtimestamp
-    FROM
-      block_parents bp
-    INNER JOIN
-      blocks main_block ON bp.block = main_block.cid
-    INNER JOIN
-      blocks block_parent ON bp.parent = block_parent.cid
-    INNER JOIN
-      blocks_synced synced ON synced.cid = main_block.cid
-    LEFT JOIN
-      miner_heads heads ON heads.stateroot = main_block.parentstateroot and heads.addr = block_parent.miner
+  SELECT
+    main_block.cid as block,
+    bp.parent as parent,
+    main_block.miner,
+    main_block.height,
+    main_block.parentweight,
+    main_block.timestamp,
+    parent_block.timestamp as parenttimestamp,
+    parent_block.height as parentheight,
+    heads.power as parentpower,
+    synced.add_ts as syncedtimestamp
+  FROM
+    blocks main_block
+  LEFT JOIN
+    block_parents bp ON bp.block = main_block.cid
+  LEFT JOIN
+    blocks parent_block ON parent_block.cid = bp.parent
+  LEFT JOIN
+    blocks_synced synced ON synced.cid = main_block.cid
+  LEFT JOIN
+    miner_heads heads ON heads.stateroot = main_block.parentstateroot and heads.addr = parent_block.miner
 
 
     ${wheres.length ? 'WHERE' : ''}
@@ -78,7 +78,6 @@ export const getChain = async ({ startBlock, endBlock, startDate, endDate, miner
 
     ${limit ? `LIMIT ${limit}` : ''}
     `
-
   const { rows } = await db.query(query, whereArgs)
 
   return rows
