@@ -156,6 +156,7 @@ const ControlsComponent = ({
         <Title>Filters</Title>
         <div id="minerPie" />
         <div id="blockHeightPie" />
+        <div id="orphanPie" />
         <div id="weirdTimeBar" />
       </Block>
       <Block>
