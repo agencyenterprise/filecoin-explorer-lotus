@@ -25,7 +25,7 @@ export class Charts extends React.Component {
       nodes: [],
       links: [],
     },
-    paging: 0,
+    paging: 1,
     nodeLabel: 'height',
     heightLabel: true,
     parentWeightLabel: false,
@@ -53,7 +53,7 @@ export class Charts extends React.Component {
 
       const chain = await getChain(blockRange, startDate, endDate, miner)
 
-      this.setState({ chain, paging: 0 })
+      this.setState({ chain, paging: 1 })
 
       // rerender graph on new db info because redraw doesn't always work with lots of new data
       this.renderGraph()
