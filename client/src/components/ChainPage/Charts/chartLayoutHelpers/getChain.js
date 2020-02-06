@@ -28,27 +28,27 @@ const createBlock = (block, blockParentInfo) => {
   }
 }
 
-const createEdge = (block, index, isBlockOrphan, timeToReceive) => {
+const createEdge = (block, isBlockOrphan, timeToReceive) => {
   const blockId = block.block
 
   return {
     sourcename: blockId,
     targetname: block.parent,
-    key: `${blockId}-${index}-e`,
+    key: `${blockId}-${block.parent}-e`,
     time: timeToReceive,
     edgeWeirdTime: isWeirdTime(timeToReceive),
     isOrphan: isBlockOrphan,
   }
 }
 
-const createEmptyEdges = (block, index, isBlockOrphan) => {
+const createEmptyEdges = (block, isBlockOrphan) => {
   const blockId = block.block
   const edgesToBeAdded = []
 
   edgesToBeAdded.push({
     sourcename: `${blockId}-empty`,
     targetname: block.parent,
-    key: `${blockId}-${index}-eb`,
+    key: `${blockId}-${block.parent}-eb`,
     edgeWeirdTime: isWeirdTime(),
     time: 0,
     isOrphan: 0,
@@ -57,7 +57,7 @@ const createEmptyEdges = (block, index, isBlockOrphan) => {
   edgesToBeAdded.push({
     sourcename: blockId,
     targetname: `${blockId}-empty`,
-    key: `${blockId}-${index}-ep`,
+    key: `${blockId}-${block.parent}-ep`,
     edgeWeirdTime: isWeirdTime(),
     time: 0,
     isOrphan: isBlockOrphan,
@@ -111,12 +111,12 @@ const blocksToChain = (blocksArr, bhRangeEnd) => {
     })
 
     if (isDirectParent) {
-      const newEdge = createEdge(block, index, isOrphan(block), timeToReceive)
+      const newEdge = createEdge(block, isOrphan(block), timeToReceive)
 
       chain.edges.push(newEdge)
     } else if (!blocks[blockId]) {
       const newEmptyBlock = createEmptyBlock(block)
-      const newEmptyEdges = createEmptyEdges(block, index, isOrphan(block))
+      const newEmptyEdges = createEmptyEdges(block, isOrphan(block))
 
       chain.nodes.push(newEmptyBlock)
       chain.edges.push(...newEmptyEdges)
