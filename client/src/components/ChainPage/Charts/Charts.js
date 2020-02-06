@@ -1,8 +1,8 @@
 import React from 'react'
-import { getChainData } from '../../../api'
 import { store } from '../../../context/store'
 import { Loader } from '../../shared/Loader'
 import { Graph } from './charts.styled'
+import { getChain } from './getChain'
 
 const dc_graph = window.dc_graph
 const dc = window.dc
@@ -30,6 +30,7 @@ export class Charts extends React.Component {
     const { blockRange: prevBlockRange, startDate: prevStartDate, endDate: prevEndDate, miner: prevMiner } = prevProps
     const { blockRange, startDate, endDate, miner } = this.props
 
+    // if changed input for sql then refetch query and reparse for graph
     if (
       blockRange.length === 2 &&
       blockRange[1] &&
@@ -41,101 +42,13 @@ export class Charts extends React.Component {
         prevEndDate !== endDate ||
         prevMiner !== miner)
     ) {
-      await this.getChain(blockRange[0], blockRange[1])
-      // rerender graph on new db info
+      let loading = true
+      this.setState({ loading })
+      const chain = await getChain(blockRange[0], blockRange[1], startDate, endDate, miner)
+      this.setState({ chain })
+      // rerender graph on new db info because redraw doesn't always work with lots of new data
       this.renderGraph()
     }
-  }
-
-  async getChain(bhRangeStart, bhRangeEnd) {
-    let loading = true
-    this.setState({ loading })
-
-    const { startDate, endDate, miner } = this.props
-    const blocksArr = await getChainData({
-      blockRange: [bhRangeStart, bhRangeEnd],
-      startDate,
-      endDate,
-      miner,
-    })
-    const chain = {
-      nodes: [],
-      edges: [],
-    }
-    const blocks = {}
-    const isWeirdTime = (timeToReceive) => {
-      if (timeToReceive <= 48) {
-        return 0
-      } else if (timeToReceive <= 51) {
-        return 1
-      } else if (timeToReceive <= 60) {
-        return 2
-      } else {
-        return 3
-      }
-    }
-
-    // block.block may appear multiple times
-    const blockParentInfo = {}
-    blocksArr.map((block) => {
-      blockParentInfo[block.parent] = { power: block.parentpower }
-    })
-    blocksArr.forEach((block, index) => {
-      // @todo: check if should be comparing parent timestamp or parent synced timestamp
-      const timeToReceive = parseInt(block.syncedtimestamp) - parseInt(block.parenttimestamp)
-      if (!blocks[block.block]) {
-        blocks[block.block] = index
-        chain.nodes.push({
-          id: blocks[block.block],
-          key: blocks[block.block].toString(),
-          height: block.height,
-          miner: block.miner,
-          parentWeight: block.parentweight,
-          timeToReceive: `${timeToReceive}s`,
-          weirdTime: isWeirdTime(timeToReceive),
-          blockCid: block.block,
-          minerPower: blockParentInfo[block.block] && blockParentInfo[block.block].power,
-          weight: block.weight,
-        })
-      }
-
-      if (block.parentheight && block.height && parseInt(block.parentheight) !== parseInt(block.height) - 1) {
-        chain.nodes.push({
-          key: `${blocks[block.block]}-empty`,
-          height: null,
-          miner: '0',
-          parentWeight: block.parentweight,
-          weirdTime: 0,
-        })
-        chain.edges.push({
-          sourcename: `${blocks[block.block]}-empty`,
-          targetname: blocks[block.parent],
-          key: `${blocks[block.block]}-eb`,
-          time: 0,
-          edgeTimeReceived: 0,
-          isOrphan: 0,
-        })
-        chain.edges.push({
-          sourcename: blocks[block.block],
-          targetname: `${blocks[block.block]}-empty`,
-          key: `${blocks[block.block]}-ep`,
-          time: 0,
-          edgeTimeReceived: 0,
-          isOrphan: blockParentInfo[block.block] && bhRangeEnd !== block.height ? 0 : 1,
-        })
-      } else {
-        const edge = {
-          sourcename: blocks[block.block],
-          targetname: blocks[block.parent],
-          key: `${index}-e`,
-          time: timeToReceive,
-        }
-        edge.edgeTimeReceived = isWeirdTime(timeToReceive)
-        edge.isOrphan = blockParentInfo[block.block] && bhRangeEnd !== block.height ? 0 : 1
-        chain.edges.push(edge)
-      }
-    })
-    this.setState({ chain })
   }
 
   build_data(nodes, edges) {
