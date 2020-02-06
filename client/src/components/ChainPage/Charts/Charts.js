@@ -76,13 +76,15 @@ export class Charts extends React.Component {
     }
 
     // block.block may appear multiple times
-    const blockInfo = {}
+    const blockParentInfo = {}
+    blocksArr.map((block) => {
+      blockParentInfo[block.parent] = { power: block.parentpower }
+    })
     blocksArr.forEach((block, index) => {
       // @todo: check if should be comparing parent timestamp or parent synced timestamp
       const timeToReceive = parseInt(block.syncedtimestamp) - parseInt(block.parenttimestamp)
       if (!blocks[block.block]) {
         blocks[block.block] = index
-        blockInfo[block.block] = block
         chain.nodes.push({
           id: blocks[block.block],
           key: blocks[block.block].toString(),
@@ -92,7 +94,7 @@ export class Charts extends React.Component {
           timeToReceive: `${timeToReceive}s`,
           weirdTime: isWeirdTime(timeToReceive),
           blockCid: block.block,
-          minerPower: block.power,
+          minerPower: blockParentInfo[block.block] && blockParentInfo[block.block].power,
           weight: block.weight,
         })
       }
@@ -103,21 +105,23 @@ export class Charts extends React.Component {
           height: null,
           miner: '0',
           parentWeight: block.parentweight,
-          weirdTime: 4,
+          weirdTime: 0,
         })
         chain.edges.push({
           sourcename: `${blocks[block.block]}-empty`,
           targetname: blocks[block.parent],
           key: `${blocks[block.block]}-eb`,
           time: 0,
-          dash: 0,
+          edgeTimeReceived: 0,
+          isOrphan: 0,
         })
         chain.edges.push({
           sourcename: blocks[block.block],
           targetname: `${blocks[block.block]}-empty`,
           key: `${blocks[block.block]}-ep`,
           time: 0,
-          dash: 0,
+          edgeTimeReceived: 0,
+          isOrphan: blockParentInfo[block.block] && bhRangeEnd !== block.height ? 0 : 1,
         })
       } else {
         const edge = {
@@ -126,8 +130,8 @@ export class Charts extends React.Component {
           key: `${index}-e`,
           time: timeToReceive,
         }
-        edge.dash = isWeirdTime(timeToReceive)
-
+        edge.edgeTimeReceived = isWeirdTime(timeToReceive)
+        edge.isOrphan = blockParentInfo[block.block] && bhRangeEnd !== block.height ? 0 : 1
         chain.edges.push(edge)
       }
     })
@@ -151,8 +155,11 @@ export class Charts extends React.Component {
     const blockHeightDimension = data.nodef.crossfilter.dimension((n) => n.height)
     const blockHeightGroup = blockHeightDimension.group()
 
-    const weirdTimeDimension = data.edgef.crossfilter.dimension((e) => e.dash)
+    const weirdTimeDimension = data.edgef.crossfilter.dimension((e) => e.edgeTimeReceived)
     const weirdTimeGroup = weirdTimeDimension.group()
+
+    const orphanDimension = data.edgef.crossfilter.dimension((e) => e.isOrphan)
+    const orphanGroup = orphanDimension.group()
 
     this.selectionDiagram
       .nodeDimension(data.nodef.dimension)
@@ -162,6 +169,7 @@ export class Charts extends React.Component {
 
     this.minerPie.dimension(minerDimension).group(minerGroup)
     this.blockHeightPie.dimension(blockHeightDimension).group(blockHeightGroup)
+    this.orphanPie.dimension(orphanDimension).group(orphanGroup)
     this.weirdTimeBar.dimension(weirdTimeDimension).group(weirdTimeGroup)
   }
 
@@ -171,6 +179,7 @@ export class Charts extends React.Component {
 
     this.minerPie = dc.pieChart('#minerPie')
     this.blockHeightPie = dc.pieChart('#blockHeightPie')
+    this.orphanPie = dc.pieChart('#orphanPie')
     this.weirdTimeBar = dc.rowChart('#weirdTimeBar')
 
     this.options = {
@@ -223,13 +232,18 @@ export class Charts extends React.Component {
     apply_engine_parameters(engine)
     // maximally distinct colors from: https://graphicdesign.stackexchange.com/revisions/3815/8
     // prettier-ignore
-    const colors = ["#FFFFFF","#000000","#FFFF00","#1CE6FF","#FF34FF","#FF4A46","#008941","#006FA6","#A30059","#FFDBE5","#7A4900","#0000A6","#63FFAC","#B79762","#004D43","#8FB0FF","#997D87","#5A0007","#809693","#FEFFE6","#1B4400","#4FC601","#3B5DFF","#4A3B53","#FF2F80","#61615A","#BA0900","#6B7900","#00C2A0","#FFAA92","#FF90C9","#B903AA","#D16100","#DDEFFF","#000035","#7B4F4B","#A1C299","#300018","#0AA6D8","#013349","#00846F","#372101","#FFB500","#C2FFED","#A079BF","#CC0744","#C0B9B2","#C2FF99","#001E09","#00489C","#6F0062","#0CBD66","#EEC3FF","#456D75","#B77B68","#7A87A1","#788D66","#885578","#FAD09F","#FF8A9A","#D157A0","#BEC459","#456648","#0086ED","#886F4C","#34362D","#B4A8BD","#00A6AA","#452C2C","#636375","#A3C8C9","#FF913F","#938A81","#575329","#00FECF","#B05B6F","#8CD0FF","#3B9700","#04F757","#C8A1A1","#1E6E00","#7900D7","#A77500","#6367A9","#A05837","#6B002C","#772600","#D790FF","#9B9700","#549E79","#FFF69F","#201625","#72418F","#BC23FF","#99ADC0","#3A2465","#922329","#5B4534","#FDE8DC","#404E55","#0089A3","#CB7E98","#A4E804","#324E72","#6A3A4C","#83AB58","#001C1E","#D1F7CE","#004B28","#C8D0F6","#A3A489","#806C66","#222800","#BF5650","#E83000","#66796D","#DA007C","#FF1A59","#8ADBB4","#1E0200","#5B4E51","#C895C5","#320033","#FF6832","#66E1D3","#CFCDAC","#D0AC94","#7ED379","#012C58","#7A7BFF","#D68E01","#353339","#78AFA1","#FEB2C6","#75797C","#837393","#943A4D","#B5F4FF","#D2DCD5","#9556BD","#6A714A","#001325","#02525F","#0AA3F7","#E98176","#DBD5DD","#5EBCD1","#3D4F44","#7E6405","#02684E","#962B75","#8D8546","#9695C5","#E773CE","#D86A78","#3E89BE","#CA834E","#518A87","#5B113C","#55813B","#E704C4","#00005F","#A97399","#4B8160","#59738A","#FF5DA7","#F7C9BF","#643127","#513A01","#6B94AA","#51A058","#A45B02","#1D1702","#E20027","#E7AB63","#4C6001","#9C6966","#64547B","#97979E","#006A66","#391406","#F4D749","#0045D2","#006C31","#DDB6D0","#7C6571","#9FB2A4","#00D891","#15A08A","#BC65E9","#FFFFFE","#C6DC99","#203B3C","#671190","#6B3A64","#F5E1FF","#FFA0F2","#CCAA35","#374527","#8BB400","#797868","#C6005A","#3B000A","#C86240","#29607C","#402334","#7D5A44","#CCB87C","#B88183","#AA5199","#B5D6C3","#A38469","#9F94F0","#A74571","#B894A6","#71BB8C","#00B433","#789EC9","#6D80BA","#953F00","#5EFF03","#E4FFFC","#1BE177","#BCB1E5","#76912F","#003109","#0060CD","#D20096","#895563","#29201D","#5B3213","#A76F42","#89412E","#1A3A2A","#494B5A","#A88C85","#F4ABAA","#A3F3AB","#00C6C8","#EA8B66","#958A9F","#BDC9D2","#9FA064","#BE4700","#658188","#83A485","#453C23","#47675D","#3A3F00","#061203","#DFFB71","#868E7E","#98D058","#6C8F7D","#D7BFC2","#3C3E6E","#D83D66","#2F5D9B","#6C5E46","#D25B88","#5B656C","#00B57F","#545C46","#866097","#365D25","#252F99","#00CCFF","#674E60","#FC009C","#92896B"];
+    const colors = ["#FFFFFF", "#000000", "#FFFF00", "#1CE6FF", "#FF34FF", "#FF4A46", "#008941", "#006FA6", "#A30059", "#FFDBE5", "#7A4900", "#0000A6", "#63FFAC", "#B79762", "#004D43", "#8FB0FF", "#997D87", "#5A0007", "#809693", "#FEFFE6", "#1B4400", "#4FC601", "#3B5DFF", "#4A3B53", "#FF2F80", "#61615A", "#BA0900", "#6B7900", "#00C2A0", "#FFAA92", "#FF90C9", "#B903AA", "#D16100", "#DDEFFF", "#000035", "#7B4F4B", "#A1C299", "#300018", "#0AA6D8", "#013349", "#00846F", "#372101", "#FFB500", "#C2FFED", "#A079BF", "#CC0744", "#C0B9B2", "#C2FF99", "#001E09", "#00489C", "#6F0062", "#0CBD66", "#EEC3FF", "#456D75", "#B77B68", "#7A87A1", "#788D66", "#885578", "#FAD09F", "#FF8A9A", "#D157A0", "#BEC459", "#456648", "#0086ED", "#886F4C", "#34362D", "#B4A8BD", "#00A6AA", "#452C2C", "#636375", "#A3C8C9", "#FF913F", "#938A81", "#575329", "#00FECF", "#B05B6F", "#8CD0FF", "#3B9700", "#04F757", "#C8A1A1", "#1E6E00", "#7900D7", "#A77500", "#6367A9", "#A05837", "#6B002C", "#772600", "#D790FF", "#9B9700", "#549E79", "#FFF69F", "#201625", "#72418F", "#BC23FF", "#99ADC0", "#3A2465", "#922329", "#5B4534", "#FDE8DC", "#404E55", "#0089A3", "#CB7E98", "#A4E804", "#324E72", "#6A3A4C", "#83AB58", "#001C1E", "#D1F7CE", "#004B28", "#C8D0F6", "#A3A489", "#806C66", "#222800", "#BF5650", "#E83000", "#66796D", "#DA007C", "#FF1A59", "#8ADBB4", "#1E0200", "#5B4E51", "#C895C5", "#320033", "#FF6832", "#66E1D3", "#CFCDAC", "#D0AC94", "#7ED379", "#012C58", "#7A7BFF", "#D68E01", "#353339", "#78AFA1", "#FEB2C6", "#75797C", "#837393", "#943A4D", "#B5F4FF", "#D2DCD5", "#9556BD", "#6A714A", "#001325", "#02525F", "#0AA3F7", "#E98176", "#DBD5DD", "#5EBCD1", "#3D4F44", "#7E6405", "#02684E", "#962B75", "#8D8546", "#9695C5", "#E773CE", "#D86A78", "#3E89BE", "#CA834E", "#518A87", "#5B113C", "#55813B", "#E704C4", "#00005F", "#A97399", "#4B8160", "#59738A", "#FF5DA7", "#F7C9BF", "#643127", "#513A01", "#6B94AA", "#51A058", "#A45B02", "#1D1702", "#E20027", "#E7AB63", "#4C6001", "#9C6966", "#64547B", "#97979E", "#006A66", "#391406", "#F4D749", "#0045D2", "#006C31", "#DDB6D0", "#7C6571", "#9FB2A4", "#00D891", "#15A08A", "#BC65E9", "#FFFFFE", "#C6DC99", "#203B3C", "#671190", "#6B3A64", "#F5E1FF", "#FFA0F2", "#CCAA35", "#374527", "#8BB400", "#797868", "#C6005A", "#3B000A", "#C86240", "#29607C", "#402334", "#7D5A44", "#CCB87C", "#B88183", "#AA5199", "#B5D6C3", "#A38469", "#9F94F0", "#A74571", "#B894A6", "#71BB8C", "#00B433", "#789EC9", "#6D80BA", "#953F00", "#5EFF03", "#E4FFFC", "#1BE177", "#BCB1E5", "#76912F", "#003109", "#0060CD", "#D20096", "#895563", "#29201D", "#5B3213", "#A76F42", "#89412E", "#1A3A2A", "#494B5A", "#A88C85", "#F4ABAA", "#A3F3AB", "#00C6C8", "#EA8B66", "#958A9F", "#BDC9D2", "#9FA064", "#BE4700", "#658188", "#83A485", "#453C23", "#47675D", "#3A3F00", "#061203", "#DFFB71", "#868E7E", "#98D058", "#6C8F7D", "#D7BFC2", "#3C3E6E", "#D83D66", "#2F5D9B", "#6C5E46", "#D25B88", "#5B656C", "#00B57F", "#545C46", "#866097", "#365D25", "#252F99", "#00CCFF", "#674E60", "#FC009C", "#92896B"];
     const timeReceivedDecorations = [
-      { color: '#4BB543', ray: null, label: '<= 48 s' },
-      { color: '#AFD71C', ray: null, label: '<= 51 s' },
-      { color: '#eed202', ray: null, label: '<= 60 s' },
-      { color: '#F70000', ray: null, label: '> 60s' },
-      { color: '#000000', ray: null, label: 'skipped' },
+      { color: '#c4c4c4', label: '<= 48 s' },
+      { color: '#AFD71C', label: '<= 51 s' },
+      { color: '#eed202', label: '<= 60 s' },
+      { color: '#F70000', label: '> 60s' },
+      { color: '#000000', label: 'skipped' },
+    ]
+
+    const orphanDecorations = [
+      { ray: null, label: '' },
+      { ray: [5, 5], label: 'orphan' },
     ]
 
     this.selectionDiagram
@@ -285,8 +299,10 @@ export class Charts extends React.Component {
           .range(colors),
       )
       .nodeTitle(null)
-      .edgeStrokeDashArray((e) => timeReceivedDecorations[e.value.dash].ray)
-      .edgeStroke('#c4c4c4')
+      .edgeStrokeDashArray((e) => {
+        return orphanDecorations[e.value.isOrphan].ray
+      })
+      .edgeStroke((e) => timeReceivedDecorations[e.value.edgeTimeReceived].color)
       .nodeStroke((kv) => timeReceivedDecorations[kv.value.weirdTime].color)
       .nodeStrokeWidth(3)
       .edgeArrowhead(this.sync_url.vals.arrows === 'head' || this.sync_url.vals.arrows === 'both' ? 'vee' : null)
@@ -395,6 +411,13 @@ export class Charts extends React.Component {
       )
       .label((n) => n.key)
       .title((kv) => kv.key)
+
+    this.orphanPie
+      .width(150)
+      .height(150)
+      .radius(75)
+      .label((kv) => orphanDecorations[kv.key].label)
+      .title((kv) => orphanDecorations[kv.key].label)
 
     this.weirdTimeBar
       .width(260)

@@ -7,27 +7,27 @@ export const getChain = async ({ startBlock, endBlock, startDate, endDate, miner
 
   if (startBlock) {
     whereArgs.push(Number(startBlock))
-    wheres.push(`block.height >= $${whereArgs.length}`)
+    wheres.push(`main_block.height >= $${whereArgs.length}`)
   }
   if (endBlock) {
     whereArgs.push(endBlock)
-    wheres.push(`block.height <= $${whereArgs.length}`)
+    wheres.push(`main_block.height <= $${whereArgs.length}`)
   }
   if (startDate) {
     let date = new Date(startDate)
     let seconds = date.getTime() / 1000
     whereArgs.push(seconds)
-    wheres.push(`block.timestamp > $${whereArgs.length}`)
+    wheres.push(`main_block.timestamp > $${whereArgs.length}`)
   }
   if (endDate) {
     let date = new Date(endDate)
     let seconds = date.getTime() / 1000
     whereArgs.push(seconds)
-    wheres.push(`block.timestamp < $${whereArgs.length}`)
+    wheres.push(`main_block.timestamp < $${whereArgs.length}`)
   }
   if (miner) {
     whereArgs.push(miner)
-    wheres.push(`block.miner = $${whereArgs.length}`)
+    wheres.push(`main_block.miner = $${whereArgs.length}`)
   }
 
   skip = Number(skip)
@@ -46,33 +46,33 @@ export const getChain = async ({ startBlock, endBlock, startDate, endDate, miner
   }
 
   const query = `
-  SELECT
-    block,
-    parent,
-    block.miner,
-    block.height,
-    block.parentweight,
-    block.timestamp,
-    parent.timestamp as parenttimestamp,
-    parent.height as parentheight,
-    heads.power as power,
-    synced.add_ts as syncedtimestamp
+    SELECT
+      main_block.cid as block,
+      block_parent.cid as parent,
+      main_block.miner,
+      main_block.height,
+      main_block.parentweight,
+      main_block.timestamp,
+      block_parent.timestamp as parenttimestamp,
+      block_parent.height as parentheight,
+      heads.power as parentpower,
+      synced.add_ts as syncedtimestamp
     FROM
-      block_parents
+      block_parents bp
     INNER JOIN
-      blocks block ON block_parents.block = block.cid
+      blocks main_block ON bp.block = main_block.cid
     INNER JOIN
-      blocks parent ON block_parents.parent = parent.cid
+      blocks block_parent ON bp.parent = block_parent.cid
     INNER JOIN
-    blocks_synced synced ON synced.cid = block.cid
+      blocks_synced synced ON synced.cid = main_block.cid
     LEFT JOIN
-      miner_heads heads ON heads.stateroot = block.parentstateroot and heads.addr = block.miner
+      miner_heads heads ON heads.stateroot = main_block.parentstateroot and heads.addr = block_parent.miner
 
 
     ${wheres.length ? 'WHERE' : ''}
     ${wheres.join(' AND ')}
 
-    ${sortOrder ? `ORDER BY block.height ${sortOrder}` : 'ORDER BY block.height ASC'}
+    ${sortOrder ? `ORDER BY main_block.height ${sortOrder}` : 'ORDER BY main_block.height ASC'}
 
     ${skip ? `OFFSET ${skip}` : ''}
 
