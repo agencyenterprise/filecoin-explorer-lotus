@@ -81,7 +81,8 @@ export class Charts extends React.Component {
       blockParentInfo[block.parent] = { power: block.parentpower }
     })
     blocksArr.forEach((block, index) => {
-      const timeToReceive = parseInt(block.timestamp) - parseInt(block.parenttimestamp)
+      // @todo: check if should be comparing parent timestamp or parent synced timestamp
+      const timeToReceive = parseInt(block.syncedtimestamp) - parseInt(block.parenttimestamp)
       if (!blocks[block.block]) {
         blocks[block.block] = index
         chain.nodes.push({
