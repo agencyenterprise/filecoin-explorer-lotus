@@ -1,8 +1,8 @@
 import React from 'react'
 import { store } from '../../../context/store'
 import { Loader } from '../../shared/Loader'
-import { Graph } from './charts.styled'
-import { getChain } from './chartLayoutHelpers/getChain'
+import { Graph, FetchMore } from './charts.styled'
+import { getChain, fetchMore } from './chartLayoutHelpers/getChain'
 import { chartOptions } from './chartLayoutHelpers/chartOptions'
 import { apply_engine_parameters } from './chartLayoutHelpers/applyEngineParams'
 import { selectionDiagramConfig } from './chartLayoutHelpers/charts/selectionDiagramConfig'
@@ -14,7 +14,6 @@ import { weirdTimeBar } from './chartLayoutHelpers/charts/weirdTimeBar'
 const dc_graph = window.dc_graph
 const dc = window.dc
 const sync_url_options = window.sync_url_options
-const d3 = window.d3
 const dcgraph_domain = window.dcgraph_domain
 const querystring = window.querystring
 
@@ -26,6 +25,7 @@ export class Charts extends React.Component {
       nodes: [],
       links: [],
     },
+    paging: 0,
     nodeLabel: 'height',
     heightLabel: true,
     parentWeightLabel: false,
@@ -49,10 +49,12 @@ export class Charts extends React.Component {
         prevEndDate !== endDate ||
         prevMiner !== miner)
     ) {
-      let loading = true
-      this.setState({ loading })
-      const chain = await getChain(blockRange[0], blockRange[1], startDate, endDate, miner)
-      this.setState({ chain })
+      this.setState({ loading: true })
+
+      const chain = await getChain(blockRange, startDate, endDate, miner)
+
+      this.setState({ chain, paging: 0 })
+
       // rerender graph on new db info because redraw doesn't always work with lots of new data
       this.renderGraph()
     }
@@ -129,8 +131,7 @@ export class Charts extends React.Component {
 
     dc.renderAll()
 
-    let loading = false
-    this.setState({ loading })
+    this.setState({ loading: false })
   }
 
   redrawGraph = () => {
@@ -149,13 +150,40 @@ export class Charts extends React.Component {
     })
   }
 
+  fetchMore = async () => {
+    const { blockRange, startDate, endDate, miner } = this.props
+    const { chain, paging } = this.state
+
+    this.setState({ loading: true })
+
+    const newChain = await fetchMore(blockRange, startDate, endDate, miner, chain, paging)
+
+    this.setState(
+      {
+        loading: false,
+        chain: newChain,
+        paging: this.state.paging + 1,
+      },
+      () => {
+        const data = this.build_data(newChain.nodes, newChain.edges)
+
+        this.selectionDiagram
+          .nodeDimension(data.nodef.dimension)
+          .nodeGroup(data.nodef.group)
+          .edgeDimension(data.edgef.dimension)
+          .edgeGroup(data.edgef.group)
+          .redraw()
+      },
+    )
+  }
+
   render() {
     const { loading } = this.state
 
     return (
       <>
         {loading && <Loader />}
-        <Graph id="graph" />
+        <Graph id="graph">{!loading && <FetchMore onClick={this.fetchMore}>Fetch more</FetchMore>}</Graph>
       </>
     )
   }
