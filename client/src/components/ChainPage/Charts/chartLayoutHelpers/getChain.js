@@ -28,27 +28,27 @@ const createBlock = (block, blockParentInfo) => {
   }
 }
 
-const createEdge = (block, isBlockOrphan, timeToReceive) => {
+const createEdge = (block, index, isBlockOrphan, timeToReceive) => {
   const blockId = block.block
 
   return {
     sourcename: blockId,
     targetname: block.parent,
-    key: `${blockId}-e`,
+    key: `${blockId}-${index}-e`,
     time: timeToReceive,
     edgeWeirdTime: isWeirdTime(timeToReceive),
     isOrphan: isBlockOrphan,
   }
 }
 
-const createEmptyEdges = (block, isBlockOrphan) => {
+const createEmptyEdges = (block, index, isBlockOrphan) => {
   const blockId = block.block
   const edgesToBeAdded = []
 
   edgesToBeAdded.push({
     sourcename: `${blockId}-empty`,
     targetname: block.parent,
-    key: `${blockId}-eb`,
+    key: `${blockId}-${index}-eb`,
     edgeWeirdTime: isWeirdTime(),
     time: 0,
     isOrphan: 0,
@@ -57,7 +57,7 @@ const createEmptyEdges = (block, isBlockOrphan) => {
   edgesToBeAdded.push({
     sourcename: blockId,
     targetname: `${blockId}-empty`,
-    key: `${blockId}-ep`,
+    key: `${blockId}-${index}-ep`,
     edgeWeirdTime: isWeirdTime(),
     time: 0,
     isOrphan: isBlockOrphan,
@@ -91,8 +91,6 @@ const blocksToChain = (blocksArr, bhRangeEnd) => {
     // block.block may appear multiple times because there are many parent child relationships
     // we want to only add the node once but add all the edges to represent the different parent/child relationships
     if (!blocks[blockId]) {
-      blocks[blockId] = true
-
       chain.nodes.push(createBlock(block, blockParentInfo))
     }
 
@@ -113,16 +111,17 @@ const blocksToChain = (blocksArr, bhRangeEnd) => {
     })
 
     if (isDirectParent) {
-      const newEdge = createEdge(block, isOrphan(block), timeToReceive)
+      const newEdge = createEdge(block, index, isOrphan(block), timeToReceive)
 
       chain.edges.push(newEdge)
-    } else {
+    } else if (!blocks[blockId]) {
       const newEmptyBlock = createEmptyBlock(block)
-      const newEmptyEdges = createEmptyEdges(block, isOrphan(block))
+      const newEmptyEdges = createEmptyEdges(block, index, isOrphan(block))
 
       chain.nodes.push(newEmptyBlock)
       chain.edges.push(...newEmptyEdges)
     }
+    blocks[blockId] = true
   })
 
   return chain
