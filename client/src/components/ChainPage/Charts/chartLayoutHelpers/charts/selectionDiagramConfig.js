@@ -29,7 +29,6 @@ export const selectionDiagramConfig = (engine, sync_url) => {
     .height('auto')
     .mouseZoomable(true)
     .nodeOrdering((n) => n.value.height)
-    .nodeStrokeWidth(0) // turn off outlines
     .edgeLabel((n) => `${n.value.time}`)
     .nodeLabelFill((n) => {
       const rgb = d3.rgb(selectionDiagram.nodeFillScale()(selectionDiagram.nodeFill()(n))),
@@ -38,7 +37,6 @@ export const selectionDiagramConfig = (engine, sync_url) => {
 
       return brightness > 127 ? 'black' : 'ghostwhite'
     })
-    .nodeFill((kv) => kv.value.miner)
     .nodeOpacity(0.25)
     .edgeOpacity(0.25)
     .timeLimit(1000)
@@ -53,8 +51,6 @@ export const selectionDiagramConfig = (engine, sync_url) => {
       return orphanRays[e.value.isOrphan]
     })
     .edgeStroke((e) => timeReceivedDecorations[e.value.edgeWeirdTime].color)
-    .nodeStroke((kv) => timeReceivedDecorations[kv.value.weirdTime].color)
-    .nodeStrokeWidth(3)
     .edgeArrowhead(sync_url.vals.arrows === 'head' || sync_url.vals.arrows === 'both' ? 'vee' : null)
     .edgeArrowtail(sync_url.vals.arrows === 'tail' || sync_url.vals.arrows === 'both' ? 'crow' : null)
 
@@ -99,7 +95,7 @@ export const selectionDiagramConfig = (engine, sync_url) => {
     'highlight-neighbors',
     dc_graph
       .highlight_neighbors({
-        edgeStroke: 'blue',
+        edgeStroke: '#0097b4',
         edgeStrokeWidth: 3,
       })
       .durationOverride(0),

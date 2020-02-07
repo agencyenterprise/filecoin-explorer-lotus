@@ -1,4 +1,5 @@
 import React from 'react'
+import { visuallyDistinctColors } from './chartLayoutHelpers/visuallyDistinctColorSet'
 import { store } from '../../../context/store'
 import { Loader } from '../../shared/Loader'
 import { Graph, FetchMore } from './charts.styled'
@@ -30,6 +31,8 @@ export class Charts extends React.Component {
     nodeLabel: 'height',
     heightLabel: true,
     parentWeightLabel: false,
+    disableMinerColor: false,
+    disableTipsetColor: false,
     weight: false,
     loading: false,
   }
@@ -126,6 +129,25 @@ export class Charts extends React.Component {
       }
 
       return label
+    })
+
+    this.selectionDiagram
+      .nodeStroke((kv) => {
+        const { disableTipsetColor } = this.context.state.nodeCheckbox
+        if (!disableTipsetColor) {
+          const tipsetVal = kv.value.tipset % visuallyDistinctColors.length
+          return visuallyDistinctColors[tipsetVal]
+        }
+        return null
+      })
+      .nodeStrokeWidth(6)
+
+    this.selectionDiagram.nodeFill((kv) => {
+      const { disableMinerColor } = this.context.state.nodeCheckbox
+      if (!disableMinerColor) {
+        return kv.value.miner
+      }
+      return 0
     })
 
     this.populate(this.sync_url.vals.n)
