@@ -32,11 +32,19 @@ const ControlsComponent = ({
   minBlock,
   maxBlock,
 }) => {
-  const [internalRange, setInternalRange] = useState([Math.max(0, maxBlock - constants.maxBlockRange), maxBlock])
+  const [isFirstCall, setIsFirstCall] = useState(true)
+  const [internalRange, setInternalRange] = useState([0, 0])
   const { state, dispatch } = useContext(store)
 
   useEffect(() => {
     if (maxBlock !== internalRange[0]) {
+      if (isFirstCall) {
+        setInternalRange([Math.max(0, maxBlock - constants.initialBlockRangeLimit), maxBlock])
+        setIsFirstCall(false)
+
+        return
+      }
+
       setInternalRange([Math.max(0, maxBlock - constants.maxBlockRange), maxBlock])
     }
 
