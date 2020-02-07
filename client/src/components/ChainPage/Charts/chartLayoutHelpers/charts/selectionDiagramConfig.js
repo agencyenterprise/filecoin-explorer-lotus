@@ -6,6 +6,14 @@ const d3 = window.d3
 export const selectionDiagramConfig = (engine, sync_url) => {
   const selectionDiagram = dc_graph.diagram('#graph')
   window.selectionDiagram = selectionDiagram
+  const orphanRays = [null, [5, 5]]
+  const timeReceivedDecorations = [
+    { color: '#c4c4c4', label: 'skipped' },
+    { color: '#c4c4c4', label: '<= 48 s' },
+    { color: '#AFD71C', label: '<= 51 s' },
+    { color: '#ffa600', label: '<= 60 s' },
+    { color: '#dc3963', label: '> 60s' },
+  ]
 
   selectionDiagram
     .layoutEngine(engine)
@@ -42,10 +50,10 @@ export const selectionDiagramConfig = (engine, sync_url) => {
     )
     .nodeTitle(null)
     .edgeStrokeDashArray((e) => {
-      return e.value.isOrphan.ray
+      return orphanRays[e.value.isOrphan]
     })
-    .edgeStroke((e) => e.value.edgeWeirdTime.color)
-    .nodeStroke((kv) => kv.value.weirdTime.color)
+    .edgeStroke((e) => timeReceivedDecorations[e.value.edgeWeirdTime].color)
+    .nodeStroke((kv) => timeReceivedDecorations[kv.value.weirdTime].color)
     .nodeStrokeWidth(3)
     .edgeArrowhead(sync_url.vals.arrows === 'head' || sync_url.vals.arrows === 'both' ? 'vee' : null)
     .edgeArrowtail(sync_url.vals.arrows === 'tail' || sync_url.vals.arrows === 'both' ? 'crow' : null)
