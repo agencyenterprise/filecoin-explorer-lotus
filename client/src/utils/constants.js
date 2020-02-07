@@ -1,3 +1,3 @@
 export const constants = {
-  maxBlockRange: 100,
+  maxBlockRange: 75,
 }
