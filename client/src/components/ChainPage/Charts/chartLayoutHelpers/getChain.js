@@ -114,7 +114,7 @@ const blocksToChain = (blocksArr, bhRangeEnd) => {
       miner: '0',
       parentWeight: block.parentweight,
       weirdTime: isWeirdTime(),
-      tipset: tipsets[tipsetKey],
+      tipset: 1,
     })
 
     if (isDirectParent) {
@@ -146,8 +146,8 @@ export const getChain = async (blockRange, startDate, endDate, miner) => {
 }
 
 export const fetchMore = async (blockRange, startDate, endDate, miner, chain, paging) => {
-  let from = blockRange[0] - 5 * paging
-  const to = blockRange[0] - 5 * (paging - 1)
+  let from = blockRange[0] - 10 * paging
+  const to = blockRange[0] - 10 * (paging - 1)
 
   if (from < 0) {
     from = 0
