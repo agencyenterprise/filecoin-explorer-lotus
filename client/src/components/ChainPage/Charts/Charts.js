@@ -2,7 +2,7 @@ import React from 'react'
 import { visuallyDistinctColors } from './chartLayoutHelpers/visuallyDistinctColorSet'
 import { store } from '../../../context/store'
 import { Loader } from '../../shared/Loader'
-import { Graph, FetchMore } from './charts.styled'
+import { Graph } from './charts.styled'
 import { getChain, fetchMore } from './chartLayoutHelpers/getChain'
 import { chartOptions } from './chartLayoutHelpers/chartOptions'
 import { apply_engine_parameters } from './chartLayoutHelpers/applyEngineParams'
@@ -17,7 +17,6 @@ const dc = window.dc
 const sync_url_options = window.sync_url_options
 const dcgraph_domain = window.dcgraph_domain
 const querystring = window.querystring
-const d3 = window.d3
 
 export class Charts extends React.Component {
   static contextType = store
@@ -40,8 +39,9 @@ export class Charts extends React.Component {
   componentDidMount() {
     // todo: need to update this to account for moving the graph a lot at once
     let fetching = false
-    document.addEventListener('bottomSpace', async (event) => {
-      if (event.detail > 20 && !fetching) {
+
+    document.addEventListener('bottomSpace', async ({ detail: { space, difference } }) => {
+      if (!fetching && space > 200 && difference > 0) {
         fetching = true
         await this.fetchMore()
         fetching = false

@@ -85,6 +85,7 @@ const blocksToChain = (blocksArr, bhRangeEnd) => {
   blocksArr.forEach((block, index) => {
     blockParentInfo[block.parent] = { power: block.parentpower }
     const tipsetKey = tipsetKeyFormatter(block)
+
     if (!tipsets[tipsetKey]) {
       tipsets[tipsetKey] = index
     }
@@ -106,7 +107,6 @@ const blocksToChain = (blocksArr, bhRangeEnd) => {
     const isOrphan = (block) => {
       return blockParentInfo[block.block] && bhRangeEnd !== block.height ? 0 : 1
     }
-    const tipsetKey = tipsetKeyFormatter(block)
 
     const createEmptyBlock = (block) => ({
       key: `${block.block}-empty`,
