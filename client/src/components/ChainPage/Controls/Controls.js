@@ -15,9 +15,11 @@ import { RangeInputs } from './RangeInputs'
 const Range = Slider.createSliderWithTooltip(Slider.Range)
 
 const nodeLabelOptions = [
-  { value: 'heightLabel', label: 'height' },
-  { value: 'parentWeightLabel', label: 'parent weight' },
-  { value: 'weight', label: 'weight contributed by the block' },
+  { value: 'heightLabel', label: 'show height' },
+  { value: 'parentWeightLabel', label: 'show parent weight' },
+  // { value: 'weight', label: 'weight contributed by the block' },
+  { value: 'disableMinerColor', label: 'disable miner color' },
+  { value: 'disableTipsetColor', label: 'disable tipset color' },
 ]
 
 const ControlsComponent = ({
@@ -53,7 +55,7 @@ const ControlsComponent = ({
   const options = nodeLabelOptions.map((item, i) => (
     <Fragment key={item.value}>
       <Checkbox checked={state.nodeCheckbox[item.value]} onChange={changeNodeLabel} value={item.value}>
-        Show {item.label}
+        {item.label}
       </Checkbox>
       {i < nodeLabelOptions.length - 1 && <DashedLine />}
     </Fragment>

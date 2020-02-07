@@ -8,9 +8,14 @@ const isWeirdTime = (timeToReceive) => {
   return 4
 }
 
-const createBlock = (block, blockParentInfo) => {
+const tipsetKeyFormatter = (block) => {
+  return `${block.parentstateroot}-${block.height}`
+}
+
+const createBlock = (block, blockParentInfo, tipsets) => {
   const blockId = block.block
   const timeToReceive = parseInt(block.syncedtimestamp) - parseInt(block.parenttimestamp)
+  const tipsetKey = tipsetKeyFormatter(block)
 
   return {
     id: blockId,
@@ -23,6 +28,7 @@ const createBlock = (block, blockParentInfo) => {
     blockCid: blockId,
     minerPower: blockParentInfo[blockId] && blockParentInfo[blockId].power,
     weight: block.weight,
+    tipset: tipsets[tipsetKey],
   }
 }
 
@@ -74,11 +80,14 @@ const blocksToChain = (blocksArr, bhRangeEnd) => {
   // used to store info for data transformations necessary to parse query data to right format
   const blocks = {}
   const blockParentInfo = {}
-  const blockInfo = {}
+  const tipsets = {}
 
-  blocksArr.forEach((block) => {
+  blocksArr.forEach((block, index) => {
     blockParentInfo[block.parent] = { power: block.parentpower }
-    blockInfo[block.block] = block
+    const tipsetKey = tipsetKeyFormatter(block)
+    if (!tipsets[tipsetKey]) {
+      tipsets[tipsetKey] = index
+    }
   })
 
   blocksArr.forEach((block, index) => {
@@ -89,7 +98,7 @@ const blocksToChain = (blocksArr, bhRangeEnd) => {
     // block.block may appear multiple times because there are many parent child relationships
     // we want to only add the node once but add all the edges to represent the different parent/child relationships
     if (!blocks[blockId]) {
-      chain.nodes.push(createBlock(block, blockParentInfo))
+      chain.nodes.push(createBlock(block, blockParentInfo, tipsets))
     }
 
     const isDirectParent = Number(block.parentheight) === Number(block.height) - 1
@@ -97,6 +106,7 @@ const blocksToChain = (blocksArr, bhRangeEnd) => {
     const isOrphan = (block) => {
       return blockParentInfo[block.block] && bhRangeEnd !== block.height ? 0 : 1
     }
+    const tipsetKey = tipsetKeyFormatter(block)
 
     const createEmptyBlock = (block) => ({
       key: `${block.block}-empty`,
@@ -104,6 +114,7 @@ const blocksToChain = (blocksArr, bhRangeEnd) => {
       miner: '0',
       parentWeight: block.parentweight,
       weirdTime: isWeirdTime(),
+      tipset: tipsets[tipsetKey],
     })
 
     if (isDirectParent) {

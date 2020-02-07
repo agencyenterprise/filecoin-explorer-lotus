@@ -18,4 +18,12 @@ export const visuallyDistinctColors = [
   '#ff7478',
   '#ff874c',
   '#ffa600',
+  '#0788b3',
+  '#0097b4',
+  '#00a4a4',
+  '#00ae86',
+  '#3db55f',
+  '#83b733',
+  '#c1b300',
+  '#ffa600',
 ]

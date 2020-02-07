@@ -53,6 +53,7 @@ export const getChain = async ({ startBlock, endBlock, startDate, endDate, miner
     main_block.height,
     main_block.parentweight,
     main_block.timestamp,
+    main_block.parentstateroot,
     parent_block.timestamp as parenttimestamp,
     parent_block.height as parentheight,
     heads.power as parentpower,
