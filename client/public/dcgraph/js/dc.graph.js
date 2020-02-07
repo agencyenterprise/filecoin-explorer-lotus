@@ -5406,7 +5406,10 @@
         }, delay)
       }
 
-      let lastPos = Number.NEGATIVE_INFINITY
+      let lastPos = {
+        top: Number.POSITIVE_INFINITY,
+        bottom: Number.NEGATIVE_INFINITY,
+      }
 
       function globalTransform(pos, scale, animate) {
         _translate = pos
@@ -5414,21 +5417,35 @@
         var obj = _g
         if (animate) obj = _g.transition().duration(_diagram.zoomDuration())
 
-        const checkForBottomSpace = () => {
+        const checkForSpace = () => {
           const draw = document.getElementsByClassName('draw')
+          const rect = draw[0].getBoundingClientRect()
 
-          const bottomBlankSpace = window.innerHeight - (draw[0].getBoundingClientRect().height + pos[1])
-          const event = new CustomEvent('bottomSpace', {
+          const topBlankSpace = rect.top
+          const bottomBlankSpace = window.innerHeight - (rect.height + pos[1])
+
+          const event = new CustomEvent('space', {
             detail: {
-              space: bottomBlankSpace,
-              difference: bottomBlankSpace - lastPos,
+              top: {
+                space: topBlankSpace,
+                difference: topBlankSpace - lastPos.top,
+              },
+              bottom: {
+                space: bottomBlankSpace,
+                difference: bottomBlankSpace - lastPos.bottom,
+              },
             },
           })
 
-          lastPos = bottomBlankSpace
+          lastPos = {
+            top: topBlankSpace,
+            bottom: bottomBlankSpace,
+          }
+
           document.dispatchEvent(event)
         }
-        throttleFunction(checkForBottomSpace, 1000)
+
+        throttleFunction(checkForSpace, 1000)
 
         obj.attr('transform', 'translate(' + pos + ')' + ' scale(' + scale + ')')
       }

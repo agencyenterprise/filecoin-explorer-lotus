@@ -145,12 +145,25 @@ export const getChain = async (blockRange, startDate, endDate, miner) => {
   return blocksToChain(blocksArr, blockRange[1])
 }
 
-export const fetchMore = async (blockRange, startDate, endDate, miner, chain, paging) => {
-  let from = blockRange[0] - 10 * paging
-  const to = blockRange[0] - 10 * (paging - 1)
+export const fetchMore = async (blockRange, maxBlock, startDate, endDate, miner, chain, paging, inverse) => {
+  let from = blockRange[0] - 10 * paging.bottom
+  let to = blockRange[0] - 10 * (paging.bottom - 1)
+
+  if (inverse) {
+    from = blockRange[1] + 10 * (paging.top - 1)
+    to = blockRange[1] + 10 * paging.top
+  }
 
   if (from < 0) {
     from = 0
+  }
+
+  if (to > maxBlock) {
+    to = maxBlock
+  }
+
+  if (from === to) {
+    return chain
   }
 
   const blocksArr = await getChainData({
@@ -163,8 +176,8 @@ export const fetchMore = async (blockRange, startDate, endDate, miner, chain, pa
   const chainToAppend = blocksToChain(blocksArr, blockRange[1])
 
   const newChain = {
-    nodes: [...chain.nodes, ...chainToAppend.nodes],
-    edges: [...chain.edges, ...chainToAppend.edges],
+    nodes: [...chainToAppend.nodes, ...chain.nodes],
+    edges: [...chainToAppend.edges, ...chain.edges],
   }
 
   return newChain

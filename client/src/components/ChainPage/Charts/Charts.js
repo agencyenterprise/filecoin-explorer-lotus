@@ -26,7 +26,10 @@ export class Charts extends React.Component {
       nodes: [],
       links: [],
     },
-    paging: 1,
+    paging: {
+      top: 1,
+      bottom: 1,
+    },
     nodeLabel: 'height',
     heightLabel: true,
     parentWeightLabel: false,
@@ -37,25 +40,34 @@ export class Charts extends React.Component {
     fetching: false,
   }
 
-  bottomSpaceListener = async ({ detail: { space, difference } }) => {
+  spaceListener = async ({
+    detail: {
+      top: { space: topSpace, difference: topDifference },
+      bottom: { space: bottomSpace, difference: bottomDifference },
+    },
+  }) => {
     // todo: need to update this to account for moving the graph a lot at once
     const { fetching } = this.state
 
-    if (!fetching && space > 200 && difference > 0) {
+    const shouldFetchFromTop = topSpace > 200 && topDifference > 0
+    const shouldFetchFromBottom = bottomSpace > 200 && bottomDifference > 0
+    const shouldFetch = shouldFetchFromTop || shouldFetchFromBottom
+
+    if (!fetching && shouldFetch) {
       this.setState({ fething: true })
 
-      await this.fetchMore()
+      await this.fetchMore(!!shouldFetchFromTop)
 
       this.setState({ fething: false })
     }
   }
 
   componentDidMount() {
-    document.addEventListener('bottomSpace', this.bottomSpaceListener)
+    document.addEventListener('space', this.spaceListener)
   }
 
   componentWillUnmount() {
-    document.removeEventListener('bottomSpace', this.bottomSpaceListener)
+    document.removeEventListener('space', this.spaceListener)
   }
 
   async componentDidUpdate(prevProps, prevState, snapshot) {
@@ -78,7 +90,7 @@ export class Charts extends React.Component {
 
       const chain = await getChain(blockRange, startDate, endDate, miner)
 
-      this.setState({ chain, paging: 1 })
+      this.setState({ chain, paging: { top: 1, bottom: 1 } })
 
       // rerender graph on new db info because redraw doesn't always work with lots of new data
       this.renderGraph()
@@ -194,19 +206,24 @@ export class Charts extends React.Component {
     })
   }
 
-  fetchMore = async () => {
-    const { blockRange, startDate, endDate, miner } = this.props
+  fetchMore = async (inverse) => {
+    const { blockRange, startDate, endDate, miner, maxBlock } = this.props
     const { chain, paging } = this.state
 
     this.setState({ loading: true })
 
-    const newChain = await fetchMore(blockRange, startDate, endDate, miner, chain, paging)
+    const newChain = await fetchMore(blockRange, maxBlock, startDate, endDate, miner, chain, paging, inverse)
+
+    const { top, bottom } = paging
 
     this.setState(
       {
         loading: false,
         chain: newChain,
-        paging: this.state.paging + 1,
+        paging: {
+          top: inverse ? top + 1 : top,
+          bottom: inverse ? bottom : bottom + 1,
+        },
       },
       () => {
         // need to redraw the other graphs also or the filtering wont work
