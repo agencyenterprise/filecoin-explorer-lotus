@@ -9,6 +9,7 @@ export const ReceivedBlocks = styled.div`
 export const Amount = styled.div`
   display: flex;
   flex-direction: column;
+  color: #4c4da7;
 `
 
 export const Number = styled.div`
@@ -44,7 +45,7 @@ export const ProgressBar = styled.div`
     height: 100%;
     left: 0;
     width: ${({ percentage }) => `${percentage}%`};
-    background-color: #c4c4c4;
+    background-color: #4c4da7;
   }
 `
 

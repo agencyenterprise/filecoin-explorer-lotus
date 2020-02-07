@@ -12,7 +12,7 @@ const rcSlider = css`
   }
 
   .rc-slider-track {
-    background: #c4c4c4;
+    background: #4c4da7;
   }
 
   .rc-slider-handle {
@@ -20,7 +20,7 @@ const rcSlider = css`
     height: 32px;
     border-radius: 0;
     border: 0;
-    background: #ababab;
+    background: #4c4da7;
   }
 `
 

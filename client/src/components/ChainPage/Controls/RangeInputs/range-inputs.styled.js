@@ -11,10 +11,11 @@ export const RangeInputs = styled.div`
   input {
     outline: none;
     border: 0;
-    font-weight: 500;
+    font-weight: bold;
     font-size: 24px;
     line-height: 29px;
     max-width: 75px;
+    color: #4c4da7;
   }
 
   span {

@@ -104,7 +104,7 @@ const ControlsComponent = ({
 
   return (
     <Controls>
-      <Block>
+      <Block dark>
         <Heading>Filecoin Block Explorer</Heading>
       </Block>
       <Block>
