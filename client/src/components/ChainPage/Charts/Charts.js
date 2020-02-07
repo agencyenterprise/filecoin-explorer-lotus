@@ -37,6 +37,18 @@ export class Charts extends React.Component {
     loading: false,
   }
 
+  componentDidMount() {
+    // todo: need to update this to account for moving the graph a lot at once
+    let fetching = false
+    document.addEventListener('bottomSpace', async (event) => {
+      if (event.detail > 20 && !fetching) {
+        fetching = true
+        await this.fetchMore()
+        fetching = false
+      }
+    })
+  }
+
   async componentDidUpdate(prevProps, prevState, snapshot) {
     const { blockRange: prevBlockRange, startDate: prevStartDate, endDate: prevEndDate, miner: prevMiner } = prevProps
     const { blockRange, startDate, endDate, miner } = this.props
@@ -206,7 +218,7 @@ export class Charts extends React.Component {
     return (
       <>
         {loading && <Loader />}
-        <Graph id="graph">{!loading && <FetchMore onClick={this.fetchMore}>Fetch more</FetchMore>}</Graph>
+        <Graph id="graph">{/* {!loading && <FetchMore onClick={this.fetchMore}>Fetch more</FetchMore>} */}</Graph>
       </>
     )
   }

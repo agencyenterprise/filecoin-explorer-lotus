@@ -5236,6 +5236,22 @@ dc_graph.diagram = function (parent, chartGroup) {
         var defn = dc_graph.builtin_arrows[aname];
         _diagram.defineArrow(aname, defn);
     });
+    let timerId;
+
+    const throttleFunction  =  function (func, delay) {
+        if (timerId) {
+            return
+        }
+    
+        // Schedule a setTimeout after delay seconds
+        timerId  =  setTimeout(function () {
+            func()
+            
+            // Once setTimeout function execution is finished, timerId = undefined so that in <br>
+            // the next scroll event function execution can be scheduled by the setTimeout
+            timerId  =  undefined;
+        }, delay)
+    } 
 
     function globalTransform(pos, scale, animate) {
         _translate = pos;
@@ -5243,6 +5259,18 @@ dc_graph.diagram = function (parent, chartGroup) {
         var obj = _g;
         if(animate)
             obj = _g.transition().duration(_diagram.zoomDuration());
+        
+        const checkForBottomSpace = () => {
+            const draw = document.getElementsByClassName('draw')
+            const bottomBlankSpace = window.innerHeight - (draw[0].getBoundingClientRect().height + pos[1])
+            const event = new CustomEvent('bottomSpace', { detail: bottomBlankSpace });
+            document.dispatchEvent(event);
+
+        }
+        throttleFunction(checkForBottomSpace, 1000)
+        
+        
+        
         obj.attr('transform', 'translate(' + pos + ')' + ' scale(' + scale + ')');
     }
 
