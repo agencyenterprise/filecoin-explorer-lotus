@@ -11,11 +11,13 @@ const toSentence = (camelCase) => {
 const tooltipContent = dc_graph.tip.html_or_json_table().json((d) => {
   const data = d.orig.value
 
-  let toolTipInfo = {}
+  let toolTipInfo = {
+    [data.miner]: '',
+  }
 
   let hasValues = false
 
-  ;['height', 'parentWeight', 'timeToReceive', 'miner', 'blockCid', 'id', 'minerPower', 'weight'].forEach((key) => {
+  ;['height', 'parentWeight', 'timeToReceive', 'blockCid', 'miner', 'minerPower'].forEach((key) => {
     if (data[key] !== undefined) {
       hasValues = true
 

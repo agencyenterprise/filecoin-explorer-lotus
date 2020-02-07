@@ -9480,11 +9480,12 @@ The dc_graph.legend shows labeled examples of nodes & edges, within the frame of
         var rowsEnter = rows.enter().append('tr')
         rowsEnter.append('td').text(function(item) {
           if (keys && typeof item === 'string') return item
+
           return JSON.stringify(item)
         })
         if (keys)
           rowsEnter.append('td').text(function(item) {
-            return JSON.stringify(d[item])
+            return d[item]
           })
         k(table.node().outerHTML) // optimizing for clarity over speed (?)
       }
@@ -9500,13 +9501,15 @@ The dc_graph.legend shows labeled examples of nodes & edges, within the frame of
         var jsontip = table.json()(d)
         if (!jsontip) return null
         try {
-          return JSON.parse(jsontip)
+          const parsed = JSON.parse(jsontip)
+
+          return parsed
         } catch (xep) {
           return [jsontip]
         }
       })
       table.json = property(function(d) {
-        return (d.orig.value.value || d.orig.value).jsontip
+        return (d.orig.value.value || d.orig.value).jsontip.replace('"', '')
       })
       return table
     }

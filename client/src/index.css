@@ -28,14 +28,16 @@ div.dc-chart {
   stroke-width: 0;
 }
 
+/* Tooltip */
+
 .d3-tip {
-  line-height: 1;
-  padding: 12px;
-  background: rgba(0, 0, 0, 0.8);
-  color: #fff;
-  border-radius: 2px;
+  background: #212121;
+  color: #e7e7e7;
   margin-top: -9px;
   overflow: hidden;
+  font-family: Arco Perpetuo Pro;
+  font-size: 12px;
+  line-height: 16px;
 }
 
 .d3-tip:after {
@@ -62,10 +64,38 @@ div.dc-chart {
   white-space: nowrap;
 }
 
-.d3-tip td:first-child {
-  font-weight: bold;
-  padding-right: 25px;
+.d3-tip table tr:first-child {
+  background-color: black;
+  font-weight: 600;
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 0.02em;
 }
+
+.d3-tip table tr:first-child td {
+  padding: 8px 16px;
+}
+
+.d3-tip table tr:nth-child(2) td {
+  padding-top: 8px;
+}
+
+.d3-tip table tr:last-child td {
+  padding-bottom: 16px;
+}
+
+.d3-tip td:first-child {
+  padding: 4px 8px 4px 16px;
+  font-weight: 600;
+  max-width: 116px;
+}
+
+.d3-tip td:last-child {
+  padding: 4px 16px 4px 8px;
+  max-width: 156px;
+}
+
+/* Datepicker */
 
 .react-datepicker-wrapper {
   width: 100%;
