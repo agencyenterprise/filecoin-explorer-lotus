@@ -59,9 +59,7 @@ div.dc-chart {
 }
 
 .d3-tip table tr td {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  word-break: break-all;
 }
 
 .d3-tip table tr:first-child {
