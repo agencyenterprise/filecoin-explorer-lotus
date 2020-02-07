@@ -34,19 +34,28 @@ export class Charts extends React.Component {
     disableTipsetColor: false,
     weight: false,
     loading: false,
+    fetching: false,
+  }
+
+  bottomSpaceListener = async ({ detail: { space, difference } }) => {
+    // todo: need to update this to account for moving the graph a lot at once
+    const { fetching } = this.state
+
+    if (!fetching && space > 200 && difference > 0) {
+      this.setState({ fething: true })
+
+      await this.fetchMore()
+
+      this.setState({ fething: false })
+    }
   }
 
   componentDidMount() {
-    // todo: need to update this to account for moving the graph a lot at once
-    let fetching = false
+    document.addEventListener('bottomSpace', this.bottomSpaceListener)
+  }
 
-    document.addEventListener('bottomSpace', async ({ detail: { space, difference } }) => {
-      if (!fetching && space > 200 && difference > 0) {
-        fetching = true
-        await this.fetchMore()
-        fetching = false
-      }
-    })
+  componentWillUnmount() {
+    document.removeEventListener('bottomSpace', this.bottomSpaceListener)
   }
 
   async componentDidUpdate(prevProps, prevState, snapshot) {

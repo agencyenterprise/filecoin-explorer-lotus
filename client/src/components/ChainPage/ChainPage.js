@@ -27,7 +27,7 @@ const ChainPageComponent = () => {
           const _maxBlock = Number(res.maxHeight)
 
           setMaxBlock(_maxBlock)
-          setBlockRange([Math.max(0, _maxBlock - constants.maxBlockRange), _maxBlock])
+          setBlockRange([Math.max(0, _maxBlock - constants.initialBlockRangeLimit), _maxBlock])
         }
       }
     }
