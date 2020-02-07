@@ -200,14 +200,16 @@ export class Charts extends React.Component {
         paging: this.state.paging + 1,
       },
       () => {
-        const data = this.build_data(newChain.nodes, newChain.edges)
+        // need to redraw the other graphs also or the filtering wont work
+        this.redrawGraph()
+        // const data = this.build_data(newChain.nodes, newChain.edges)
 
-        this.selectionDiagram
-          .nodeDimension(data.nodef.dimension)
-          .nodeGroup(data.nodef.group)
-          .edgeDimension(data.edgef.dimension)
-          .edgeGroup(data.edgef.group)
-          .redraw()
+        // this.selectionDiagram
+        //   .nodeDimension(data.nodef.dimension)
+        //   .nodeGroup(data.nodef.group)
+        //   .edgeDimension(data.edgef.dimension)
+        //   .edgeGroup(data.edgef.group)
+        //   .redraw()
       },
     )
   }
