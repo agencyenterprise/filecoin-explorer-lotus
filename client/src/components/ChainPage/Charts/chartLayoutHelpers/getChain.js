@@ -1,13 +1,11 @@
 import { getChainData } from '../../../../api'
 
 const isWeirdTime = (timeToReceive) => {
-  if (!timeToReceive) return { color: '#000000', label: 'skipped' }
-
-  if (timeToReceive <= 48) return { color: '#c4c4c4', label: '<= 48 s' }
-  if (timeToReceive <= 51) return { color: '#AFD71C', label: '<= 51 s' }
-  if (timeToReceive <= 60) return { color: '#eed202', label: '<= 60 s' }
-
-  return { color: '#F70000', label: '> 60s' }
+  if (!timeToReceive) return 0
+  if (timeToReceive <= 48) return 1
+  if (timeToReceive <= 51) return 2
+  if (timeToReceive <= 60) return 3
+  return 4
 }
 
 const createBlock = (block, blockParentInfo) => {
@@ -97,9 +95,7 @@ const blocksToChain = (blocksArr, bhRangeEnd) => {
     const isDirectParent = Number(block.parentheight) === Number(block.height) - 1
 
     const isOrphan = (block) => {
-      return blockParentInfo[block.block] && bhRangeEnd !== block.height
-        ? { ray: null, label: '' }
-        : { ray: [5, 5], label: 'orphan' }
+      return blockParentInfo[block.block] && bhRangeEnd !== block.height ? 0 : 1
     }
 
     const createEmptyBlock = (block) => ({

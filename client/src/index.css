@@ -17,6 +17,7 @@ div.dc-chart {
 
 #minerPie,
 #blockHeightPie,
+#orphanPie,
 #weirdTimeBar {
   margin: 26px 0;
   text-align: center;

@@ -1,12 +1,25 @@
+import { visuallyDistinctColors } from '../visuallyDistinctColorSet'
 const dc = window.dc
+const d3 = window.d3
 
-const orphanPie = dc.pieChart('#orphanPie')
+export const orphanPieConfig = () => {
+  const orphanPie = dc.pieChart('#orphanPie')
+  const subsetVisuallyDistinctColors = visuallyDistinctColors.slice(2, visuallyDistinctColors.length)
 
-orphanPie
-  .width(150)
-  .height(150)
-  .radius(75)
-  .label((kv) => kv.value.label)
-  .title((kv) => kv.value.label)
+  const orphanLabels = ['ok', 'orphan']
 
-export { orphanPie }
+  orphanPie
+    .width(150)
+    .height(150)
+    .radius(75)
+    .colors(
+      d3.scale
+        .ordinal()
+        .domain([0, 1, 2])
+        .range(subsetVisuallyDistinctColors),
+    )
+    .label((kv) => orphanLabels[kv.key])
+    .title((kv) => orphanLabels[kv.key])
+
+  return orphanPie
+}

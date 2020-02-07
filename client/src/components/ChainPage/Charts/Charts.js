@@ -6,16 +6,17 @@ import { getChain, fetchMore } from './chartLayoutHelpers/getChain'
 import { chartOptions } from './chartLayoutHelpers/chartOptions'
 import { apply_engine_parameters } from './chartLayoutHelpers/applyEngineParams'
 import { selectionDiagramConfig } from './chartLayoutHelpers/charts/selectionDiagramConfig'
-import { minerPie } from './chartLayoutHelpers/charts/minerPieConfig'
-import { blockHeightPie } from './chartLayoutHelpers/charts/blockHeightPieConfig'
-import { orphanPie } from './chartLayoutHelpers/charts/orphanPieConfig'
-import { weirdTimeBar } from './chartLayoutHelpers/charts/weirdTimeBar'
+import { minerPieConfig } from './chartLayoutHelpers/charts/minerPieConfig'
+import { blockHeightPieConfig } from './chartLayoutHelpers/charts/blockHeightPieConfig'
+import { orphanPieConfig } from './chartLayoutHelpers/charts/orphanPieConfig'
+import { weirdTimeBarConfig } from './chartLayoutHelpers/charts/weirdTimeBar'
 
 const dc_graph = window.dc_graph
 const dc = window.dc
 const sync_url_options = window.sync_url_options
 const dcgraph_domain = window.dcgraph_domain
 const querystring = window.querystring
+const d3 = window.d3
 
 export class Charts extends React.Component {
   static contextType = store
@@ -96,10 +97,10 @@ export class Charts extends React.Component {
   }
 
   renderGraph() {
-    this.minerPie = minerPie
-    this.blockHeightPie = blockHeightPie
-    this.orphanPie = orphanPie
-    this.weirdTimeBar = weirdTimeBar
+    this.minerPie = minerPieConfig()
+    this.blockHeightPie = blockHeightPieConfig()
+    this.orphanPie = orphanPieConfig()
+    this.weirdTimeBar = weirdTimeBarConfig()
 
     this.sync_url = sync_url_options(chartOptions, dcgraph_domain(this.selectionDiagram), this.selectionDiagram)
 
