@@ -20,7 +20,7 @@ export const selectionDiagramConfig = (engine, sync_url) => {
     .timeLimit(5000)
     .transitionDuration(sync_url.vals.transition_duration)
     .fitStrategy(sync_url.vals.fit || 'vertical')
-    .zoomExtent([0.1, 1.5])
+    .zoomExtent([0.01, 1.5])
     .restrictPan(false)
     .margins({ top: 20, left: 20, right: 20, bottom: 20 })
     .autoZoom('once-noanim')
