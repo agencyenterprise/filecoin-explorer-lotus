@@ -6,19 +6,28 @@ export const Graph = styled.div`
   overflow: hidden;
 `
 
-export const FetchMore = styled.button`
-  background-color: #e9e9e9;
-  border: 1px solid #ababab;
-  bottom: 50px;
+export const SaveSvg = styled.button`
+  background-color: #212121;
+  color: white;
+  bottom: 10px;
   cursor: pointer;
-  font-size: 14px;
-  left: 50%;
+  border: 0;
+  font-size: 12px;
+  font-weight: 500;
+  right: 10px;
   outline: none;
   position: absolute;
-  padding: 5px 20px;
+  padding: 8px 18px;
   z-index: 200;
 
   &:hover {
+    opacity: 0.9;
+  }
+
+  &:disabled {
     opacity: 0.7;
+    cursor: default;
+    background-color: #212121;
+    color: #e9e9e9;
   }
 `

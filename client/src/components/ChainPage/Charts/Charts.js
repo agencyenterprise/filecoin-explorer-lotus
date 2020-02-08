@@ -1,16 +1,19 @@
+import { faCircleNotch } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import React from 'react'
-import { visuallyDistinctColors } from './chartLayoutHelpers/visuallyDistinctColorSet'
 import { store } from '../../../context/store'
 import { Loader } from '../../shared/Loader'
-import { Graph } from './charts.styled'
-import { getChain, fetchMore } from './chartLayoutHelpers/getChain'
-import { chartOptions } from './chartLayoutHelpers/chartOptions'
 import { apply_engine_parameters } from './chartLayoutHelpers/applyEngineParams'
-import { selectionDiagramConfig } from './chartLayoutHelpers/charts/selectionDiagramConfig'
-import { minerPieConfig } from './chartLayoutHelpers/charts/minerPieConfig'
+import { chartOptions } from './chartLayoutHelpers/chartOptions'
 import { blockHeightPieConfig } from './chartLayoutHelpers/charts/blockHeightPieConfig'
+import { minerPieConfig } from './chartLayoutHelpers/charts/minerPieConfig'
 import { orphanPieConfig } from './chartLayoutHelpers/charts/orphanPieConfig'
+import { selectionDiagramConfig } from './chartLayoutHelpers/charts/selectionDiagramConfig'
 import { weirdTimeBarConfig } from './chartLayoutHelpers/charts/weirdTimeBar'
+import { fetchMore, getChain } from './chartLayoutHelpers/getChain'
+import { getSVGString, svgString2Image } from './chartLayoutHelpers/svg'
+import { visuallyDistinctColors } from './chartLayoutHelpers/visuallyDistinctColorSet'
+import { Graph, SaveSvg } from './charts.styled'
 
 const dc_graph = window.dc_graph
 const dc = window.dc
@@ -38,6 +41,7 @@ export class Charts extends React.Component {
     weight: false,
     loading: false,
     fetching: false,
+    buildingSvg: false,
   }
 
   spaceListener = async ({
@@ -68,6 +72,43 @@ export class Charts extends React.Component {
 
   componentWillUnmount() {
     document.removeEventListener('space', this.spaceListener)
+  }
+
+  saveSvg = () => {
+    const { buildingSvg } = this.state
+
+    if (buildingSvg) return
+
+    const download = (blob, name) => {
+      const hiddenInput = document.getElementById('hidden-input')
+      const url = window.URL.createObjectURL(blob)
+
+      hiddenInput.href = url
+      hiddenInput.download = name
+      hiddenInput.click()
+
+      window.URL.revokeObjectURL(url)
+    }
+
+    this.setState({ buildingSvg: true })
+
+    const svg = document.getElementById('graph').children[0]
+    const draw = document.getElementsByClassName('draw')[0]
+
+    let tmp = draw.getAttribute('transform')
+
+    draw.setAttribute('transform', 'scale(0.5)')
+
+    const { width, height } = draw.getBoundingClientRect()
+
+    const svgString = getSVGString(svg, width, height)
+
+    svgString2Image(svgString, width * 3, height * 3, (dataBlob) => {
+      download(dataBlob, 'graph.png')
+
+      this.setState({ buildingSvg: false })
+      draw.setAttribute('transform', tmp)
+    })
   }
 
   async componentDidUpdate(prevProps, prevState, snapshot) {
@@ -241,12 +282,20 @@ export class Charts extends React.Component {
   }
 
   render() {
-    const { loading } = this.state
+    const { loading, buildingSvg } = this.state
 
     return (
       <>
         {loading && <Loader />}
-        <Graph id="graph">{/* {!loading && <FetchMore onClick={this.fetchMore}>Fetch more</FetchMore>} */}</Graph>
+        <Graph id="graph">
+          {!loading && (
+            <SaveSvg disabled={buildingSvg} onClick={this.saveSvg}>
+              {buildingSvg && <FontAwesomeIcon icon={faCircleNotch} style={{ marginRight: '5px' }} spin />}
+              Save Graph
+            </SaveSvg>
+          )}
+        </Graph>
+        <a href="javascript:;" id="hidden-input"></a>
       </>
     )
   }
