@@ -101,14 +101,13 @@ export class Charts extends React.Component {
 
     const { width, height } = draw.getBoundingClientRect()
 
-    const svgString = getSVGString(svg, width, height)
+    const svgString = getSVGString(svg, width + 50, height + 50)
+    const blob = new Blob([svgString])
 
-    svgString2Image(svgString, width * 3, height * 3, (dataBlob) => {
-      download(dataBlob, 'graph.png')
+    download(blob, 'graph.svg')
 
-      this.setState({ buildingSvg: false })
-      draw.setAttribute('transform', tmp)
-    })
+    this.setState({ buildingSvg: false })
+    draw.setAttribute('transform', tmp)
   }
 
   async componentDidUpdate(prevProps, prevState, snapshot) {
