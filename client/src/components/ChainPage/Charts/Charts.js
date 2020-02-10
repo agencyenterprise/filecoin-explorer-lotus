@@ -11,7 +11,7 @@ import { orphanPieConfig } from './chartLayoutHelpers/charts/orphanPieConfig'
 import { selectionDiagramConfig } from './chartLayoutHelpers/charts/selectionDiagramConfig'
 import { weirdTimeBarConfig } from './chartLayoutHelpers/charts/weirdTimeBar'
 import { fetchMore, getChain } from './chartLayoutHelpers/getChain'
-import { getSVGString, svgString2Image } from './chartLayoutHelpers/svg'
+import { getSVGString } from './chartLayoutHelpers/svg'
 import { visuallyDistinctColors } from './chartLayoutHelpers/visuallyDistinctColorSet'
 import { Graph, SaveSvg } from './charts.styled'
 

@@ -4,6 +4,13 @@ export const Graph = styled.div`
   background-color: #f7f7f7;
   flex: 1;
   overflow: hidden;
+
+  rect.node-label {
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 17px;
+    font-family: Arco Perpetuo Pro;
+  }
 `
 
 export const SaveSvg = styled.button`
