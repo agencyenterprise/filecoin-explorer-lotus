@@ -46,6 +46,7 @@ export const selectionDiagramConfig = (engine, sync_url) => {
         .domain([0, 1, 2])
         .range(visuallyDistinctColors),
     )
+    .nodeShape('rounded-rect')
     .nodeTitle(null)
     .edgeStrokeDashArray((e) => {
       return orphanRays[e.value.isOrphan]
