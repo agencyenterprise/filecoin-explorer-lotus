@@ -66,9 +66,6 @@ const ControlsComponent = ({
 
   return (
     <Controls>
-      <Block dark>
-        <Heading>Filecoin Block Explorer</Heading>
-      </Block>
       <Block>
         <Title>1. Block Height</Title>
         <DashedLine />

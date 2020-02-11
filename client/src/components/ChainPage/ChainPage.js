@@ -2,7 +2,8 @@ import debounce from 'lodash/debounce'
 import React, { useEffect, useState } from 'react'
 import { getBlockRange } from '../../api'
 import { constants } from '../../utils'
-import { ChainPage } from './chain-page.styled'
+import { Bar } from './Bar'
+import { ChainPage, ChartAndRange, ControlsAndBar, RangeContainer } from './chain-page.styled'
 import { Charts } from './Charts'
 import { Controls } from './Controls'
 import { Range } from './Range'
@@ -38,7 +39,7 @@ const ChainPageComponent = () => {
 
   return (
     <ChainPage id="main">
-      <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+      <ChartAndRange>
         <Charts
           blockRange={blockRange}
           maxBlock={maxBlock}
@@ -47,7 +48,7 @@ const ChainPageComponent = () => {
           miner={miner}
           style={{ flex: 1 }}
         />
-        <div style={{ height: '64px', width: '100%', borderTop: '1px solid #D7D7D7' }}>
+        <RangeContainer>
           <Range
             minBlock={minBlock}
             maxBlock={maxBlock}
@@ -55,20 +56,23 @@ const ChainPageComponent = () => {
               setBlockRange(blockRange)
             }, 500)}
           />
-        </div>
-      </div>
-      <Controls
-        minBlock={minBlock}
-        maxBlock={maxBlock}
-        debouncedUpdateBlockHeightFilter={debounce((blockRange) => {
-          setBlockRange(blockRange)
-        }, 500)}
-        startDate={startDate}
-        endDate={endDate}
-        setStartDate={setStartDate}
-        setEndDate={setEndDate}
-        setMiner={setMiner}
-      />
+        </RangeContainer>
+      </ChartAndRange>
+      <ControlsAndBar>
+        <Controls
+          minBlock={minBlock}
+          maxBlock={maxBlock}
+          debouncedUpdateBlockHeightFilter={debounce((blockRange) => {
+            setBlockRange(blockRange)
+          }, 500)}
+          startDate={startDate}
+          endDate={endDate}
+          setStartDate={setStartDate}
+          setEndDate={setEndDate}
+          setMiner={setMiner}
+        />
+        <Bar />
+      </ControlsAndBar>
     </ChainPage>
   )
 }
