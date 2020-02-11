@@ -5,6 +5,7 @@ import { constants } from '../../utils'
 import { ChainPage } from './chain-page.styled'
 import { Charts } from './Charts'
 import { Controls } from './Controls'
+import { Range } from './Range'
 
 const ChainPageComponent = () => {
   const [blockRange, setBlockRange] = useState([])
@@ -37,7 +38,25 @@ const ChainPageComponent = () => {
 
   return (
     <ChainPage id="main">
-      <Charts blockRange={blockRange} maxBlock={maxBlock} startDate={startDate} endDate={endDate} miner={miner} />
+      <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+        <Charts
+          blockRange={blockRange}
+          maxBlock={maxBlock}
+          startDate={startDate}
+          endDate={endDate}
+          miner={miner}
+          style={{ flex: 1 }}
+        />
+        <div style={{ height: '64px', width: '100%', borderTop: '1px solid #D7D7D7' }}>
+          <Range
+            minBlock={minBlock}
+            maxBlock={maxBlock}
+            debouncedUpdateBlockHeightFilter={debounce((blockRange) => {
+              setBlockRange(blockRange)
+            }, 500)}
+          />
+        </div>
+      </div>
       <Controls
         minBlock={minBlock}
         maxBlock={maxBlock}

@@ -1121,8 +1121,6 @@
             n.dcg_shape.rx = 26
             n.dcg_shape.ry = 26
           }
-
-          console.log(n)
         })
       }
     }

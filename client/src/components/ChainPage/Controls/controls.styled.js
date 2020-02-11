@@ -53,6 +53,7 @@ export const Title = styled.h3`
   line-height: 16px;
   letter-spacing: 0.02em;
   margin-bottom: 8px;
+  text-transform: uppercase;
 `
 
 export const Description = styled.p`

@@ -89,13 +89,7 @@ const ControlsComponent = ({
     return newInternalBlockRange
   }
 
-  const onChangeRange = (newInternalBlockRange) => {
-    const resolvedRangeInterval = resolveRangeInterval(newInternalBlockRange)
-
-    setInternalRange(resolvedRangeInterval)
-  }
-
-  const onChanRangeInput = (newInternalBlockRange) => {
+  const onChangeRangeInput = (newInternalBlockRange) => {
     const resolvedRangeInterval = resolveRangeInterval(newInternalBlockRange)
 
     setInternalRange(resolvedRangeInterval)
@@ -108,11 +102,11 @@ const ControlsComponent = ({
         <Heading>Filecoin Block Explorer</Heading>
       </Block>
       <Block>
-        <Title>Block Height</Title>
+        <Title>1. Block Height</Title>
         <DashedLine />
-        <RangeInputs rangeIntervals={internalRange} onChange={onChanRangeInput} />
+        <RangeInputs rangeIntervals={internalRange} onChange={onChangeRangeInput} />
         <DashedLine />
-        {internalRange[1] && (
+        {/* {internalRange[1] && (
           <Range
             min={minBlock}
             max={maxBlock}
@@ -122,14 +116,11 @@ const ControlsComponent = ({
             onChange={onChangeRange}
             onAfterChange={debouncedUpdateBlockHeightFilter}
           />
-        )}
-        <Description>
-          The slider has a max range of 50 blocks due to lorem ipsum dolor amet pitchfork raw denim thundercats butcher
-          flexitarian.
-        </Description>
+        )} */}
+        {options}
       </Block>
       <Block>
-        <Title>Find Miner</Title>
+        <Title>2. Find Miner</Title>
         <Input
           placeholder="Miner Address"
           onBlur={(e) => {
@@ -143,7 +134,7 @@ const ControlsComponent = ({
         />
       </Block>
       <Block>
-        <Title>Narrow date range</Title>
+        <Title>3. Narrow date range</Title>
         <DatePicker
           selected={startDate}
           onChange={setStartDate}
@@ -152,17 +143,15 @@ const ControlsComponent = ({
         />
         <DatePicker selected={endDate} onChange={setEndDate} placeholderText="End date, mm/dd/yyyy" />
       </Block>
-      <Block>{options}</Block>
-
       <Block>
-        <Title>Filters</Title>
+        <Title>4. Filters</Title>
         <div id="minerPie" />
         {/* <div id="blockHeightPie" /> */}
         <div id="orphanPie" />
         <div id="weirdTimeBar" />
       </Block>
       <Block>
-        <Title>Time block received after parent</Title>
+        <Title>5. Time block received after parent</Title>
         <ReceivedBlocks amount={562} kind="less than 48s" percentage={97.4} />
         <ReceivedBlocks amount={12} kind="between 48 - 51s" percentage={2.1} />
       </Block>
