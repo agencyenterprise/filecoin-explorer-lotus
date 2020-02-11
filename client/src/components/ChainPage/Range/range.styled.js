@@ -34,3 +34,17 @@ export const RangeContainer = styled.div`
 
   ${rcSlider}
 `
+
+export const RangeNumber = styled.div`
+  font-weight: bold;
+  font-size: 16px;
+  line-height: 19px;
+
+  &:first-child {
+    margin-right: 15px;
+  }
+
+  &:last-child {
+    margin-left: 15px;
+  }
+`

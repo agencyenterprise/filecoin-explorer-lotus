@@ -1,18 +1,16 @@
-import Slider from 'rc-slider'
 import 'rc-slider/assets/index.css'
 import React, { Fragment, useContext, useEffect, useState } from 'react'
 import 'react-datepicker/dist/react-datepicker.css'
+import { changeRange } from '../../../context/actions/range'
 import { store } from '../../../context/store'
 import { constants } from '../../../utils'
 import { Block } from '../../shared/Block'
 import { Checkbox } from '../../shared/Checkbox'
 import { DatePicker } from '../../shared/DatePicker'
 import { Input } from '../../shared/Input'
-import { Controls, DashedLine, Description, Heading, Title } from './controls.styled'
-import { ReceivedBlocks } from './ReceivedBlocks'
+import { Controls, DashedLine, Heading, Title } from './controls.styled'
 import { RangeInputs } from './RangeInputs'
-
-const Range = Slider.createSliderWithTooltip(Slider.Range)
+import { ReceivedBlocks } from './ReceivedBlocks'
 
 const nodeLabelOptions = [
   { value: 'heightLabel', label: 'show height' },
@@ -29,15 +27,14 @@ const ControlsComponent = ({
   setStartDate,
   setEndDate,
   setMiner,
-  minBlock,
   maxBlock,
 }) => {
-  const [internalRange, setInternalRange] = useState([0, 0])
   const { state, dispatch } = useContext(store)
+  const { range } = state
 
   useEffect(() => {
-    if (maxBlock !== internalRange[0]) {
-      setInternalRange([Math.max(0, maxBlock - constants.initialBlockRangeLimit), maxBlock])
+    if (maxBlock !== range[0]) {
+      changeRange(dispatch, range, [Math.max(0, maxBlock - constants.initialBlockRangeLimit), maxBlock])
     }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -61,39 +58,10 @@ const ControlsComponent = ({
     </Fragment>
   ))
 
-  const resolveRangeInterval = (newInternalBlockRange) => {
-    if (newInternalBlockRange[0] > newInternalBlockRange[1]) {
-      let tmp = newInternalBlockRange[1]
-
-      newInternalBlockRange[1] = newInternalBlockRange[0]
-      newInternalBlockRange[0] = tmp
-    }
-
-    if (internalRange[0] !== newInternalBlockRange[0]) {
-      // note: min is moving
-      if (newInternalBlockRange[1] - newInternalBlockRange[0] > constants.maxBlockRange) {
-        newInternalBlockRange[1] = newInternalBlockRange[0] + constants.maxBlockRange
-      }
-    } else {
-      // note: max is moving
-      if (newInternalBlockRange[1] - newInternalBlockRange[0] > constants.maxBlockRange) {
-        newInternalBlockRange[0] = newInternalBlockRange[1] - constants.maxBlockRange
-      }
-    }
-
-    if (newInternalBlockRange[1] === 0) {
-      newInternalBlockRange[0] = 0
-      newInternalBlockRange[1] = constants.maxBlockRange
-    }
-
-    return newInternalBlockRange
-  }
-
   const onChangeRangeInput = (newInternalBlockRange) => {
-    const resolvedRangeInterval = resolveRangeInterval(newInternalBlockRange)
+    const newRange = changeRange(dispatch, range, newInternalBlockRange)
 
-    setInternalRange(resolvedRangeInterval)
-    debouncedUpdateBlockHeightFilter(resolvedRangeInterval)
+    debouncedUpdateBlockHeightFilter(newRange)
   }
 
   return (
@@ -104,19 +72,8 @@ const ControlsComponent = ({
       <Block>
         <Title>1. Block Height</Title>
         <DashedLine />
-        <RangeInputs rangeIntervals={internalRange} onChange={onChangeRangeInput} />
+        <RangeInputs rangeIntervals={range} onChange={onChangeRangeInput} />
         <DashedLine />
-        {/* {internalRange[1] && (
-          <Range
-            min={minBlock}
-            max={maxBlock}
-            value={internalRange}
-            step={5}
-            allowCross={false}
-            onChange={onChangeRange}
-            onAfterChange={debouncedUpdateBlockHeightFilter}
-          />
-        )} */}
         {options}
       </Block>
       <Block>
