@@ -1,3 +1,4 @@
+/* eslint-disable jsx-a11y/anchor-is-valid, no-script-url */
 import { faCircleNotch } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import React from 'react'
@@ -14,7 +15,7 @@ import { chartOptions } from './chartLayoutHelpers/chartOptions'
 import { fetchMore, getChain } from './chartLayoutHelpers/getChain'
 import { getSVGString } from './chartLayoutHelpers/svg'
 import { visuallyDistinctColors } from './chartLayoutHelpers/visuallyDistinctColorSet'
-import { Graph, SaveSvg } from './charts.styled'
+import { Charts, Graph, SaveSvg } from './charts.styled'
 
 const dc_graph = window.dc_graph
 const dc = window.dc
@@ -22,7 +23,7 @@ const sync_url_options = window.sync_url_options
 const dcgraph_domain = window.dcgraph_domain
 const querystring = window.querystring
 
-export class Charts extends React.Component {
+class ChartsComponent extends React.Component {
   static contextType = store
 
   state = {
@@ -311,7 +312,7 @@ export class Charts extends React.Component {
     const { loading, buildingSvg, chain } = this.state
 
     return (
-      <>
+      <Charts>
         {loading && <Loader />}
         <div id="container"></div>
         <Graph id="graph">
@@ -322,8 +323,12 @@ export class Charts extends React.Component {
             </SaveSvg>
           )}
         </Graph>
-        <a href="javascript:;" id="hidden-input"></a>
-      </>
+        <a href="javascript:;" id="hidden-input">
+          file input
+        </a>
+      </Charts>
     )
   }
 }
+
+export { ChartsComponent as Charts }

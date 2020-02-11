@@ -1,5 +1,5 @@
 import 'rc-slider/assets/index.css'
-import React, { Fragment, useContext, useEffect, useState } from 'react'
+import React, { Fragment, useContext, useEffect, useRef } from 'react'
 import 'react-datepicker/dist/react-datepicker.css'
 import { changeRange } from '../../../context/actions/range'
 import { store } from '../../../context/store'
@@ -8,9 +8,8 @@ import { Block } from '../../shared/Block'
 import { Checkbox } from '../../shared/Checkbox'
 import { DatePicker } from '../../shared/DatePicker'
 import { Input } from '../../shared/Input'
-import { Controls, DashedLine, Heading, Title } from './controls.styled'
+import { Controls, DashedLine, Title } from './controls.styled'
 import { RangeInputs } from './RangeInputs'
-import { ReceivedBlocks } from './ReceivedBlocks'
 
 const nodeLabelOptions = [
   { value: 'heightLabel', label: 'show height' },
@@ -31,6 +30,18 @@ const ControlsComponent = ({
 }) => {
   const { state, dispatch } = useContext(store)
   const { range } = state
+  const controlsRef = useRef()
+
+  const onScroll = () => {}
+
+  useEffect(() => {
+    const controlsElement = controlsRef.current
+    controlsElement.addEventListener('scroll', onScroll)
+
+    return () => {
+      controlsElement.removeEventListener('scroll', onScroll)
+    }
+  }, [])
 
   useEffect(() => {
     if (maxBlock !== range[0]) {
@@ -65,15 +76,15 @@ const ControlsComponent = ({
   }
 
   return (
-    <Controls>
-      <Block>
+    <Controls ref={controlsRef} id="controls">
+      <Block data-section={1} data-label="Block Height">
         <Title>1. Block Height</Title>
         <DashedLine />
         <RangeInputs rangeIntervals={range} onChange={onChangeRangeInput} />
         <DashedLine />
         {options}
       </Block>
-      <Block>
+      <Block data-section={2} data-label="Find Miner">
         <Title>2. Find Miner</Title>
         <Input
           placeholder="Miner Address"
@@ -87,7 +98,7 @@ const ControlsComponent = ({
           }}
         />
       </Block>
-      <Block>
+      <Block data-section={3} data-label="Narrow date range">
         <Title>3. Narrow date range</Title>
         <DatePicker
           selected={startDate}
@@ -97,18 +108,18 @@ const ControlsComponent = ({
         />
         <DatePicker selected={endDate} onChange={setEndDate} placeholderText="End date, mm/dd/yyyy" />
       </Block>
-      <Block>
+      <Block data-section={4} data-label="Filters">
         <Title>4. Filters</Title>
         <div id="minerPie" />
         {/* <div id="blockHeightPie" /> */}
         <div id="orphanPie" />
         <div id="weirdTimeBar" />
       </Block>
-      <Block>
+      {/* <Block>
         <Title>5. Time block received after parent</Title>
         <ReceivedBlocks amount={562} kind="less than 48s" percentage={97.4} />
         <ReceivedBlocks amount={12} kind="between 48 - 51s" percentage={2.1} />
-      </Block>
+      </Block> */}
     </Controls>
   )
 }
