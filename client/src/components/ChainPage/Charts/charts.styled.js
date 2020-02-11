@@ -1,5 +1,14 @@
 import styled from 'styled-components'
 
+export const Charts = styled.div`
+  flex: 1;
+  display: flex;
+
+  #hidden-input {
+    display: none;
+  }
+`
+
 export const Graph = styled.div`
   background-color: #f7f7f7;
   flex: 1;
