@@ -5,7 +5,7 @@ export const DatePicker = styled(DatePickerComponent)`
   border: 1px solid #c7c7c7;
   border-left: 4px solid #c7c7c7;
   box-sizing: border-box;
-  color: 212121;
+  color: #212121;
   font-family: Arco Perpetuo Pro;
   font-size: 12px;
   font-weight: 300;
@@ -14,6 +14,7 @@ export const DatePicker = styled(DatePickerComponent)`
   padding: 12px 8px;
   width: 100%;
   margin: 8px 0;
+  outline: none;
 
   input {
     width: 100%;
@@ -34,5 +35,9 @@ export const DatePicker = styled(DatePickerComponent)`
   :-moz-placeholder {
     /* Firefox 18- */
     color: #ababab;
+  }
+
+  &:focus {
+    border-color: #9ae8ea;
   }
 `
