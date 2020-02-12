@@ -1,7 +1,7 @@
 import Slider from 'rc-slider'
 import 'rc-slider/assets/index.css'
 import React, { useContext, useEffect } from 'react'
-import { changeRange } from '../../../context/actions/range'
+import { changeRange } from '../../../context/range/actions'
 import { store } from '../../../context/store'
 import { constants } from '../../../utils'
 import { RangeContainer, RangeNumber } from './range.styled'

@@ -5,7 +5,9 @@ const initialState = {
     heightLabel: true,
   },
   range: [0, 0],
+  currentSection: 1,
 }
+
 const store = createContext(initialState)
 
 const { Provider } = store
@@ -30,6 +32,11 @@ const StateProvider = ({ children }) => {
         return {
           ...state,
           range,
+        }
+      case 'CHANGE_CURRENT_SECTION':
+        return {
+          ...state,
+          currentSection: action.payload,
         }
       default:
         throw new Error()

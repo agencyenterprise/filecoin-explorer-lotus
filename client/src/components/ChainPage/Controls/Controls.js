@@ -1,7 +1,8 @@
 import 'rc-slider/assets/index.css'
-import React, { Fragment, useContext, useEffect, useRef } from 'react'
+import React, { Fragment, useContext, useEffect, useRef, useState } from 'react'
 import 'react-datepicker/dist/react-datepicker.css'
-import { changeRange } from '../../../context/actions/range'
+import { changeRange } from '../../../context/range/actions'
+import { changeCurrentSection } from '../../../context/current-section/actions'
 import { store } from '../../../context/store'
 import { constants } from '../../../utils'
 import { Block } from '../../shared/Block'
@@ -29,10 +30,37 @@ const ControlsComponent = ({
   maxBlock,
 }) => {
   const { state, dispatch } = useContext(store)
-  const { range } = state
+  const { range, currentSection } = state
+  const [sections, setSections] = useState([])
   const controlsRef = useRef()
 
-  const onScroll = () => {}
+  const onScroll = () => {
+    const controlsElement = controlsRef.current
+
+    const topPos = controlsElement.scrollTop
+
+    if (controlsElement.scrollHeight == controlsElement.scrollTop + window.innerHeight) {
+      changeCurrentSection(dispatch, sections.length)
+
+      return
+    }
+
+    let selectedSection = 1
+
+    for (let i = 0; i < sections.length; i += 1) {
+      const section = sections[i]
+
+      if (topPos >= section.top) {
+        selectedSection = section.section
+
+        break
+      }
+    }
+
+    if (selectedSection !== currentSection) {
+      changeCurrentSection(dispatch, selectedSection)
+    }
+  }
 
   useEffect(() => {
     const controlsElement = controlsRef.current
@@ -41,6 +69,25 @@ const ControlsComponent = ({
     return () => {
       controlsElement.removeEventListener('scroll', onScroll)
     }
+  }, [sections, currentSection])
+
+  useEffect(() => {
+    const elements = document.querySelectorAll('[data-section]')
+
+    const asItems = []
+
+    elements.forEach((element) => {
+      asItems.push({
+        top: element.offsetTop,
+        section: Number(element.getAttribute('data-section')),
+      })
+    })
+
+    asItems.reverse()
+
+    setSections(asItems)
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {

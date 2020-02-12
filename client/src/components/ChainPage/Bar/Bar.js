@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react'
+import React, { useContext, useEffect, useState } from 'react'
+import { store } from '../../../context/store'
 import { Bar, Logo, Menu, MenuButton, MenuButtonWrapper, RotatedTextWrapper, SectionText } from './bar.styled'
 
 const BarComponent = () => {
   const [tag, setTag] = useState('')
-  const [currentSection, setCurrentSection] = useState('1')
   const [items, setItems] = useState([])
+  const { state } = useContext(store)
+  const { currentSection } = state
 
   useEffect(() => {
     const elements = document.querySelectorAll('[data-section]')
@@ -14,7 +16,7 @@ const BarComponent = () => {
     elements.forEach((element) => {
       asItems.push({
         element,
-        section: element.getAttribute('data-section'),
+        section: Number(element.getAttribute('data-section')),
         label: element.getAttribute('data-label'),
       })
     })
@@ -31,7 +33,7 @@ const BarComponent = () => {
   }
 
   const navigate = (to) => {
-    setCurrentSection(to)
+    console.log('to', to)
   }
 
   return (
