@@ -1,4 +1,5 @@
 import { getChainData } from '../../../../api'
+import { orderBy, findIndex } from 'lodash'
 
 const isWeirdTime = (timeToReceive) => {
   if (!timeToReceive) return 0
@@ -12,15 +13,28 @@ const tipsetKeyFormatter = (block) => {
   return `${block.parentstateroot}-${block.height}`
 }
 
-const createBlock = (block, blockParentInfo, tipsets) => {
+const calcX = (block, blocksAtHeight) => {
+  const blocksAtCurrentHeight = blocksAtHeight[block.height]
+  const numBlocksAtHeight = blocksAtCurrentHeight.length
+  const positionOfCurrentBlock = findIndex(blocksAtCurrentHeight, { block: block.block })
+  // @todo update so there is more space between unlike tipsets
+  let xPos = positionOfCurrentBlock / numBlocksAtHeight
+  if (positionOfCurrentBlock % 2) {
+    xPos *= -1
+  }
+  return xPos
+}
+
+const createBlock = (block, blockParentInfo, tipsets, blocksAtHeight) => {
   const blockId = block.block
   const timeToReceive = parseInt(block.syncedtimestamp) - parseInt(block.parenttimestamp)
   const tipsetKey = tipsetKeyFormatter(block)
-
   return {
     id: blockId,
     key: blockId,
     height: block.height,
+    group: tipsets[tipsetKey],
+    label: block.miner,
     miner: block.miner,
     parentWeight: block.parentweight,
     timeToReceive: `${timeToReceive}s`,
@@ -29,15 +43,16 @@ const createBlock = (block, blockParentInfo, tipsets) => {
     minerPower: blockParentInfo[blockId] && blockParentInfo[blockId].power,
     weight: block.weight,
     tipset: tipsets[tipsetKey],
+    x: calcX(block, blocksAtHeight),
+    y: block.height,
   }
 }
 
-const createEdge = (block, isBlockOrphan, timeToReceive) => {
+const createEdge = (block, isBlockOrphan, timeToReceive, blockIndices) => {
   const blockId = block.block
-
   return {
-    sourcename: blockId,
-    targetname: block.parent,
+    from: blockIndices[blockId],
+    to: blockIndices[block.parent],
     key: `${blockId}-${block.parent}-e`,
     time: timeToReceive,
     edgeWeirdTime: isWeirdTime(timeToReceive),
@@ -45,13 +60,13 @@ const createEdge = (block, isBlockOrphan, timeToReceive) => {
   }
 }
 
-const createEmptyEdges = (block, isBlockOrphan) => {
+const createEmptyEdges = (block, isBlockOrphan, blocks) => {
   const blockId = block.block
   const edgesToBeAdded = []
 
   edgesToBeAdded.push({
-    sourcename: `${blockId}-empty`,
-    targetname: block.parent,
+    from: `${blockId}-empty`,
+    to: block.parent,
     key: `${blockId}-${block.parent}-eb`,
     edgeWeirdTime: isWeirdTime(),
     time: 0,
@@ -59,8 +74,8 @@ const createEmptyEdges = (block, isBlockOrphan) => {
   })
 
   edgesToBeAdded.push({
-    sourcename: blockId,
-    targetname: `${blockId}-empty`,
+    from: blockId,
+    to: `${blockId}-empty`,
     key: `${blockId}-${block.parent}-ep`,
     edgeWeirdTime: isWeirdTime(),
     time: 0,
@@ -70,17 +85,21 @@ const createEmptyEdges = (block, isBlockOrphan) => {
   return edgesToBeAdded
 }
 
-const blocksToChain = (blocksArr, bhRangeEnd) => {
+const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
   // format chain as expected by dc.graph.js
   const chain = {
     nodes: [],
     edges: [],
   }
 
+  const heightRange = bhRangeEnd - bhRangeStart
+
   // used to store info for data transformations necessary to parse query data to right format
   const blocks = {}
   const blockParentInfo = {}
+  const blockIndices = {}
   const tipsets = {}
+  const blocksAtHeight = {}
 
   blocksArr.forEach((block, index) => {
     blockParentInfo[block.parent] = { power: block.parentpower }
@@ -88,6 +107,15 @@ const blocksToChain = (blocksArr, bhRangeEnd) => {
 
     if (!tipsets[tipsetKey]) {
       tipsets[tipsetKey] = index
+    }
+
+    const blockInfoForHeight = { block: block.block, tipsetGroup: tipsets[tipsetKey], index: index }
+    if (!blocksAtHeight[block.height]) {
+      blocksAtHeight[block.height] = [blockInfoForHeight]
+    } else {
+      blocksAtHeight[block.height].push(blockInfoForHeight)
+      // @todo: improve performance by finding better place to insert and using splice and maintain sorted array
+      blocksAtHeight[block.height] = orderBy(blocksAtHeight[block.height], ['tipsetGroup', 'index'])
     }
   })
 
@@ -99,7 +127,8 @@ const blocksToChain = (blocksArr, bhRangeEnd) => {
     // block.block may appear multiple times because there are many parent child relationships
     // we want to only add the node once but add all the edges to represent the different parent/child relationships
     if (!blocks[blockId]) {
-      chain.nodes.push(createBlock(block, blockParentInfo, tipsets))
+      const chainLength = chain.nodes.push(createBlock(block, blockParentInfo, tipsets, blocksAtHeight))
+      blockIndices[blockId] = chainLength - 1
     }
 
     const isDirectParent = Number(block.parentheight) === Number(block.height) - 1
@@ -115,20 +144,23 @@ const blocksToChain = (blocksArr, bhRangeEnd) => {
       parentWeight: block.parentweight,
       weirdTime: isWeirdTime(),
       tipset: 1,
+      x: 0,
+      y: 0,
     })
 
-    if (isDirectParent) {
-      const newEdge = createEdge(block, isOrphan(block), timeToReceive)
-
+    if (isDirectParent && blockIndices[blockId] && blockIndices[block.parent]) {
+      const newEdge = createEdge(block, isOrphan(block), timeToReceive, blockIndices)
       chain.edges.push(newEdge)
-    } else if (!blocks[blockId]) {
-      const newEmptyBlock = createEmptyBlock(block)
-      const newEmptyEdges = createEmptyEdges(block, isOrphan(block))
-
-      chain.nodes.push(newEmptyBlock)
-      chain.edges.push(...newEmptyEdges)
     }
-    blocks[blockId] = true
+    // @todo: need to add back this feature of adding empty nodes when skip parent
+    // else if (!blocks[blockId]) {
+    //   const newEmptyBlock = createEmptyBlock(block)
+    //   const newEmptyEdges = createEmptyEdges(block, isOrphan(block), blocks)
+
+    //   chain.nodes.push(newEmptyBlock)
+    //   chain.edges.push(...newEmptyEdges)
+    // }
+    blocks[blockId] = index
   })
 
   return chain
@@ -142,7 +174,7 @@ export const getChain = async (blockRange, startDate, endDate, miner) => {
     miner,
   })
 
-  return blocksToChain(blocksArr, blockRange[1])
+  return blocksToChain(blocksArr, blockRange[1], blockRange[0])
 }
 
 export const fetchMore = async (blockRange, maxBlock, startDate, endDate, miner, chain, paging, inverse) => {

@@ -3,13 +3,14 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import React from 'react'
 import { store } from '../../../context/store'
 import { Loader } from '../../shared/Loader'
+import ElGrapho from 'elgrapho'
 import { apply_engine_parameters } from './chartLayoutHelpers/applyEngineParams'
 import { chartOptions } from './chartLayoutHelpers/chartOptions'
-import { blockHeightPieConfig } from './chartLayoutHelpers/charts/blockHeightPieConfig'
-import { minerPieConfig } from './chartLayoutHelpers/charts/minerPieConfig'
-import { orphanPieConfig } from './chartLayoutHelpers/charts/orphanPieConfig'
-import { selectionDiagramConfig } from './chartLayoutHelpers/charts/selectionDiagramConfig'
-import { weirdTimeBarConfig } from './chartLayoutHelpers/charts/weirdTimeBar'
+// import { blockHeightPieConfig } from './chartLayoutHelpers/charts/blockHeightPieConfig'
+// import { minerPieConfig } from './chartLayoutHelpers/charts/minerPieConfig'
+// import { orphanPieConfig } from './chartLayoutHelpers/charts/orphanPieConfig'
+// import { selectionDiagramConfig } from './chartLayoutHelpers/charts/selectionDiagramConfig'
+// import { weirdTimeBarConfig } from './chartLayoutHelpers/charts/weirdTimeBar'
 import { fetchMore, getChain } from './chartLayoutHelpers/getChain'
 import { getSVGString, svgString2Image } from './chartLayoutHelpers/svg'
 import { visuallyDistinctColors } from './chartLayoutHelpers/visuallyDistinctColorSet'
@@ -133,7 +134,8 @@ export class Charts extends React.Component {
       this.setState({ chain, paging: { top: 1, bottom: 1 } })
 
       // rerender graph on new db info because redraw doesn't always work with lots of new data
-      this.renderGraph()
+      // this.renderGraph()
+      this.setState({ loading: false })
     }
   }
 
@@ -172,63 +174,63 @@ export class Charts extends React.Component {
     this.weirdTimeBar.dimension(weirdTimeDimension).group(weirdTimeGroup)
   }
 
-  renderGraph() {
-    this.minerPie = minerPieConfig()
-    this.blockHeightPie = blockHeightPieConfig()
-    this.orphanPie = orphanPieConfig()
-    this.weirdTimeBar = weirdTimeBarConfig()
+  // renderGraph() {
+  //   this.minerPie = minerPieConfig()
+  //   this.blockHeightPie = blockHeightPieConfig()
+  //   this.orphanPie = orphanPieConfig()
+  //   this.weirdTimeBar = weirdTimeBarConfig()
 
-    this.sync_url = sync_url_options(chartOptions, dcgraph_domain(this.selectionDiagram), this.selectionDiagram)
+  //   this.sync_url = sync_url_options(chartOptions, dcgraph_domain(this.selectionDiagram), this.selectionDiagram)
 
-    const engine = dc_graph.spawn_engine(this.sync_url.vals.layout, querystring.parse(), this.sync_url.vals.worker)
-    apply_engine_parameters(engine)
+  //   const engine = dc_graph.spawn_engine(this.sync_url.vals.layout, querystring.parse(), this.sync_url.vals.worker)
+  //   apply_engine_parameters(engine)
 
-    this.selectionDiagram = selectionDiagramConfig(engine, this.sync_url, this.context.state.nodeCheckbox)
-    this.selectionDiagram.nodeLabel((n) => {
-      const { heightLabel, parentWeightLabel, weight } = this.context.state.nodeCheckbox
-      const { height, parentWeight, weight: nWeight } = n.value
+  //   this.selectionDiagram = selectionDiagramConfig(engine, this.sync_url, this.context.state.nodeCheckbox)
+  //   this.selectionDiagram.nodeLabel((n) => {
+  //     const { heightLabel, parentWeightLabel, weight } = this.context.state.nodeCheckbox
+  //     const { height, parentWeight, weight: nWeight } = n.value
 
-      let label = ``
-      if (heightLabel && height) {
-        label += ` ${height}`
-      }
+  //     let label = ``
+  //     if (heightLabel && height) {
+  //       label += ` ${height}`
+  //     }
 
-      if (parentWeightLabel && parentWeight) {
-        label += `\n ${parentWeight}`
-      }
+  //     if (parentWeightLabel && parentWeight) {
+  //       label += `\n ${parentWeight}`
+  //     }
 
-      if (weight && nWeight) {
-        label += `\n ${nWeight}`
-      }
+  //     if (weight && nWeight) {
+  //       label += `\n ${nWeight}`
+  //     }
 
-      return label
-    })
+  //     return label
+  //   })
 
-    this.selectionDiagram
-      .nodeStroke((kv) => {
-        const { disableTipsetColor } = this.context.state.nodeCheckbox
-        if (!disableTipsetColor) {
-          const tipsetVal = kv.value.tipset % visuallyDistinctColors.length
-          return visuallyDistinctColors[tipsetVal]
-        }
-        return null
-      })
-      .nodeStrokeWidth(6)
+  //   this.selectionDiagram
+  //     .nodeStroke((kv) => {
+  //       const { disableTipsetColor } = this.context.state.nodeCheckbox
+  //       if (!disableTipsetColor) {
+  //         const tipsetVal = kv.value.tipset % visuallyDistinctColors.length
+  //         return visuallyDistinctColors[tipsetVal]
+  //       }
+  //       return null
+  //     })
+  //     .nodeStrokeWidth(6)
 
-    this.selectionDiagram.nodeFill((kv) => {
-      const { disableMinerColor } = this.context.state.nodeCheckbox
-      if (!disableMinerColor) {
-        return kv.value.miner
-      }
-      return 0
-    })
+  //   this.selectionDiagram.nodeFill((kv) => {
+  //     const { disableMinerColor } = this.context.state.nodeCheckbox
+  //     if (!disableMinerColor) {
+  //       return kv.value.miner
+  //     }
+  //     return 0
+  //   })
 
-    this.populate(this.sync_url.vals.n)
+  //   this.populate(this.sync_url.vals.n)
 
-    dc.renderAll()
+  //   dc.renderAll()
 
-    this.setState({ loading: false })
-  }
+  //   this.setState({ loading: false })
+  // }
 
   redrawGraph = () => {
     this.populate(this.sync_url.vals.n)
@@ -281,11 +283,30 @@ export class Charts extends React.Component {
   }
 
   render() {
-    const { loading, buildingSvg } = this.state
+    const { loading, buildingSvg, chain } = this.state
+    const { blockRange } = this.props
+    if (chain.nodes.length > 0) {
+      let model = {
+        nodes: chain.nodes,
+        edges: chain.edges,
+        steps: 1,
+      }
+
+      const graph = new ElGrapho({
+        container: document.getElementById('container'),
+        model: model,
+        width: 200,
+        height: 5000,
+        // height: 40 * (blockRange[1] - blockRange[0]),
+        darkMode: true,
+        glowBlend: 1,
+      })
+    }
 
     return (
       <>
         {loading && <Loader />}
+        <div id="container"></div>
         <Graph id="graph">
           {!loading && (
             <SaveSvg disabled={buildingSvg} onClick={this.saveSvg}>
