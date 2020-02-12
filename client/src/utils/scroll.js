@@ -6,10 +6,10 @@ export const scroll = {
   },
 
   scrollTo: function(targetNode, container) {
-    const target = targetNode.offsetTop + 10
+    const target = targetNode.offsetTop
 
     const difference = targetNode.offsetTop - container.scrollTop
-    const scrollStep = difference / 25
+    const scrollStep = difference / 35
     const positiveDifference = difference > 0
 
     if (this.timer) {
@@ -29,7 +29,15 @@ export const scroll = {
         return
       }
 
-      yScroll = container.scrollTop + scrollStep
+      let currentScrollStep = scrollStep
+
+      if (positiveDifference && target - currentPosition < scrollStep) {
+        currentScrollStep = target - currentPosition
+      } else if (!positiveDifference && target - currentPosition > scrollStep) {
+        currentScrollStep = target - currentPosition
+      }
+
+      yScroll = container.scrollTop + currentScrollStep
       container.scrollTo(0, yScroll)
 
       if (yScroll === lastIteration) return
