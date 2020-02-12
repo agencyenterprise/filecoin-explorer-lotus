@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react'
 import { store } from '../../../context/store'
 import { Bar, Logo, Menu, MenuButton, MenuButtonWrapper, RotatedTextWrapper, SectionText } from './bar.styled'
+import { scroll } from '../../../utils'
 
 const BarComponent = () => {
   const [tag, setTag] = useState('')
@@ -33,7 +34,9 @@ const BarComponent = () => {
   }
 
   const navigate = (to) => {
-    console.log('to', to)
+    const controlsDiv = document.getElementById('controls')
+
+    scroll.scrollTo(to.element, controlsDiv)
   }
 
   return (
@@ -45,7 +48,7 @@ const BarComponent = () => {
               key={item.section}
               onMouseEnter={() => onMouseEnter(item.label)}
               onMouseLeave={onMouseLeave}
-              onClick={() => navigate(item.section)}
+              onClick={() => navigate(item)}
             >
               <MenuButton active={item.section === currentSection}>{item.section}</MenuButton>
             </MenuButtonWrapper>
