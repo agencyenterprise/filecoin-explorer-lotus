@@ -16,7 +16,6 @@ const tipsetKeyFormatter = (block) => {
 const calcX = (block, blocksAtHeight) => {
   const blocksAtCurrentHeight = blocksAtHeight[block.height]
   const centerBlock = (blocksAtCurrentHeight.length - 1) / 2
-  console.log(block.height, blocksAtCurrentHeight, centerBlock)
   const positionOfCurrentBlock = findIndex(blocksAtCurrentHeight, { block: block.block, filler: false })
   // @todo update so there is more space between unlike tipsets
   let xPos = positionOfCurrentBlock - centerBlock
