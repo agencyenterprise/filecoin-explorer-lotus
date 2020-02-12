@@ -15,13 +15,15 @@ const tipsetKeyFormatter = (block) => {
 
 const calcX = (block, blocksAtHeight) => {
   const blocksAtCurrentHeight = blocksAtHeight[block.height]
-  const numBlocksAtHeight = blocksAtCurrentHeight.length
-  const positionOfCurrentBlock = findIndex(blocksAtCurrentHeight, { block: block.block })
+  const centerBlock = (blocksAtCurrentHeight.length - 1) / 2
+  console.log(block.height, blocksAtCurrentHeight, centerBlock)
+  const positionOfCurrentBlock = findIndex(blocksAtCurrentHeight, { block: block.block, filler: false })
   // @todo update so there is more space between unlike tipsets
-  let xPos = positionOfCurrentBlock / numBlocksAtHeight
-  if (positionOfCurrentBlock % 2) {
-    xPos *= -1
-  }
+  let xPos = positionOfCurrentBlock - centerBlock
+  // console.log('x pos is', xPos, centerBlock, positionOfCurrentBlock, blocksAtCurrentHeight)
+  // if (positionOfCurrentBlock % 2) {
+  //   xPos *= -1
+  // }
   return xPos
 }
 
@@ -34,7 +36,7 @@ const createBlock = (block, blockParentInfo, tipsets, blocksAtHeight) => {
     key: blockId,
     height: block.height,
     group: tipsets[tipsetKey],
-    label: block.miner,
+    label: block.height,
     miner: block.miner,
     parentWeight: block.parentweight,
     timeToReceive: `${timeToReceive}s`,
@@ -109,13 +111,18 @@ const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
       tipsets[tipsetKey] = index
     }
 
-    const blockInfoForHeight = { block: block.block, tipsetGroup: tipsets[tipsetKey], index: index }
+    const blockInfoForHeight = { block: block.block, tipsetGroup: tipsets[tipsetKey], index: index, filler: false }
     if (!blocksAtHeight[block.height]) {
       blocksAtHeight[block.height] = [blockInfoForHeight]
-    } else {
+    } else if (findIndex(blocksAtHeight[block.height], { tipsetGroup: tipsets[tipsetKey] }) === -1) {
+      // if new tipset insert blank before to space
+      blocksAtHeight[block.height].push({ ...blockInfoForHeight, filler: true })
       blocksAtHeight[block.height].push(blockInfoForHeight)
+      blocksAtHeight[block.height] = orderBy(blocksAtHeight[block.height], ['tipsetGroup', 'filler'], ['asc', 'desc'])
+    } else if (findIndex(blocksAtHeight[block.height], { block: block.block }) === -1) {
       // @todo: improve performance by finding better place to insert and using splice and maintain sorted array
-      blocksAtHeight[block.height] = orderBy(blocksAtHeight[block.height], ['tipsetGroup', 'index'])
+      blocksAtHeight[block.height].push(blockInfoForHeight)
+      blocksAtHeight[block.height] = orderBy(blocksAtHeight[block.height], ['tipsetGroup', 'filler'], ['asc', 'desc'])
     }
   })
 
@@ -129,6 +136,7 @@ const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
     if (!blocks[blockId]) {
       const chainLength = chain.nodes.push(createBlock(block, blockParentInfo, tipsets, blocksAtHeight))
       blockIndices[blockId] = chainLength - 1
+      blocks[blockId] = index
     }
 
     const isDirectParent = Number(block.parentheight) === Number(block.height) - 1
@@ -160,7 +168,6 @@ const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
     //   chain.nodes.push(newEmptyBlock)
     //   chain.edges.push(...newEmptyEdges)
     // }
-    blocks[blockId] = index
   })
 
   return chain
