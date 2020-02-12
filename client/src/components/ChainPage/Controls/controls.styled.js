@@ -39,13 +39,6 @@ export const DashedLine = styled.div`
   margin: 20px -24px;
 `
 
-export const Heading = styled.h1`
-  font-weight: 600;
-  font-size: 16px;
-  line-height: 19px;
-  letter-spacing: 0.02em;
-`
-
 export const Title = styled.h3`
   font-style: normal;
   font-weight: 600;
@@ -53,6 +46,7 @@ export const Title = styled.h3`
   line-height: 16px;
   letter-spacing: 0.02em;
   margin-bottom: 8px;
+  text-transform: uppercase;
 `
 
 export const Description = styled.p`

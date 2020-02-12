@@ -15,7 +15,6 @@ export const RangeInputs = styled.div`
     font-size: 24px;
     line-height: 29px;
     max-width: 75px;
-    color: #4c4da7;
   }
 
   span {

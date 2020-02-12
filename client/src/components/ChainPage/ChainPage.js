@@ -2,9 +2,11 @@ import debounce from 'lodash/debounce'
 import React, { useEffect, useState } from 'react'
 import { getBlockRange } from '../../api'
 import { constants } from '../../utils'
-import { ChainPage } from './chain-page.styled'
+import { Bar } from './Bar'
+import { ChainPage, ChartAndRange, ControlsAndBar, RangeContainer } from './chain-page.styled'
 import { Charts } from './Charts'
 import { Controls } from './Controls'
+import { Range } from './Range'
 
 const ChainPageComponent = () => {
   const [blockRange, setBlockRange] = useState([])
@@ -37,19 +39,40 @@ const ChainPageComponent = () => {
 
   return (
     <ChainPage id="main">
-      <Charts blockRange={blockRange} maxBlock={maxBlock} startDate={startDate} endDate={endDate} miner={miner} />
-      <Controls
-        minBlock={minBlock}
-        maxBlock={maxBlock}
-        debouncedUpdateBlockHeightFilter={debounce((blockRange) => {
-          setBlockRange(blockRange)
-        }, 500)}
-        startDate={startDate}
-        endDate={endDate}
-        setStartDate={setStartDate}
-        setEndDate={setEndDate}
-        setMiner={setMiner}
-      />
+      <ChartAndRange>
+        <Charts
+          blockRange={blockRange}
+          maxBlock={maxBlock}
+          startDate={startDate}
+          endDate={endDate}
+          miner={miner}
+          style={{ flex: 1 }}
+        />
+        <RangeContainer>
+          <Range
+            minBlock={minBlock}
+            maxBlock={maxBlock}
+            debouncedUpdateBlockHeightFilter={debounce((blockRange) => {
+              setBlockRange(blockRange)
+            }, 500)}
+          />
+        </RangeContainer>
+      </ChartAndRange>
+      <ControlsAndBar>
+        <Controls
+          minBlock={minBlock}
+          maxBlock={maxBlock}
+          debouncedUpdateBlockHeightFilter={debounce((blockRange) => {
+            setBlockRange(blockRange)
+          }, 500)}
+          startDate={startDate}
+          endDate={endDate}
+          setStartDate={setStartDate}
+          setEndDate={setEndDate}
+          setMiner={setMiner}
+        />
+        <Bar />
+      </ControlsAndBar>
     </ChainPage>
   )
 }

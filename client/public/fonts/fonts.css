@@ -45,3 +45,9 @@
   font-weight: 900;
   src: url('ArcoPerpetuoPro-Black.otf') format('opentype');
 }
+
+@font-face {
+  font-family: 'Suprapower';
+  font-weight: 800;
+  src: url('Suprapower-Heavy.otf') format('opentype');
+}

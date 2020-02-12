@@ -1060,6 +1060,7 @@
           if ((!shape.useTextSize || shape.useTextSize(n.dcg_shape)) && diagram.nodeFitLabel.eval(n)) {
             bbox = getBBoxNoThrow(this)
             bbox = { x: bbox.x, y: bbox.y, width: bbox.width, height: bbox.height }
+
             var padding
             var content = diagram.nodeContent.eval(n)
             if (content && diagram.content(content).padding) padding = diagram.content(content).padding(n)
@@ -1070,8 +1071,23 @@
                 y: padding2.y * 2,
               }
             }
-            bbox.width += padding.x
-            bbox.height += padding.y
+
+            const forcedPadding = {
+              x: 30,
+              y: 10,
+            }
+
+            if (!n.orig.value.height) {
+              bbox.width = 50
+              bbox.height = 50
+            } else {
+              bbox.width += padding.x + forcedPadding.x
+              bbox.height += padding.y + forcedPadding.y
+            }
+
+            // bbox.width += padding.x
+            // bbox.height += padding.y
+
             n.bbox = bbox
           }
           var r = 0,
@@ -1097,6 +1113,14 @@
           }
           n.cola.width = w
           n.cola.height = h
+
+          if (!n.orig.value.height) {
+            n.dcg_shape.rx = 500
+            n.dcg_shape.ry = 500
+          } else {
+            n.dcg_shape.rx = 26
+            n.dcg_shape.ry = 26
+          }
         })
       }
     }
@@ -1406,7 +1430,7 @@
           return false
         },
         useRadius: function() {
-          return false
+          return true
         },
         usePaddingAndStroke: function() {
           return false
@@ -1415,7 +1439,7 @@
           return { x: 0, y: 0 }
         },
         calc_radii: function(n, ry, bbox) {
-          return { rx: 0, ry: 0 }
+          return { rx: 26, ry: 26 }
         },
         create: function(nodeEnter) {},
         replace: function(nodeChanged) {},
@@ -1510,8 +1534,9 @@
           var fity = bbox.height / 2
           // fixme: fudge to make sure text is not too tall for node
           if (!n.dcg_shape.noshape) fity += 5
+
           return {
-            rx: bbox.width / 2,
+            rx: bbox.width / 2 + 5,
             ry: Math.max(ry, fity),
           }
         },

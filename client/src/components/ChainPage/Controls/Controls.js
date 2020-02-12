@@ -1,18 +1,16 @@
-import Slider from 'rc-slider'
 import 'rc-slider/assets/index.css'
-import React, { Fragment, useContext, useEffect, useState } from 'react'
+import React, { Fragment, useContext, useEffect, useRef, useState } from 'react'
 import 'react-datepicker/dist/react-datepicker.css'
+import { changeRange } from '../../../context/range/actions'
+import { changeCurrentSection } from '../../../context/current-section/actions'
 import { store } from '../../../context/store'
 import { constants } from '../../../utils'
 import { Block } from '../../shared/Block'
 import { Checkbox } from '../../shared/Checkbox'
 import { DatePicker } from '../../shared/DatePicker'
 import { Input } from '../../shared/Input'
-import { Controls, DashedLine, Description, Heading, Title } from './controls.styled'
-import { ReceivedBlocks } from './ReceivedBlocks'
+import { Controls, DashedLine, Title } from './controls.styled'
 import { RangeInputs } from './RangeInputs'
-
-const Range = Slider.createSliderWithTooltip(Slider.Range)
 
 const nodeLabelOptions = [
   { value: 'heightLabel', label: 'show height' },
@@ -29,15 +27,72 @@ const ControlsComponent = ({
   setStartDate,
   setEndDate,
   setMiner,
-  minBlock,
   maxBlock,
 }) => {
-  const [internalRange, setInternalRange] = useState([0, 0])
   const { state, dispatch } = useContext(store)
+  const { range, currentSection } = state
+  const [sections, setSections] = useState([])
+  const controlsRef = useRef()
+
+  const onScroll = () => {
+    const controlsElement = controlsRef.current
+
+    const topPos = controlsElement.scrollTop
+
+    if (controlsElement.scrollHeight == controlsElement.scrollTop + window.innerHeight) {
+      changeCurrentSection(dispatch, sections.length)
+
+      return
+    }
+
+    let selectedSection = 1
+
+    for (let i = 0; i < sections.length; i += 1) {
+      const section = sections[i]
+
+      if (topPos >= section.top) {
+        selectedSection = section.section
+
+        break
+      }
+    }
+
+    if (selectedSection !== currentSection) {
+      changeCurrentSection(dispatch, selectedSection)
+    }
+  }
 
   useEffect(() => {
-    if (maxBlock !== internalRange[0]) {
-      setInternalRange([Math.max(0, maxBlock - constants.initialBlockRangeLimit), maxBlock])
+    const controlsElement = controlsRef.current
+    controlsElement.addEventListener('scroll', onScroll)
+
+    return () => {
+      controlsElement.removeEventListener('scroll', onScroll)
+    }
+  }, [sections, currentSection])
+
+  useEffect(() => {
+    const elements = document.querySelectorAll('[data-section]')
+
+    const asItems = []
+
+    elements.forEach((element) => {
+      asItems.push({
+        top: element.offsetTop,
+        section: Number(element.getAttribute('data-section')),
+      })
+    })
+
+    asItems.reverse()
+
+    setSections(asItems)
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  useEffect(() => {
+    if (maxBlock !== range[0]) {
+      changeRange(dispatch, range, [Math.max(0, maxBlock - constants.initialBlockRangeLimit), maxBlock])
     }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -61,75 +116,23 @@ const ControlsComponent = ({
     </Fragment>
   ))
 
-  const resolveRangeInterval = (newInternalBlockRange) => {
-    if (newInternalBlockRange[0] > newInternalBlockRange[1]) {
-      let tmp = newInternalBlockRange[1]
+  const onChangeRangeInput = (newInternalBlockRange) => {
+    const newRange = changeRange(dispatch, range, newInternalBlockRange)
 
-      newInternalBlockRange[1] = newInternalBlockRange[0]
-      newInternalBlockRange[0] = tmp
-    }
-
-    if (internalRange[0] !== newInternalBlockRange[0]) {
-      // note: min is moving
-      if (newInternalBlockRange[1] - newInternalBlockRange[0] > constants.maxBlockRange) {
-        newInternalBlockRange[1] = newInternalBlockRange[0] + constants.maxBlockRange
-      }
-    } else {
-      // note: max is moving
-      if (newInternalBlockRange[1] - newInternalBlockRange[0] > constants.maxBlockRange) {
-        newInternalBlockRange[0] = newInternalBlockRange[1] - constants.maxBlockRange
-      }
-    }
-
-    if (newInternalBlockRange[1] === 0) {
-      newInternalBlockRange[0] = 0
-      newInternalBlockRange[1] = constants.maxBlockRange
-    }
-
-    return newInternalBlockRange
-  }
-
-  const onChangeRange = (newInternalBlockRange) => {
-    const resolvedRangeInterval = resolveRangeInterval(newInternalBlockRange)
-
-    setInternalRange(resolvedRangeInterval)
-  }
-
-  const onChanRangeInput = (newInternalBlockRange) => {
-    const resolvedRangeInterval = resolveRangeInterval(newInternalBlockRange)
-
-    setInternalRange(resolvedRangeInterval)
-    debouncedUpdateBlockHeightFilter(resolvedRangeInterval)
+    debouncedUpdateBlockHeightFilter(newRange)
   }
 
   return (
-    <Controls>
-      <Block dark>
-        <Heading>Filecoin Block Explorer</Heading>
-      </Block>
-      <Block>
-        <Title>Block Height</Title>
+    <Controls ref={controlsRef} id="controls">
+      <Block data-section={1} data-label="Block Height">
+        <Title>1. Block Height</Title>
         <DashedLine />
-        <RangeInputs rangeIntervals={internalRange} onChange={onChanRangeInput} />
+        <RangeInputs rangeIntervals={range} onChange={onChangeRangeInput} />
         <DashedLine />
-        {internalRange[1] && (
-          <Range
-            min={minBlock}
-            max={maxBlock}
-            value={internalRange}
-            step={5}
-            allowCross={false}
-            onChange={onChangeRange}
-            onAfterChange={debouncedUpdateBlockHeightFilter}
-          />
-        )}
-        <Description>
-          The slider has a max range of 50 blocks due to lorem ipsum dolor amet pitchfork raw denim thundercats butcher
-          flexitarian.
-        </Description>
+        {options}
       </Block>
-      <Block>
-        <Title>Find Miner</Title>
+      <Block data-section={2} data-label="Find Miner">
+        <Title>2. Find Miner</Title>
         <Input
           placeholder="Miner Address"
           onBlur={(e) => {
@@ -142,8 +145,8 @@ const ControlsComponent = ({
           }}
         />
       </Block>
-      <Block>
-        <Title>Narrow date range</Title>
+      <Block data-section={3} data-label="Narrow date range">
+        <Title>3. Narrow date range</Title>
         <DatePicker
           selected={startDate}
           onChange={setStartDate}
@@ -152,20 +155,18 @@ const ControlsComponent = ({
         />
         <DatePicker selected={endDate} onChange={setEndDate} placeholderText="End date, mm/dd/yyyy" />
       </Block>
-      <Block>{options}</Block>
-
-      <Block>
-        <Title>Filters</Title>
+      <Block data-section={4} data-label="Filters">
+        <Title>4. Filters</Title>
         <div id="minerPie" />
         {/* <div id="blockHeightPie" /> */}
         <div id="orphanPie" />
         <div id="weirdTimeBar" />
       </Block>
-      <Block>
-        <Title>Time block received after parent</Title>
+      {/* <Block>
+        <Title>5. Time block received after parent</Title>
         <ReceivedBlocks amount={562} kind="less than 48s" percentage={97.4} />
         <ReceivedBlocks amount={12} kind="between 48 - 51s" percentage={2.1} />
-      </Block>
+      </Block> */}
     </Controls>
   )
 }
