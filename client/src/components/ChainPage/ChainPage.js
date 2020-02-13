@@ -3,8 +3,8 @@ import React, { useEffect, useState } from 'react'
 import { getBlockRange } from '../../api'
 import { constants } from '../../utils'
 import { ChainPage } from './chain-page.styled'
-import { Charts } from './Charts'
 import { Controls } from './Controls'
+import { LaGrapha } from './LaGrapha'
 
 const ChainPageComponent = () => {
   const [blockRange, setBlockRange] = useState([])
@@ -37,7 +37,7 @@ const ChainPageComponent = () => {
 
   return (
     <ChainPage id="main">
-      <Charts blockRange={blockRange} maxBlock={maxBlock} startDate={startDate} endDate={endDate} miner={miner} />
+      <LaGrapha blockRange={blockRange} maxBlock={maxBlock} startDate={startDate} endDate={endDate} miner={miner} />
       <Controls
         minBlock={minBlock}
         maxBlock={maxBlock}

@@ -60,30 +60,30 @@ const createEdge = (block, isBlockOrphan, timeToReceive, blockIndices) => {
   }
 }
 
-const createEmptyEdges = (block, isBlockOrphan, blocks) => {
-  const blockId = block.block
-  const edgesToBeAdded = []
+// const createEmptyEdges = (block, isBlockOrphan, blocks) => {
+//   const blockId = block.block
+//   const edgesToBeAdded = []
 
-  edgesToBeAdded.push({
-    from: `${blockId}-empty`,
-    to: block.parent,
-    key: `${blockId}-${block.parent}-eb`,
-    edgeWeirdTime: isWeirdTime(),
-    time: 0,
-    isOrphan: 0,
-  })
+//   edgesToBeAdded.push({
+//     from: `${blockId}-empty`,
+//     to: block.parent,
+//     key: `${blockId}-${block.parent}-eb`,
+//     edgeWeirdTime: isWeirdTime(),
+//     time: 0,
+//     isOrphan: 0,
+//   })
 
-  edgesToBeAdded.push({
-    from: blockId,
-    to: `${blockId}-empty`,
-    key: `${blockId}-${block.parent}-ep`,
-    edgeWeirdTime: isWeirdTime(),
-    time: 0,
-    isOrphan: isBlockOrphan,
-  })
+//   edgesToBeAdded.push({
+//     from: blockId,
+//     to: `${blockId}-empty`,
+//     key: `${blockId}-${block.parent}-ep`,
+//     edgeWeirdTime: isWeirdTime(),
+//     time: 0,
+//     isOrphan: isBlockOrphan,
+//   })
 
-  return edgesToBeAdded
-}
+//   return edgesToBeAdded
+// }
 
 const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
   // format chain as expected by dc.graph.js
@@ -92,7 +92,7 @@ const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
     edges: [],
   }
 
-  const heightRange = bhRangeEnd - bhRangeStart
+  // const heightRange = bhRangeEnd - bhRangeStart
 
   // used to store info for data transformations necessary to parse query data to right format
   const blocks = {}
@@ -143,16 +143,16 @@ const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
       return blockParentInfo[block.block] && bhRangeEnd !== block.height ? 0 : 1
     }
 
-    const createEmptyBlock = (block) => ({
-      key: `${block.block}-empty`,
-      height: null,
-      miner: '0',
-      parentWeight: block.parentweight,
-      weirdTime: isWeirdTime(),
-      tipset: 1,
-      x: 0,
-      y: 0,
-    })
+    // const createEmptyBlock = (block) => ({
+    //   key: `${block.block}-empty`,
+    //   height: null,
+    //   miner: '0',
+    //   parentWeight: block.parentweight,
+    //   weirdTime: isWeirdTime(),
+    //   tipset: 1,
+    //   x: 0,
+    //   y: 0,
+    // })
 
     if (isDirectParent && blockIndices[blockId] && blockIndices[block.parent]) {
       const newEdge = createEdge(block, isOrphan(block), timeToReceive, blockIndices)
