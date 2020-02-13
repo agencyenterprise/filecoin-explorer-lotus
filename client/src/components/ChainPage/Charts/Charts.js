@@ -284,7 +284,10 @@ export class Charts extends React.Component {
 
   render() {
     const { loading, buildingSvg, chain } = this.state
+    const windowHeight = window.innerHeight
     const { blockRange } = this.props
+    const numEpochsDisplayed = blockRange[1] - blockRange[0]
+    console.log(windowHeight / numEpochsDisplayed)
     if (chain.nodes.length > 0) {
       let model = {
         nodes: chain.nodes,
@@ -296,10 +299,13 @@ export class Charts extends React.Component {
         container: document.getElementById('container'),
         model: model,
         width: 200,
-        height: 5000,
-        // height: 40 * (blockRange[1] - blockRange[0]),
+        height: windowHeight,
+        nodeSize: windowHeight / (numEpochsDisplayed * 25),
+        edgeSize: windowHeight / (numEpochsDisplayed * 25),
+        labelSize: windowHeight / (numEpochsDisplayed * 25),
         darkMode: true,
         glowBlend: 1,
+        fillContainer: true,
       })
     }
 
