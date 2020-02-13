@@ -1,4 +1,4 @@
 export const constants = {
   maxBlockRange: 5000,
-  initialBlockRangeLimit: 100,
+  initialBlockRangeLimit: 5000,
 }

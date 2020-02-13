@@ -132,6 +132,30 @@ export class Charts extends React.Component {
       const chain = await getChain(blockRange, startDate, endDate, miner)
 
       this.setState({ chain, paging: { top: 1, bottom: 1 } })
+      const height = window.innerHeight
+      const width = 500
+      const numEpochsDisplayed = blockRange[1] - blockRange[0]
+      const desiredInitialRange = 50
+      const zoomY = numEpochsDisplayed / desiredInitialRange
+      // @todo: improve this calc
+      const y = desiredInitialRange / 2 - height / 2
+
+      if (chain.nodes.length > 0) {
+        let model = {
+          nodes: chain.nodes,
+          edges: chain.edges,
+          steps: 1,
+        }
+        const graph = new ElGrapho({
+          container: document.getElementById('container'),
+          model: model,
+          darkMode: true,
+          glowBlend: 1,
+          height,
+          width,
+        })
+        graph.fire('zoom-to-point', { zoomY, y })
+      }
 
       // rerender graph on new db info because redraw doesn't always work with lots of new data
       // this.renderGraph()
@@ -284,32 +308,6 @@ export class Charts extends React.Component {
 
   render() {
     const { loading, buildingSvg, chain } = this.state
-    const { blockRange } = this.props
-    const numEpochsDisplayed = blockRange[1] - blockRange[0]
-    const desiredInitialRange = 50
-    const zoomY = numEpochsDisplayed / desiredInitialRange
-    console.log('y is', window.innerHeight / 2)
-
-    if (chain.nodes.length > 0) {
-      let model = {
-        nodes: chain.nodes,
-        edges: chain.edges,
-        steps: 1,
-      }
-
-      const graph = new ElGrapho({
-        container: document.getElementById('container'),
-        model: model,
-        // magicZoom: false,
-        // nodeSize: windowHeight / (numEpochsDisplayed * 15),
-        // edgeSize: windowHeight / (numEpochsDisplayed * 25),
-        // labelSize: windowHeight / (numEpochsDisplayed * 25),
-        darkMode: true,
-        glowBlend: 1,
-        fillContainer: true,
-      })
-      graph.fire('zoom-to-point', { zoomY, y: window.innerHeight / -(2 * zoomY) })
-    }
 
     return (
       <>

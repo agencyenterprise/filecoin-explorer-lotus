@@ -387,7 +387,7 @@ ElGrapho.prototype = {
 
     this.on('zoom-to-point', function(e) {
       const { zoomX, zoomY, x, y } = e
-      console.log('zoom y is', zoomY)
+      console.log('zoom y is', zoomY, y)
       that.zoomToPoint(x || 0, y || 0, zoomX || 1, zoomY || 1)
     })
 
@@ -596,7 +596,6 @@ ElGrapho.prototype = {
         let panX = (viewportCenterX - boxCenterX) * that.zoomX
         let boxCenterY = topLeftY + height / 2
         let panY = (boxCenterY - viewportCenterY) * that.zoomY
-
         that.zoomToPoint(panX, panY, zoomX, zoomY)
         BoxZoom.destroy()
         that.zoomBoxAnchor = null
