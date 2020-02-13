@@ -4,8 +4,8 @@ import { getBlockRange } from '../../api'
 import { constants } from '../../utils'
 import { Bar } from './Bar'
 import { ChainPage, ChartAndRange, ControlsAndBar, RangeContainer } from './chain-page.styled'
-import { Charts } from './Charts'
 import { Controls } from './Controls'
+import { LaGrapha } from './LaGrapha'
 import { Range } from './Range'
 
 const ChainPageComponent = () => {
@@ -40,7 +40,7 @@ const ChainPageComponent = () => {
   return (
     <ChainPage id="main">
       <ChartAndRange>
-        <Charts
+        <LaGrapha
           blockRange={blockRange}
           maxBlock={maxBlock}
           startDate={startDate}
