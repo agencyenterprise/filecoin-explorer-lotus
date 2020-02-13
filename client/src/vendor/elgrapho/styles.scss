@@ -7,7 +7,7 @@
 .el-grapho-wrapper {
   display: inline-block;
   position: relative;
-  background-color: white;
+  background-color: #e5e5e5;
   overflow: hidden;
 
   &.el-grapho-select-interaction-mode {
@@ -26,4 +26,3 @@
     background-color: black;
   }
 }
-

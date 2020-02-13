@@ -626,6 +626,8 @@ ElGrapho.prototype = {
       if (that.interactionMode === Enums.interactionMode.PAN) {
         let mousePos = that.getMousePosition(evt)
 
+        if (!mousePos || !that.panStart) return
+
         let mouseDiff = {
           x: mousePos.x - that.panStart.x,
           y: mousePos.y - that.panStart.y,

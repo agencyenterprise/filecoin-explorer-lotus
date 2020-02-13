@@ -4,13 +4,13 @@
   right: 5px;
   pointer-events: none;
   font-family: monospace;
-  background-color: white;
+  background-color: #e5e5e5;
   border-radius: 3px;
   padding: 3px;
   opacity: 0.9;
 
   &::selection {
-    background: transparent; 
+    background: transparent;
   }
 }
 

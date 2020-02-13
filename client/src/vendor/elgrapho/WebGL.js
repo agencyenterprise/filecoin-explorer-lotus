@@ -108,6 +108,7 @@ WebGL.prototype = {
     shaderProgram.modelViewMatrixUniform = gl.getUniformLocation(shaderProgram, 'uModelViewMatrix')
     shaderProgram.magicZoom = gl.getUniformLocation(shaderProgram, 'magicZoom')
     shaderProgram.nodeSize = gl.getUniformLocation(shaderProgram, 'nodeSize')
+
     shaderProgram.glowSize = gl.getUniformLocation(shaderProgram, 'glowSize')
     shaderProgram.focusedGroup = gl.getUniformLocation(shaderProgram, 'focusedGroup')
     shaderProgram.zoom = gl.getUniformLocation(shaderProgram, 'zoom')
@@ -432,11 +433,11 @@ WebGL.prototype = {
     if (darkMode) {
       gl.clearColor(0, 0, 0, 1)
     } else {
-      gl.clearColor(1, 1, 1, 1)
+      gl.clearColor(229, 229, 229, 1)
     }
 
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-    //gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); // To disable the background color of the canvas element
+    //gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA) // To disable the background color of the canvas element
     mat4.ortho(projectionMatrix, left, right, bottom, top, near, far)
 
     mat4.translate(modelViewMatrix, modelViewMatrix, [panX, panY, 0])
@@ -531,7 +532,7 @@ WebGL.prototype = {
     let far = 100000.0
 
     gl.viewport(0, 0, layer.width * Concrete.PIXEL_RATIO, layer.height * Concrete.PIXEL_RATIO)
-    gl.clearColor(1, 1, 1, 1)
+    gl.clearColor(229, 229, 229, 1)
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
     //mat4.perspective(projectionMatrix, fieldOfView, aspect, zNear, zFar);
     mat4.ortho(projectionMatrix, left, right, bottom, top, near, far)

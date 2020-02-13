@@ -61,10 +61,11 @@ class LaGraphaComponent extends Component {
         const graph = new ElGrapho({
           container: this.laGraphaRef.current,
           model,
-          glowBlend: 0,
           labelSize: 0.5,
           height,
           width,
+          edgeSize: 0.5,
+          nodeOutline: false,
         })
         graph.fire('zoom-to-point', { zoomY, y })
       }

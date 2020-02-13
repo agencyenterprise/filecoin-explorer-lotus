@@ -16,7 +16,7 @@ uniform bool darkMode;
 
 varying vec4 vVertexColor;
 
-const float MAX_NODE_SIZE = 16.0;
+const float MAX_NODE_SIZE = 30.0;
 
 // const PALETTE_HEX = [
 //   '3366CC',
@@ -45,7 +45,7 @@ void main() {
   gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
 
   if (magicZoom) {
-    gl_PointSize = MAX_NODE_SIZE; 
+    gl_PointSize = MAX_NODE_SIZE;
   }
   else {
     gl_PointSize = nodeSize * MAX_NODE_SIZE * zoom;
@@ -67,7 +67,7 @@ void main() {
 
   if (!isFocused) {
     if (darkMode) {
-      vVertexColor = vec4(60.0/255.0, 60.0/255.0, 60.0/255.0, globalAlpha);  
+      vVertexColor = vec4(60.0/255.0, 60.0/255.0, 60.0/255.0, globalAlpha);
     }
     else {
       vVertexColor = vec4(220.0/255.0, 220.0/255.0, 220.0/255.0, globalAlpha);

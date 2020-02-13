@@ -101,10 +101,6 @@ const ControlsComponent = ({
   const changeNodeLabel = (event) => {
     const { value, checked } = event.target
     dispatch({ type: 'CHANGE_NODE_CHECKBOX', payload: { key: value, value: checked } })
-
-    setTimeout(() => {
-      window.selectionDiagram.redraw()
-    }, 100)
   }
 
   const options = nodeLabelOptions.map((item, i) => (

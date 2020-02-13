@@ -6,7 +6,7 @@
   transition: opacity 0.3s ease-in-out;
 
   button {
-    background: white;
+    background: #e5e5e5;
     padding: 5px;
     cursor: pointer;
     outline: none;
@@ -27,11 +27,13 @@
 .el-grapho-wrapper.el-grapho-dark-mode .el-grapho-controls {
   button {
     background: black;
-    border-color: white;
+    border-color: #e5e5e5;
     color: white;
     border-color: #aaa;
 
-    path, polygon, rect {
+    path,
+    polygon,
+    rect {
       fill: white;
     }
   }
@@ -44,7 +46,8 @@
     .el-grapho-select-control {
       border-color: #119fe0;
 
-      path, polygon {
+      path,
+      polygon {
         fill: #119fe0;
       }
     }
@@ -58,7 +61,8 @@
     .el-grapho-pan-control {
       border-color: #119fe0;
 
-      path, polygon {
+      path,
+      polygon {
         fill: #119fe0;
       }
     }
@@ -72,12 +76,10 @@
     .el-grapho-box-zoom-control {
       border-color: #119fe0;
 
-      path, polygon {
+      path,
+      polygon {
         fill: #119fe0;
       }
     }
   }
 }
-
-
-

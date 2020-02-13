@@ -15,20 +15,20 @@ uniform bool darkMode;
 varying vec4 vVertexColor;
 
 const float POINT_STROKE_WIDTH_FACTOR = 1.5;
-const float MAX_NODE_SIZE = 16.0;
+const float MAX_NODE_SIZE = 38.0;
 
 void main() {
   gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
   //gl_Position.z = 0.0;
 
   if (magicZoom) {
-    gl_PointSize = MAX_NODE_SIZE * POINT_STROKE_WIDTH_FACTOR; 
+    gl_PointSize = MAX_NODE_SIZE * POINT_STROKE_WIDTH_FACTOR;
   }
   else {
     gl_PointSize = nodeSize * MAX_NODE_SIZE * zoom * POINT_STROKE_WIDTH_FACTOR;
   }
 
-  
+
   if (focusedGroup == -1.0 || aVertexColor == focusedGroup) {
     gl_Position.z = -0.4;
   }
@@ -37,20 +37,20 @@ void main() {
   }
 
   // if (gl_VertexID == hoverNode) {
-    
-  //   vVertexColor = vec4(0.0, 0.0, 0.0, 1.0); 
+
+  //   vVertexColor = vec4(0.0, 0.0, 0.0, 1.0);
   // }
   // else {
 
   if (darkMode) {
-    vVertexColor = vec4(0.0, 0.0, 0.0, 1.0); 
+    vVertexColor = vec4(0.0, 0.0, 0.0, 1.0);
   }
   else {
-    vVertexColor = vec4(1.0, 1.0, 1.0, 1.0); 
+    vVertexColor = vec4(1.0, 1.0, 1.0, 1.0);
   }
-  
+
   //}
 
-  
 
-}`;
+
+}`
