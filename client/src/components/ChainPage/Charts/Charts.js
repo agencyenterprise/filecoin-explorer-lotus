@@ -284,10 +284,12 @@ export class Charts extends React.Component {
 
   render() {
     const { loading, buildingSvg, chain } = this.state
-    const windowHeight = window.innerHeight
     const { blockRange } = this.props
     const numEpochsDisplayed = blockRange[1] - blockRange[0]
-    console.log(windowHeight / numEpochsDisplayed)
+    const desiredInitialRange = 50
+    const zoomY = numEpochsDisplayed / desiredInitialRange
+    console.log('y is', window.innerHeight / 2)
+
     if (chain.nodes.length > 0) {
       let model = {
         nodes: chain.nodes,
@@ -298,15 +300,15 @@ export class Charts extends React.Component {
       const graph = new ElGrapho({
         container: document.getElementById('container'),
         model: model,
-        width: 200,
-        height: windowHeight,
-        nodeSize: windowHeight / (numEpochsDisplayed * 25),
-        edgeSize: windowHeight / (numEpochsDisplayed * 25),
-        labelSize: windowHeight / (numEpochsDisplayed * 25),
+        // magicZoom: false,
+        // nodeSize: windowHeight / (numEpochsDisplayed * 15),
+        // edgeSize: windowHeight / (numEpochsDisplayed * 25),
+        // labelSize: windowHeight / (numEpochsDisplayed * 25),
         darkMode: true,
         glowBlend: 1,
         fillContainer: true,
       })
+      graph.fire('zoom-to-point', { zoomY, y: window.innerHeight / -(2 * zoomY) })
     }
 
     return (

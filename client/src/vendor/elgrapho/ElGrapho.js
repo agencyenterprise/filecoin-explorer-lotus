@@ -258,7 +258,7 @@ ElGrapho.prototype = {
     labelsContext.scale(scale, scale)
     labelsContext.textAlign = 'center'
 
-    labelsContext.font = `${that.labelSize * 12}px Arial`
+    labelsContext.font = `${that.labelSize * that.zoomX * 12}px Arial`
 
     if (this.darkMode) {
       labelsContext.fillStyle = '#eee'
@@ -385,6 +385,12 @@ ElGrapho.prototype = {
     let that = this
     let viewport = this.viewport
 
+    this.on('zoom-to-point', function(e) {
+      const { zoomX, zoomY, x, y } = e
+      console.log('zoom y is', zoomY)
+      that.zoomToPoint(x || 0, y || 0, zoomX || 1, zoomY || 1)
+    })
+
     this.on('zoom-in', function() {
       that.zoomIn()
     })
@@ -427,7 +433,6 @@ ElGrapho.prototype = {
           x: mousePos.x,
           y: mousePos.y,
         }
-
         BoxZoom.create(evt.clientX, evt.clientY)
       }
     })
