@@ -43,7 +43,7 @@ class LaGraphaComponent extends Component {
       const chain = await getChain(blockRange, startDate, endDate, miner)
 
       const height = window.innerHeight
-      const width = window.innerWidth - 305
+      const width = window.innerWidth - 361
       const numEpochsDisplayed = blockRange[1] - blockRange[0]
       const desiredInitialRange = 50
       const zoomY = numEpochsDisplayed / desiredInitialRange
