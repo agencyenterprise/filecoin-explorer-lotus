@@ -500,7 +500,7 @@ WebGL.prototype = {
     if (darkMode) {
       gl.clearColor(0, 0, 0, 1)
     } else {
-      gl.clearColor(229, 229, 229, 1)
+      gl.clearColor(1, 1, 1, 1)
     }
 
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
@@ -608,7 +608,7 @@ WebGL.prototype = {
     let far = 100000.0
 
     gl.viewport(0, 0, layer.width * Concrete.PIXEL_RATIO, layer.height * Concrete.PIXEL_RATIO)
-    gl.clearColor(229, 229, 229, 1)
+    gl.clearColor(1, 1, 1, 1)
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
     //mat4.perspective(projectionMatrix, fieldOfView, aspect, zNear, zFar);
     mat4.ortho(projectionMatrix, left, right, bottom, top, near, far)

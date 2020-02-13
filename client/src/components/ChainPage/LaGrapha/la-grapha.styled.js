@@ -1,7 +1,7 @@
 import styled from 'styled-components'
 
 export const LaGrapha = styled.div`
-  background-color: #f7f7f7;
+  background-color: #ffffff;
   flex: 1;
   overflow: hidden;
 `
