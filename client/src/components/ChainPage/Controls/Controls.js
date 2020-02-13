@@ -155,13 +155,13 @@ const ControlsComponent = ({
         />
         <DatePicker selected={endDate} onChange={setEndDate} placeholderText="End date, mm/dd/yyyy" />
       </Block>
-      <Block data-section={4} data-label="Filters">
+      {/* <Block data-section={4} data-label="Filters">
         <Title>4. Filters</Title>
         <div id="minerPie" />
         {/* <div id="blockHeightPie" /> */}
-        <div id="orphanPie" />
-        <div id="weirdTimeBar" />
-      </Block>
+      {/* <div id="orphanPie" />
+        <div id="weirdTimeBar" /> */}
+      {/* </Block> */}
       {/* <Block>
         <Title>5. Time block received after parent</Title>
         <ReceivedBlocks amount={562} kind="less than 48s" percentage={97.4} />
