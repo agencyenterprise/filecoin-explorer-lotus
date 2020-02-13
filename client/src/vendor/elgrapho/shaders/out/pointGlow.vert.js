@@ -7,16 +7,16 @@ attribute float aVertexColor;
 uniform mat4 uModelViewMatrix;
 uniform mat4 uProjectionMatrix;
 uniform bool magicZoom;
-uniform float nodeSize;
+uniform float glowSize;
 // TODO: focusedGroup and group should change to int
 uniform float focusedGroup;
 uniform float zoom;
 uniform float globalAlpha; // 0..1
 uniform bool darkMode;
 
-varying vec4 vVertexColor;
+varying vec4 vVertexGlowColor;
 
-const float MAX_NODE_SIZE = 16.0;
+const float MAX_NODE_SIZE = 50.0;
 
 // const PALETTE_HEX = [
 //   '3366CC',
@@ -48,7 +48,7 @@ void main() {
     gl_PointSize = MAX_NODE_SIZE; 
   }
   else {
-    gl_PointSize = nodeSize * MAX_NODE_SIZE * zoom;
+    gl_PointSize = glowSize * MAX_NODE_SIZE * zoom;
   }
 
   float validColor = mod(aVertexColor, 8.0);
@@ -67,35 +67,35 @@ void main() {
 
   if (!isFocused) {
     if (darkMode) {
-      vVertexColor = vec4(60.0/255.0, 60.0/255.0, 60.0/255.0, globalAlpha);  
+      vVertexGlowColor = vec4(60.0/255.0, 60.0/255.0, 60.0/255.0, globalAlpha);  
     }
     else {
-      vVertexColor = vec4(220.0/255.0, 220.0/255.0, 220.0/255.0, globalAlpha);
+      vVertexGlowColor = vec4(220.0/255.0, 220.0/255.0, 220.0/255.0, globalAlpha);
     }
   }
   else if (validColor == 0.0) {
-    vVertexColor = vec4(51.0/255.0, 102.0/255.0, 204.0/255.0, globalAlpha); // 3366CC
+    vVertexGlowColor = vec4(51.0/255.0, 102.0/255.0, 204.0/255.0, globalAlpha); // 3366CC
   }
   else if (validColor == 1.0) {
-    vVertexColor = vec4(220.0/255.0, 57.0/255.0, 18.0/255.0, globalAlpha); // DC3912
+    vVertexGlowColor = vec4(220.0/255.0, 57.0/255.0, 18.0/255.0, globalAlpha); // DC3912
   }
   else if (validColor == 2.0) {
-    vVertexColor = vec4(255.0/255.0, 153.0/255.0, 0.0/255.0, globalAlpha); // FF9900
+    vVertexGlowColor = vec4(255.0/255.0, 153.0/255.0, 0.0/255.0, globalAlpha); // FF9900
   }
   else if (validColor == 3.0) {
-    vVertexColor = vec4(16.0/255.0, 150.0/255.0, 24.0/255.0, globalAlpha); // 109618
+    vVertexGlowColor = vec4(16.0/255.0, 150.0/255.0, 24.0/255.0, globalAlpha); // 109618
   }
   else if (validColor == 4.0) {
-    vVertexColor = vec4(153.0/255.0, 0.0/255.0, 153.0/255.0, globalAlpha); // 990099
+    vVertexGlowColor = vec4(153.0/255.0, 0.0/255.0, 153.0/255.0, globalAlpha); // 990099
   }
   else if (validColor == 5.0) {
-    vVertexColor = vec4(59.0/255.0, 62.0/255.0, 172.0/255.0, globalAlpha); // 3B3EAC
+    vVertexGlowColor = vec4(59.0/255.0, 62.0/255.0, 172.0/255.0, globalAlpha); // 3B3EAC
   }
   else if (validColor == 6.0) {
-    vVertexColor = vec4(0.0/255.0, 153.0/255.0, 198.0/255.0, globalAlpha); // 0099C6
+    vVertexGlowColor = vec4(0.0/255.0, 153.0/255.0, 198.0/255.0, globalAlpha); // 0099C6
   }
   else if (validColor == 7.0) {
-    vVertexColor = vec4(221.0/255.0, 68.0/255.0, 119.0/255.0, globalAlpha); // DD4477
+    vVertexGlowColor = vec4(221.0/255.0, 68.0/255.0, 119.0/255.0, globalAlpha); // DD4477
   }
 
 }`

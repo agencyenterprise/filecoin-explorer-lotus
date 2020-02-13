@@ -133,7 +133,7 @@ export class Charts extends React.Component {
 
       this.setState({ chain, paging: { top: 1, bottom: 1 } })
       const height = window.innerHeight
-      const width = 500
+      const width = window.innerWidth - 305
       const numEpochsDisplayed = blockRange[1] - blockRange[0]
       const desiredInitialRange = 50
       const zoomY = numEpochsDisplayed / desiredInitialRange
@@ -150,7 +150,8 @@ export class Charts extends React.Component {
           container: document.getElementById('container'),
           model: model,
           darkMode: true,
-          glowBlend: 1,
+          glowBlend: 0,
+          labelSize: 0.5,
           height,
           width,
         })

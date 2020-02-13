@@ -17,8 +17,7 @@ const calcX = (block, blocksAtHeight) => {
   const blocksAtCurrentHeight = blocksAtHeight[block.height]
   const centerBlock = (blocksAtCurrentHeight.length - 1) / 2
   const positionOfCurrentBlock = findIndex(blocksAtCurrentHeight, { block: block.block, filler: false })
-  // @todo update so there is more space between unlike tipsets
-  let xPos = positionOfCurrentBlock - centerBlock
+  let xPos = (positionOfCurrentBlock - centerBlock) / blocksAtCurrentHeight.length / 2
   // console.log('x pos is', xPos, centerBlock, positionOfCurrentBlock, blocksAtCurrentHeight)
   // if (positionOfCurrentBlock % 2) {
   //   xPos *= -1
@@ -35,7 +34,7 @@ const createBlock = (block, blockParentInfo, tipsets, blocksAtHeight) => {
     key: blockId,
     height: block.height,
     group: tipsets[tipsetKey],
-    label: block.height,
+    label: block.miner,
     miner: block.miner,
     parentWeight: block.parentweight,
     timeToReceive: `${timeToReceive}s`,
@@ -168,6 +167,8 @@ const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
     //   chain.edges.push(...newEmptyEdges)
     // }
   })
+  // push fake nodes so that chain renders in only half the available width for easier zooomoing
+  chain.nodes.push({ y: 0, x: -1 }, { y: 0, x: 1 })
 
   return chain
 }
