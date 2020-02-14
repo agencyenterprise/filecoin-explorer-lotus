@@ -94,6 +94,7 @@ ElGrapho.prototype = {
     }
     this.hoveredDataIndex = -1
     this.selectedIndex = -1
+    this.doubleSelectedIndex = -1
 
     // all Listeners we need to call remove for on cleanup
     this.allListeners = []
@@ -426,6 +427,23 @@ ElGrapho.prototype = {
       that.stepDown()
     })
 
+    // @todo: maybe implement this zoom in with mousewheel if we need
+    // this.addListener(
+    //   viewport.container,
+    //   'mousewheel',
+    //   _.throttle(
+    //     function(e) {
+    //       if (e.deltaY < 0) {
+    //         that.fire('zoom-in')
+    //       } else if (e.deltaY > 0) {
+    //         that.fire('zoom-out')
+    //       }
+    //     },
+    //     10,
+    //     { trailing: false },
+    //   ),
+    // )
+
     this.addListener(document, 'mousedown', function(evt) {
       if (Dom.closest(evt.target, '.el-grapho-controls')) {
         return
@@ -614,18 +632,21 @@ ElGrapho.prototype = {
 
         if (dataIndex === -1) {
           that.deselectNode()
+          that.deselectDoubleSelectNode()
           that.deselectGroup()
         } else if (that.selectedIndex === -1) {
           // doing it with click twice instead of click in circle to not have to do calculations about being within range of dot from anywhere in circle
           // assume first click to show tipset second to show miner
           that.selectNode(dataIndex)
           that.selectGroup(that.vertices.points.glowColors[dataIndex])
-        } else {
-          that.selectNode(dataIndex)
+        } else if (that.doubleSelectedIndex === -1) {
+          that.deselectGroup()
+          that.doubleSelectNode(dataIndex)
           that.selectGroup(that.vertices.points.colors[dataIndex])
-          that.fire(Enums.events.NODE_CLICK, {
-            dataIndex: dataIndex,
-          })
+        } else {
+          that.deselectGroup()
+          // todo: see what's up with the unknown timetoreceive and why its grouping group 0 and 1
+          that.selectGroup(that.vertices.points.outlineColors[dataIndex])
         }
       }
 
@@ -810,8 +831,16 @@ ElGrapho.prototype = {
     this.selectedIndex = index
     this.hoverDirty = true
   },
+  doubleSelectNode: function(index) {
+    this.doubleSelectedIndex = index
+    this.hoverDirty = true
+  },
   deselectNode: function() {
     this.selectedIndex = -1
+    this.hoverDirty = true
+  },
+  deselectDoubleSelectNode: function() {
+    this.doubleSelectedIndex = -1
     this.hoverDirty = true
   },
 }

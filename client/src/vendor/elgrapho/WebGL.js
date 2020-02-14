@@ -3,12 +3,14 @@ const mat4 = glMatrix.mat4
 const Concrete = require('concretejs')
 const pointVert = require('./shaders/out/point.vert')
 const pointGlowVert = require('./shaders/out/pointGlow.vert')
+const pointOutlineVert = require('./shaders/out/pointOutline.vert')
 const pointStrokeVert = require('./shaders/out/pointStroke.vert')
 const hitPointVert = require('./shaders/out/hitPoint.vert')
 const triangleVert = require('./shaders/out/triangle.vert')
 const triangleFrag = require('./shaders/out/triangle.frag')
 const pointFrag = require('./shaders/out/point.frag')
 const pointGlowFrag = require('./shaders/out/pointGlow.frag')
+const pointOutlineFrag = require('./shaders/out/pointOutline.frag')
 const pointHitFrag = require('./shaders/out/pointHit.frag')
 const Profiler = require('./Profiler')
 
@@ -75,7 +77,6 @@ WebGL.prototype = {
   },
 
   getPointGlowShaderProgram: function() {
-    console.log('point glow shader')
     let gl = this.layer.scene.context
     let vertexGlowShader = this.getShader('vertex', pointGlowVert, gl)
     let glowFragmentShader = this.getShader('fragment', pointGlowFrag, gl)
@@ -105,6 +106,44 @@ WebGL.prototype = {
     shaderProgram.nodeSize = gl.getUniformLocation(shaderProgram, 'nodeSize')
 
     shaderProgram.glowSize = gl.getUniformLocation(shaderProgram, 'glowSize')
+    shaderProgram.focusedGroup = gl.getUniformLocation(shaderProgram, 'focusedGroup')
+    shaderProgram.zoom = gl.getUniformLocation(shaderProgram, 'zoom')
+    shaderProgram.globalAlpha = gl.getUniformLocation(shaderProgram, 'globalAlpha')
+    shaderProgram.darkMode = gl.getUniformLocation(shaderProgram, 'darkMode')
+    shaderProgram.iChannel0 = gl.getUniformLocation(shaderProgram, 'iChannel0')
+
+    return shaderProgram
+  },
+
+  getPointOutlineShaderProgram: function() {
+    console.log('point outline shader')
+    let gl = this.layer.scene.context
+    let vertexOutlineShader = this.getShader('vertex', pointOutlineVert, gl)
+    let outlineFragmentShader = this.getShader('fragment', pointOutlineFrag, gl)
+    let shaderProgram = gl.createProgram()
+
+    gl.attachShader(shaderProgram, outlineFragmentShader)
+    gl.attachShader(shaderProgram, vertexOutlineShader)
+    gl.linkProgram(shaderProgram)
+
+    if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+      console.error('Could not initialise shaders')
+    }
+
+    gl.useProgram(shaderProgram)
+
+    // attribute variables per data point
+    shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, 'aVertexPosition')
+    gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute)
+
+    shaderProgram.vertexColorAttribute = gl.getAttribLocation(shaderProgram, 'aVertexColor')
+    gl.enableVertexAttribArray(shaderProgram.vertexColorAttribute)
+
+    // uniform constants for all data points
+    shaderProgram.projectionMatrixUniform = gl.getUniformLocation(shaderProgram, 'uProjectionMatrix')
+    shaderProgram.modelViewMatrixUniform = gl.getUniformLocation(shaderProgram, 'uModelViewMatrix')
+    shaderProgram.magicZoom = gl.getUniformLocation(shaderProgram, 'magicZoom')
+    shaderProgram.outlineSize = gl.getUniformLocation(shaderProgram, 'outlineSize')
     shaderProgram.focusedGroup = gl.getUniformLocation(shaderProgram, 'focusedGroup')
     shaderProgram.zoom = gl.getUniformLocation(shaderProgram, 'zoom')
     shaderProgram.globalAlpha = gl.getUniformLocation(shaderProgram, 'globalAlpha')
@@ -239,6 +278,7 @@ WebGL.prototype = {
         positions: this.createBuffer(vertices.points.positions, 2, this.layer.scene.context),
         colors: this.createBuffer(vertices.points.colors, 1, this.layer.scene.context),
         glowColors: this.createBuffer(vertices.points.glowColors, 1, this.layer.scene.context),
+        outlineColors: this.createBuffer(vertices.points.outlineColors, 1, this.layer.scene.context),
 
         // unfortunately, have to have dedicated hitPositions because these buffers need to be bound
         // to a specific context.  Would be nice if I could work around this so that we aren't wasting so much buffer memory
@@ -352,6 +392,37 @@ WebGL.prototype = {
 
     this.bindBuffer(buffers.positions, shaderProgram.vertexPositionAttribute, gl)
     this.bindBuffer(buffers.glowColors, shaderProgram.vertexColorAttribute, gl)
+
+    gl.drawArrays(gl.POINTS, 0, buffers.positions.numItems)
+  },
+  drawScenePointOutlines: function(
+    projectionMatrix,
+    modelViewMatrix,
+    magicZoom,
+    nodeSize,
+    focusedGroup,
+    zoom,
+    glowBlend,
+    darkMode,
+  ) {
+    let layer = this.layer
+    let gl = layer.scene.context
+    let shaderProgram = this.getPointOutlineShaderProgram()
+    let buffers = this.buffers.points
+    console.log('scene point outlines')
+
+    gl.uniformMatrix4fv(shaderProgram.projectionMatrixUniform, false, projectionMatrix)
+    gl.uniformMatrix4fv(shaderProgram.modelViewMatrixUniform, false, modelViewMatrix)
+    gl.uniform1i(shaderProgram.magicZoom, magicZoom)
+    gl.uniform1f(shaderProgram.outlineSize, nodeSize)
+    gl.uniform1f(shaderProgram.focusedGroup, focusedGroup)
+    gl.uniform1f(shaderProgram.zoom, zoom)
+    gl.uniform1f(shaderProgram.globalAlpha, 1)
+    gl.uniform1i(shaderProgram.darkMode, darkMode)
+    gl.uniform1i(shaderProgram.iChannel0, 0)
+
+    this.bindBuffer(buffers.positions, shaderProgram.vertexPositionAttribute, gl)
+    this.bindBuffer(buffers.outlineColors, shaderProgram.vertexColorAttribute, gl)
 
     gl.drawArrays(gl.POINTS, 0, buffers.positions.numItems)
   },
@@ -480,6 +551,16 @@ WebGL.prototype = {
         )
       }
       this.drawScenePoints(
+        projectionMatrix,
+        modelViewMatrix,
+        magicZoom,
+        nodeSize,
+        focusedGroup,
+        zoom,
+        glowBlend,
+        darkMode,
+      )
+      this.drawScenePointOutlines(
         projectionMatrix,
         modelViewMatrix,
         magicZoom,

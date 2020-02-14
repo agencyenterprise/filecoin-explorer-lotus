@@ -13,6 +13,7 @@ const VertexBridge = {
     //let halfHeight = height/2;
     let colors = new Float32Array(nodes.length)
     let glowColors = new Float32Array(nodes.length)
+    let outlineColors = new Float32Array(nodes.length)
 
     let positionCounter = 0
     nodes.forEach(function(node, n) {
@@ -24,6 +25,7 @@ const VertexBridge = {
       positions[positionCounter++] = node.y
       colors[n] = node.minerColor
       glowColors[n] = node.tipset
+      outlineColors[n] = node.weirdTime
     })
 
     // one edge is defined by two elements (from and to).  each edge requires 2 triangles.  Each triangle has 3 positions, with an x and y for each
@@ -149,6 +151,7 @@ const VertexBridge = {
         positions: positions,
         colors: colors,
         glowColors: glowColors,
+        outlineColors: outlineColors,
       },
       triangles: {
         positions: trianglePositions,
