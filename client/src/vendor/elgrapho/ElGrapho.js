@@ -283,7 +283,6 @@ ElGrapho.prototype = {
     labelsContext.restore()
   },
   renderRings: function(scale) {
-    console.log('render rings')
     let hoverIndex = this.hoveredDataIndex
     let selectedIndex = this.selectedIndex
 
@@ -303,7 +302,6 @@ ElGrapho.prototype = {
 
       // hover ring
       if (hoverIndex >= 0) {
-        console.log('hover index!')
         node = this.model.nodes[hoverIndex]
         x = (node.x * halfWidth * this.zoomX + this.panX) / scale
         y = (node.y * -1 * halfHeight * this.zoomY - this.panY) / scale
@@ -326,7 +324,6 @@ ElGrapho.prototype = {
 
       // selected ring
       if (selectedIndex >= 0) {
-        console.log('selected index!')
         node = this.model.nodes[selectedIndex]
         x = (node.x * halfWidth * this.zoomX + this.panX) / scale
         y = (node.y * -1 * halfHeight * this.zoomY - this.panY) / scale
@@ -391,7 +388,6 @@ ElGrapho.prototype = {
 
     this.on('zoom-to-point', function(e) {
       const { zoomX, zoomY, x, y } = e
-      console.log('zoom y is', zoomY, y)
       that.zoomToPoint(x || 0, y || 0, zoomX || 1, zoomY || 1)
     })
 
@@ -628,7 +624,6 @@ ElGrapho.prototype = {
       if (that.interactionMode === Enums.interactionMode.SELECT) {
         let mousePos = that.getMousePosition(evt)
         let dataIndex = viewport.getIntersection(mousePos.x, mousePos.y)
-        console.log('selected index', that.selectedIndex, dataIndex)
 
         if (dataIndex === -1) {
           that.deselectNode()

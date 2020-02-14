@@ -116,7 +116,6 @@ WebGL.prototype = {
   },
 
   getPointOutlineShaderProgram: function() {
-    console.log('point outline shader')
     let gl = this.layer.scene.context
     let vertexOutlineShader = this.getShader('vertex', pointOutlineVert, gl)
     let outlineFragmentShader = this.getShader('fragment', pointOutlineFrag, gl)
