@@ -1,5 +1,4 @@
 module.exports = `//#version 300 es
-
 attribute vec4 aVertexPosition;
 // TODO: this should be an int
 attribute float aVertexColor;
@@ -13,10 +12,9 @@ uniform float focusedGroup;
 uniform float zoom;
 uniform float globalAlpha; // 0..1
 uniform bool darkMode;
-
 varying vec4 vVertexGlowColor;
 
-const float MAX_NODE_SIZE = 38.0;
+const float MAX_NODE_SIZE = 80.0;
 
 // const PALETTE_HEX = [
 //   '3366CC',
@@ -42,6 +40,7 @@ const float MAX_NODE_SIZE = 38.0;
 // ];
 
 void main() {
+
   gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
 
   if (magicZoom) {
@@ -96,6 +95,6 @@ void main() {
   }
   else if (validColor == 7.0) {
     vVertexGlowColor = vec4(221.0/255.0, 68.0/255.0, 119.0/255.0, globalAlpha); // DD4477
-  }
+  };
 
 }`

@@ -39,18 +39,13 @@ WebGL.prototype = {
   },
 
   getPointShaderProgram: function() {
-    console.log('point shader')
     let gl = this.layer.scene.context
     let vertexShader = this.getShader('vertex', pointVert, gl)
-    // let vertexGlowShader = this.getShader('vertex', pointGlowVert, gl)
     let fragmentShader = this.getShader('fragment', pointFrag, gl)
-    // let glowFragmentShader = this.getShader('fragment', pointGlowFrag, gl)
     let shaderProgram = gl.createProgram()
 
     gl.attachShader(shaderProgram, vertexShader)
     gl.attachShader(shaderProgram, fragmentShader)
-    // gl.attachShader(shaderProgram, glowFragmentShader)
-    // gl.attachShader(shaderProgram, vertexGlowShader)
     gl.linkProgram(shaderProgram)
 
     if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
@@ -114,12 +109,12 @@ WebGL.prototype = {
     shaderProgram.zoom = gl.getUniformLocation(shaderProgram, 'zoom')
     shaderProgram.globalAlpha = gl.getUniformLocation(shaderProgram, 'globalAlpha')
     shaderProgram.darkMode = gl.getUniformLocation(shaderProgram, 'darkMode')
+    shaderProgram.iChannel0 = gl.getUniformLocation(shaderProgram, 'iChannel0')
 
     return shaderProgram
   },
 
   getPointStrokeShaderProgram: function() {
-    console.log('now point stroke')
     let gl = this.layer.scene.context
     let vertexShader = this.getShader('vertex', pointStrokeVert, gl)
     let fragmentShader = this.getShader('fragment', pointFrag, gl)
@@ -301,35 +296,6 @@ WebGL.prototype = {
 
     gl.drawArrays(gl.POINTS, 0, buffers.positions.numItems)
   },
-  drawScenePointGlows: function(
-    projectionMatrix,
-    modelViewMatrix,
-    magicZoom,
-    nodeSize,
-    focusedGroup,
-    zoom,
-    glowBlend,
-    darkMode,
-  ) {
-    let layer = this.layer
-    let gl = layer.scene.context
-    let shaderProgram = this.getPointGlowShaderProgram()
-    let buffers = this.buffers.points
-
-    gl.uniformMatrix4fv(shaderProgram.projectionMatrixUniform, false, projectionMatrix)
-    gl.uniformMatrix4fv(shaderProgram.modelViewMatrixUniform, false, modelViewMatrix)
-    gl.uniform1i(shaderProgram.magicZoom, magicZoom)
-    gl.uniform1f(shaderProgram.glowSize, nodeSize * 5)
-    gl.uniform1f(shaderProgram.focusedGroup, focusedGroup)
-    gl.uniform1f(shaderProgram.zoom, zoom)
-    gl.uniform1f(shaderProgram.globalAlpha, 0)
-    gl.uniform1i(shaderProgram.darkMode, darkMode)
-
-    this.bindBuffer(buffers.positions, shaderProgram.vertexPositionAttribute, gl)
-    this.bindBuffer(buffers.glowColors, shaderProgram.vertexColorAttribute, gl)
-
-    gl.drawArrays(gl.POINTS, 0, buffers.positions.numItems)
-  },
   drawScenePointStrokes: function(
     projectionMatrix,
     modelViewMatrix,
@@ -355,10 +321,41 @@ WebGL.prototype = {
     gl.uniform1i(shaderProgram.darkMode, darkMode)
 
     this.bindBuffer(buffers.positions, shaderProgram.vertexPositionAttribute, gl)
-    this.bindBuffer(buffers.colors, shaderProgram.vertexColorAttribute, gl)
+    this.bindBuffer(buffers.glowColors, shaderProgram.vertexColorAttribute, gl)
 
     gl.drawArrays(gl.POINTS, 0, buffers.positions.numItems)
   },
+  drawScenePointGlows: function(
+    projectionMatrix,
+    modelViewMatrix,
+    magicZoom,
+    nodeSize,
+    focusedGroup,
+    zoom,
+    glowBlend,
+    darkMode,
+  ) {
+    let layer = this.layer
+    let gl = layer.scene.context
+    let shaderProgram = this.getPointGlowShaderProgram()
+    let buffers = this.buffers.points
+
+    gl.uniformMatrix4fv(shaderProgram.projectionMatrixUniform, false, projectionMatrix)
+    gl.uniformMatrix4fv(shaderProgram.modelViewMatrixUniform, false, modelViewMatrix)
+    gl.uniform1i(shaderProgram.magicZoom, magicZoom)
+    gl.uniform1f(shaderProgram.glowSize, nodeSize * 2)
+    gl.uniform1f(shaderProgram.focusedGroup, focusedGroup)
+    gl.uniform1f(shaderProgram.zoom, zoom)
+    gl.uniform1f(shaderProgram.globalAlpha, 1)
+    gl.uniform1i(shaderProgram.darkMode, darkMode)
+    gl.uniform1i(shaderProgram.iChannel0, 0)
+
+    this.bindBuffer(buffers.positions, shaderProgram.vertexPositionAttribute, gl)
+    this.bindBuffer(buffers.glowColors, shaderProgram.vertexColorAttribute, gl)
+
+    gl.drawArrays(gl.POINTS, 0, buffers.positions.numItems)
+  },
+
   drawSceneTriangles: function(
     projectionMatrix,
     modelViewMatrix,
@@ -437,7 +434,7 @@ WebGL.prototype = {
     }
 
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-    //gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA) // To disable the background color of the canvas element
+    // gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA) // To disable the background color of the canvas element
     mat4.ortho(projectionMatrix, left, right, bottom, top, near, far)
 
     mat4.translate(modelViewMatrix, modelViewMatrix, [panX, panY, 0])
@@ -451,10 +448,9 @@ WebGL.prototype = {
 
     if (glowBlend === 0) {
       gl.enable(gl.DEPTH_TEST)
-    } else {
-      gl.enable(gl.BLEND)
-      gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
     }
+    gl.enable(gl.BLEND)
+    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
 
     if (this.buffers.triangles) {
       this.drawSceneTriangles(

@@ -64,7 +64,8 @@ class LaGraphaComponent extends Component {
           labelSize: 0.5,
           height,
           width,
-          edgeSize: 0.5,
+          edgeSize: 0.3,
+          darkMode: true,
           nodeOutline: false,
         })
         graph.fire('zoom-to-point', { zoomY, y })

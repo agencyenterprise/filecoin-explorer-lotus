@@ -63,37 +63,44 @@ void main() {
   }
 
   float validColor = mod(aVertexColor, 8.0);
+  if (darkMode) {
+      vVertexColor = vec4(55.0/255.0, 55.0/255.0, 55.0/255.0, 1);  
+  }
+  else {
+    vVertexColor = vec4(128.0/255.0, 128.0/255.0, 128.0/255.0, 1);
+  }
+  
 
-  if (!isFocused) {
-    if (darkMode) {
-      vVertexColor = vec4(60.0/255.0, 60.0/255.0, 60.0/255.0, globalAlpha);  
-    }
-    else {
-      vVertexColor = vec4(220.0/255.0, 220.0/255.0, 220.0/255.0, globalAlpha);
-    }
-  }
-  else if (validColor == 0.0) {
-    vVertexColor = vec4(51.0/255.0, 102.0/255.0, 204.0/255.0, globalAlpha); // 3366CC
-  }
-  else if (validColor == 1.0) {
-    vVertexColor = vec4(220.0/255.0, 57.0/255.0, 18.0/255.0, globalAlpha); // DC3912
-  }
-  else if (validColor == 2.0) {
-    vVertexColor = vec4(255.0/255.0, 153.0/255.0, 0.0/255.0, globalAlpha); // FF9900
-  }
-  else if (validColor == 3.0) {
-    vVertexColor = vec4(16.0/255.0, 150.0/255.0, 24.0/255.0, globalAlpha); // 109618
-  }
-  else if (validColor == 4.0) {
-    vVertexColor = vec4(153.0/255.0, 0.0/255.0, 153.0/255.0, globalAlpha); // 990099
-  }
-  else if (validColor == 5.0) {
-    vVertexColor = vec4(59.0/255.0, 62.0/255.0, 172.0/255.0, globalAlpha); // 3B3EAC
-  }
-  else if (validColor == 6.0) {
-    vVertexColor = vec4(0.0/255.0, 153.0/255.0, 198.0/255.0, globalAlpha); // 0099C6
-  }
-  else if (validColor == 7.0) {
-    vVertexColor = vec4(221.0/255.0, 68.0/255.0, 119.0/255.0, globalAlpha); // DD4477
-  }
-}`;
+  // if (!isFocused) {
+  //   if (darkMode) {
+  //     vVertexColor = vec4(60.0/255.0, 60.0/255.0, 60.0/255.0, globalAlpha);  
+  //   }
+  //   else {
+  //     vVertexColor = vec4(220.0/255.0, 220.0/255.0, 220.0/255.0, globalAlpha);
+  //   }
+  // }
+  // else if (validColor == 0.0) {
+  //   vVertexColor = vec4(51.0/255.0, 102.0/255.0, 204.0/255.0, globalAlpha); // 3366CC
+  // }
+  // else if (validColor == 1.0) {
+  //   vVertexColor = vec4(220.0/255.0, 57.0/255.0, 18.0/255.0, globalAlpha); // DC3912
+  // }
+  // else if (validColor == 2.0) {
+  //   vVertexColor = vec4(255.0/255.0, 153.0/255.0, 0.0/255.0, globalAlpha); // FF9900
+  // }
+  // else if (validColor == 3.0) {
+  //   vVertexColor = vec4(16.0/255.0, 150.0/255.0, 24.0/255.0, globalAlpha); // 109618
+  // }
+  // else if (validColor == 4.0) {
+  //   vVertexColor = vec4(153.0/255.0, 0.0/255.0, 153.0/255.0, globalAlpha); // 990099
+  // }
+  // else if (validColor == 5.0) {
+  //   vVertexColor = vec4(59.0/255.0, 62.0/255.0, 172.0/255.0, globalAlpha); // 3B3EAC
+  // }
+  // else if (validColor == 6.0) {
+  //   vVertexColor = vec4(0.0/255.0, 153.0/255.0, 198.0/255.0, globalAlpha); // 0099C6
+  // }
+  // else if (validColor == 7.0) {
+  //   vVertexColor = vec4(221.0/255.0, 68.0/255.0, 119.0/255.0, globalAlpha); // DD4477
+  // }
+}`

@@ -22,7 +22,7 @@ const VertexBridge = {
 
       positions[positionCounter++] = node.x
       positions[positionCounter++] = node.y
-      colors[n] = node.group
+      colors[n] = node.minerColor
       glowColors[n] = node.tipset
     })
 

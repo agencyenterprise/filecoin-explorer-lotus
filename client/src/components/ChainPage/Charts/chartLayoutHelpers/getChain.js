@@ -25,7 +25,7 @@ const calcX = (block, blocksAtHeight) => {
   return xPos
 }
 
-const createBlock = (block, blockParentInfo, tipsets, blocksAtHeight) => {
+const createBlock = (block, blockParentInfo, tipsets, miners, blocksAtHeight) => {
   const blockId = block.block
   const timeToReceive = parseInt(block.syncedtimestamp) - parseInt(block.parenttimestamp)
   const tipsetKey = tipsetKeyFormatter(block)
@@ -36,6 +36,7 @@ const createBlock = (block, blockParentInfo, tipsets, blocksAtHeight) => {
     group: tipsets[tipsetKey],
     label: block.miner,
     miner: block.miner,
+    minerColor: miners[block.miner],
     parentWeight: block.parentweight,
     timeToReceive: `${timeToReceive}s`,
     weirdTime: isWeirdTime(timeToReceive),
@@ -99,6 +100,7 @@ const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
   const blockParentInfo = {}
   const blockIndices = {}
   const tipsets = {}
+  const miners = {}
   const blocksAtHeight = {}
 
   blocksArr.forEach((block, index) => {
@@ -107,6 +109,9 @@ const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
 
     if (!tipsets[tipsetKey]) {
       tipsets[tipsetKey] = index
+    }
+    if (!miners[block.miner]) {
+      miners[block.miner] = index
     }
 
     const blockInfoForHeight = { block: block.block, tipsetGroup: tipsets[tipsetKey], index: index, filler: false }
@@ -132,7 +137,7 @@ const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
     // block.block may appear multiple times because there are many parent child relationships
     // we want to only add the node once but add all the edges to represent the different parent/child relationships
     if (!blocks[blockId]) {
-      const chainLength = chain.nodes.push(createBlock(block, blockParentInfo, tipsets, blocksAtHeight))
+      const chainLength = chain.nodes.push(createBlock(block, blockParentInfo, tipsets, miners, blocksAtHeight))
       blockIndices[blockId] = chainLength - 1
       blocks[blockId] = index
     }

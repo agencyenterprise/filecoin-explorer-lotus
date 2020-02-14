@@ -16,7 +16,7 @@ uniform bool darkMode;
 
 varying vec4 vVertexColor;
 
-const float MAX_NODE_SIZE = 30.0;
+const float MAX_NODE_SIZE = 20.0;
 
 // const PALETTE_HEX = [
 //   '3366CC',
