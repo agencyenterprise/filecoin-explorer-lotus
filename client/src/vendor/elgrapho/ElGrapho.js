@@ -282,6 +282,7 @@ ElGrapho.prototype = {
     labelsContext.restore()
   },
   renderRings: function(scale) {
+    console.log('render rings')
     let hoverIndex = this.hoveredDataIndex
     let selectedIndex = this.selectedIndex
 
@@ -301,6 +302,7 @@ ElGrapho.prototype = {
 
       // hover ring
       if (hoverIndex >= 0) {
+        console.log('hover index!')
         node = this.model.nodes[hoverIndex]
         x = (node.x * halfWidth * this.zoomX + this.panX) / scale
         y = (node.y * -1 * halfHeight * this.zoomY - this.panY) / scale
@@ -323,6 +325,7 @@ ElGrapho.prototype = {
 
       // selected ring
       if (selectedIndex >= 0) {
+        console.log('selected index!')
         node = this.model.nodes[selectedIndex]
         x = (node.x * halfWidth * this.zoomX + this.panX) / scale
         y = (node.y * -1 * halfHeight * this.zoomY - this.panY) / scale
@@ -461,8 +464,6 @@ ElGrapho.prototype = {
         function(evt) {
           let mousePos = that.getMousePosition(evt)
           let dataIndex = viewport.getIntersection(mousePos.x, mousePos.y)
-
-          //console.log(mousePos.x, mousePos.y, dataIndex);
 
           if (that.interactionMode === Enums.interactionMode.PAN) {
             if (that.panStart) {
@@ -609,14 +610,19 @@ ElGrapho.prototype = {
       if (that.interactionMode === Enums.interactionMode.SELECT) {
         let mousePos = that.getMousePosition(evt)
         let dataIndex = viewport.getIntersection(mousePos.x, mousePos.y)
+        console.log('selected index', that.selectedIndex, dataIndex)
 
         if (dataIndex === -1) {
           that.deselectNode()
           that.deselectGroup()
+        } else if (that.selectedIndex === -1) {
+          // doing it with click twice instead of click in circle to not have to do calculations about being within range of dot from anywhere in circle
+          // assume first click to show tipset second to show miner
+          that.selectNode(dataIndex)
+          that.selectGroup(that.vertices.points.glowColors[dataIndex])
         } else {
           that.selectNode(dataIndex)
           that.selectGroup(that.vertices.points.colors[dataIndex])
-
           that.fire(Enums.events.NODE_CLICK, {
             dataIndex: dataIndex,
           })
