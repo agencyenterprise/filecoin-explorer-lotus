@@ -2,8 +2,7 @@ import debounce from 'lodash/debounce'
 import React, { useEffect, useState } from 'react'
 import { getBlockRange } from '../../api'
 import { constants } from '../../utils'
-import { Bar } from './Bar'
-import { ChainPage, ChartAndRange, ControlsAndBar, RangeContainer } from './chain-page.styled'
+import { ChainPage, ChartAndRange, RangeContainer } from './chain-page.styled'
 import { Controls } from './Controls'
 import { LaGrapha } from './LaGrapha'
 import { Range } from './Range'
@@ -58,21 +57,18 @@ const ChainPageComponent = () => {
           />
         </RangeContainer>
       </ChartAndRange>
-      <ControlsAndBar>
-        <Controls
-          minBlock={minBlock}
-          maxBlock={maxBlock}
-          debouncedUpdateBlockHeightFilter={debounce((blockRange) => {
-            setBlockRange(blockRange)
-          }, 500)}
-          startDate={startDate}
-          endDate={endDate}
-          setStartDate={setStartDate}
-          setEndDate={setEndDate}
-          setMiner={setMiner}
-        />
-        <Bar />
-      </ControlsAndBar>
+      <Controls
+        minBlock={minBlock}
+        maxBlock={maxBlock}
+        debouncedUpdateBlockHeightFilter={debounce((blockRange) => {
+          setBlockRange(blockRange)
+        }, 500)}
+        startDate={startDate}
+        endDate={endDate}
+        setStartDate={setStartDate}
+        setEndDate={setEndDate}
+        setMiner={setMiner}
+      />
     </ChainPage>
   )
 }

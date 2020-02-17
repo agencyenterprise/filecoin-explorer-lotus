@@ -30,65 +30,8 @@ const ControlsComponent = ({
   maxBlock,
 }) => {
   const { state, dispatch } = useContext(store)
-  const { range, currentSection } = state
-  const [sections, setSections] = useState([])
+  const { range } = state
   const controlsRef = useRef()
-
-  const onScroll = () => {
-    const controlsElement = controlsRef.current
-
-    const topPos = controlsElement.scrollTop
-
-    if (controlsElement.scrollHeight == controlsElement.scrollTop + window.innerHeight) {
-      changeCurrentSection(dispatch, sections.length)
-
-      return
-    }
-
-    let selectedSection = 1
-
-    for (let i = 0; i < sections.length; i += 1) {
-      const section = sections[i]
-
-      if (topPos >= section.top) {
-        selectedSection = section.section
-
-        break
-      }
-    }
-
-    if (selectedSection !== currentSection) {
-      changeCurrentSection(dispatch, selectedSection)
-    }
-  }
-
-  useEffect(() => {
-    const controlsElement = controlsRef.current
-    controlsElement.addEventListener('scroll', onScroll)
-
-    return () => {
-      controlsElement.removeEventListener('scroll', onScroll)
-    }
-  }, [sections, currentSection])
-
-  useEffect(() => {
-    const elements = document.querySelectorAll('[data-section]')
-
-    const asItems = []
-
-    elements.forEach((element) => {
-      asItems.push({
-        top: element.offsetTop,
-        section: Number(element.getAttribute('data-section')),
-      })
-    })
-
-    asItems.reverse()
-
-    setSections(asItems)
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
 
   useEffect(() => {
     if (maxBlock !== range[0]) {
@@ -120,15 +63,15 @@ const ControlsComponent = ({
 
   return (
     <Controls ref={controlsRef} id="controls">
-      <Block data-section={1} data-label="Block Height">
-        <Title>1. Block Height</Title>
+      <Block>
+        <Title>Block Height</Title>
         <DashedLine />
         <RangeInputs rangeIntervals={range} onChange={onChangeRangeInput} />
         <DashedLine />
         {options}
       </Block>
-      <Block data-section={2} data-label="Find Miner">
-        <Title>2. Find Miner</Title>
+      <Block>
+        <Title>Find Miner</Title>
         <Input
           placeholder="Miner Address"
           onBlur={(e) => {
@@ -141,8 +84,8 @@ const ControlsComponent = ({
           }}
         />
       </Block>
-      <Block data-section={3} data-label="Narrow date range">
-        <Title>3. Narrow date range</Title>
+      <Block>
+        <Title>Narrow date range</Title>
         <DatePicker
           selected={startDate}
           onChange={setStartDate}
@@ -151,18 +94,6 @@ const ControlsComponent = ({
         />
         <DatePicker selected={endDate} onChange={setEndDate} placeholderText="End date, mm/dd/yyyy" />
       </Block>
-      {/* <Block data-section={4} data-label="Filters">
-        <Title>4. Filters</Title>
-        <div id="minerPie" />
-        {/* <div id="blockHeightPie" /> */}
-      {/* <div id="orphanPie" />
-        <div id="weirdTimeBar" /> */}
-      {/* </Block> */}
-      {/* <Block>
-        <Title>5. Time block received after parent</Title>
-        <ReceivedBlocks amount={562} kind="less than 48s" percentage={97.4} />
-        <ReceivedBlocks amount={12} kind="between 48 - 51s" percentage={2.1} />
-      </Block> */}
     </Controls>
   )
 }
