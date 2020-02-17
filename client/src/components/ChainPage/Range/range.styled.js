@@ -1,10 +1,14 @@
 import styled, { css } from 'styled-components'
 
 const rcSlider = css`
+  .rc-slider {
+    padding: 0;
+  }
+
   .rc-slider-rail,
   .rc-slider-track {
     border-radius: 0;
-    height: 8px;
+    height: 16px;
   }
 
   .rc-slider-rail {
@@ -12,15 +16,15 @@ const rcSlider = css`
   }
 
   .rc-slider-track {
-    background: #212121;
+    background: #848484;
   }
 
   .rc-slider-handle {
     width: 4px;
-    height: 24px;
+    height: 16px;
     border-radius: 0;
     border: 0;
-    top: 2px;
+    top: 5px;
     background: #212121;
   }
 `
@@ -41,10 +45,14 @@ export const RangeNumber = styled.div`
   line-height: 19px;
 
   &:first-child {
-    margin-right: 15px;
+    margin-right: 25px;
   }
 
   &:last-child {
-    margin-left: 15px;
+    margin-left: 25px;
   }
+`
+
+export const Spacer = styled.div`
+  flex: 1;
 `

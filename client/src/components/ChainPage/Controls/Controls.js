@@ -1,8 +1,6 @@
-import 'rc-slider/assets/index.css'
-import React, { Fragment, useContext, useEffect, useRef, useState } from 'react'
+import React, { Fragment, useContext, useEffect } from 'react'
 import 'react-datepicker/dist/react-datepicker.css'
 import { changeRange } from '../../../context/range/actions'
-import { changeCurrentSection } from '../../../context/current-section/actions'
 import { store } from '../../../context/store'
 import { constants } from '../../../utils'
 import { Block } from '../../shared/Block'
@@ -29,9 +27,10 @@ const ControlsComponent = ({
   setMiner,
   maxBlock,
 }) => {
-  const { state, dispatch } = useContext(store)
-  const { range } = state
-  const controlsRef = useRef()
+  const {
+    state: { nodeCheckbox, range },
+    dispatch,
+  } = useContext(store)
 
   useEffect(() => {
     if (maxBlock !== range[0]) {
@@ -48,7 +47,7 @@ const ControlsComponent = ({
 
   const options = nodeLabelOptions.map((item, i) => (
     <Fragment key={item.value}>
-      <Checkbox checked={state.nodeCheckbox[item.value]} onChange={changeNodeLabel} value={item.value}>
+      <Checkbox checked={nodeCheckbox[item.value]} onChange={changeNodeLabel} value={item.value}>
         {item.label}
       </Checkbox>
       {i < nodeLabelOptions.length - 1 && <DashedLine />}
@@ -62,7 +61,7 @@ const ControlsComponent = ({
   }
 
   return (
-    <Controls ref={controlsRef} id="controls">
+    <Controls id="controls">
       <Block>
         <Title>Block Height</Title>
         <DashedLine />
