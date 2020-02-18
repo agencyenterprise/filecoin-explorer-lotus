@@ -70,7 +70,6 @@ class LaGraphaComponent extends Component {
           width,
           edgeSize: 0.3,
           nodeSize: 1,
-          darkMode: true,
           nodeOutline: false,
         })
 
