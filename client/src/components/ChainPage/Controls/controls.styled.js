@@ -35,8 +35,8 @@ export const Controls = styled.div`
 `
 
 export const DashedLine = styled.div`
-  border: 1px dashed #d7d7d7;
-  margin: 20px -24px;
+  border: 0.5px dashed #d7d7d7;
+  margin: 18px -24px;
 `
 
 export const Title = styled.h3`

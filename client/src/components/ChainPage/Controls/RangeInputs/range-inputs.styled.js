@@ -13,7 +13,7 @@ export const RangeInputs = styled.div`
     border: 0;
     font-weight: bold;
     font-size: 24px;
-    line-height: 29px;
+    line-height: 24px;
     max-width: 75px;
   }
 

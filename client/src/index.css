@@ -30,14 +30,15 @@ div.dc-chart {
 
 /* Tooltip */
 
-.el-grapho-tooltip {
-  background-color: #212121 !important;
+div.el-grapho-tooltip {
+  background-color: #212121;
   color: #e7e7e7;
   margin-top: -9px;
   overflow: hidden;
   font-family: Arco Perpetuo Pro;
   font-size: 12px;
   line-height: 16px;
+  padding: 0;
 }
 
 .el-grapho-tooltip:after {
