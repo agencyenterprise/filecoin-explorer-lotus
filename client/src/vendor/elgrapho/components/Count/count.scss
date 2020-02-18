@@ -1,0 +1,19 @@
+.el-grapho-count {
+  position: absolute;
+  bottom: 5px;
+  right: 5px;
+  pointer-events: none;
+  font-family: monospace;
+  border-radius: 3px;
+  padding: 3px;
+  opacity: 0.9;
+
+  &::selection {
+    background: transparent;
+  }
+}
+
+.el-grapho-wrapper.el-grapho-dark-mode .el-grapho-count {
+  background-color: black;
+  color: white;
+}

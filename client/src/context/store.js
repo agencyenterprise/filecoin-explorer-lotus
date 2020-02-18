@@ -6,6 +6,8 @@ const initialState = {
   },
   range: [0, 0],
   currentSection: 1,
+  selectedNode: {},
+  isNodeModalOpen: false,
 }
 
 const store = createContext(initialState)
@@ -37,6 +39,21 @@ const StateProvider = ({ children }) => {
         return {
           ...state,
           currentSection: action.payload,
+        }
+      case 'SELECTED_NODE':
+        return {
+          ...state,
+          selectedNode: action.payload,
+        }
+      case 'OPEN_NODE_MODAL':
+        return {
+          ...state,
+          isNodeModalOpen: true,
+        }
+      case 'CLOSE_NODE_MODAL':
+        return {
+          ...state,
+          isNodeModalOpen: false,
         }
       default:
         throw new Error()

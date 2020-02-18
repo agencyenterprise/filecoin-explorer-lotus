@@ -30,17 +30,18 @@ div.dc-chart {
 
 /* Tooltip */
 
-.d3-tip {
-  background: #212121;
+div.el-grapho-tooltip {
+  background-color: #212121;
   color: #e7e7e7;
   margin-top: -9px;
   overflow: hidden;
   font-family: Arco Perpetuo Pro;
   font-size: 12px;
   line-height: 16px;
+  padding: 0;
 }
 
-.d3-tip:after {
+.el-grapho-tooltip:after {
   box-sizing: border-box;
   display: inline;
   font-size: 10px;
@@ -52,17 +53,17 @@ div.dc-chart {
   text-align: center;
 }
 
-.d3-tip.n:after {
+.el-grapho-tooltip.n:after {
   margin: -1px 0 0 0;
   top: 100%;
   left: 0;
 }
 
-.d3-tip table tr td {
+.el-grapho-tooltip table tr td {
   word-break: break-all;
 }
 
-.d3-tip table tr:first-child {
+.el-grapho-tooltip table tr:first-child {
   background-color: black;
   font-weight: 600;
   font-size: 12px;
@@ -70,25 +71,25 @@ div.dc-chart {
   letter-spacing: 0.02em;
 }
 
-.d3-tip table tr:first-child td {
+.el-grapho-tooltip table tr:first-child td {
   padding: 8px 16px;
 }
 
-.d3-tip table tr:nth-child(2) td {
+.el-grapho-tooltip table tr:nth-child(2) td {
   padding-top: 8px;
 }
 
-.d3-tip table tr:last-child td {
+.el-grapho-tooltip table tr:last-child td {
   padding-bottom: 16px;
 }
 
-.d3-tip td:first-child {
+.el-grapho-tooltip td:first-child {
   padding: 4px 8px 4px 16px;
   font-weight: 600;
   max-width: 116px;
 }
 
-.d3-tip td:last-child {
+.el-grapho-tooltip td:last-child {
   padding: 4px 16px 4px 8px;
   max-width: 156px;
 }

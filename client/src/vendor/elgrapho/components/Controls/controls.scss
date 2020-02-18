@@ -1,0 +1,83 @@
+.el-grapho-controls {
+  position: absolute;
+  right: 0;
+  top: 5px;
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+
+  button {
+    padding: 5px;
+    cursor: pointer;
+    outline: none;
+    border: 2px solid black;
+    border-radius: 3px;
+    margin-right: 5px;
+  }
+
+  .el-grapho-step-down-control {
+    transform: scale(1, -1);
+  }
+}
+
+.el-grapho-wrapper:hover .el-grapho-controls {
+  opacity: 1;
+}
+
+.el-grapho-wrapper.el-grapho-dark-mode .el-grapho-controls {
+  button {
+    background: black;
+    color: white;
+    border-color: #aaa;
+
+    path,
+    polygon,
+    rect {
+      fill: white;
+    }
+  }
+}
+
+.el-grapho-wrapper.el-grapho-select-interaction-mode {
+  cursor: default;
+
+  .el-grapho-controls {
+    .el-grapho-select-control {
+      border-color: #119fe0;
+
+      path,
+      polygon {
+        fill: #119fe0;
+      }
+    }
+  }
+}
+
+.el-grapho-wrapper.el-grapho-pan-interaction-mode {
+  cursor: move;
+
+  .el-grapho-controls {
+    .el-grapho-pan-control {
+      border-color: #119fe0;
+
+      path,
+      polygon {
+        fill: #119fe0;
+      }
+    }
+  }
+}
+
+.el-grapho-wrapper.el-grapho-box-zoom-interaction-mode {
+  cursor: zoom-in;
+
+  .el-grapho-controls {
+    .el-grapho-box-zoom-control {
+      border-color: #119fe0;
+
+      path,
+      polygon {
+        fill: #119fe0;
+      }
+    }
+  }
+}

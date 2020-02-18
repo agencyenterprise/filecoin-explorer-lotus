@@ -4,7 +4,7 @@ import React, { useContext, useEffect } from 'react'
 import { changeRange } from '../../../context/range/actions'
 import { store } from '../../../context/store'
 import { constants } from '../../../utils'
-import { RangeContainer, RangeNumber } from './range.styled'
+import { RangeContainer, RangeNumber, Spacer } from './range.styled'
 
 const Range = Slider.createSliderWithTooltip(Slider.Range)
 
@@ -27,7 +27,7 @@ const RangeComponent = ({ minBlock, maxBlock, debouncedUpdateBlockHeightFilter }
   return (
     <RangeContainer>
       <RangeNumber>{range[0]}</RangeNumber>
-      {(range[1] && (
+      {range[1] ? (
         <Range
           min={minBlock}
           max={maxBlock}
@@ -37,7 +37,9 @@ const RangeComponent = ({ minBlock, maxBlock, debouncedUpdateBlockHeightFilter }
           onChange={onChangeRange}
           onAfterChange={debouncedUpdateBlockHeightFilter}
         />
-      )) || <div />}
+      ) : (
+        <Spacer />
+      )}
       <RangeNumber>{range[1]}</RangeNumber>
     </RangeContainer>
   )

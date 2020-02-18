@@ -1,0 +1,1 @@
+export { LaGrapha } from './LaGrapha'

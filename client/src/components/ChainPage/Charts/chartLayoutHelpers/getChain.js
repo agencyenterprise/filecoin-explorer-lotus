@@ -1,4 +1,5 @@
 import { getChainData } from '../../../../api'
+import { orderBy, findIndex } from 'lodash'
 
 const isWeirdTime = (timeToReceive) => {
   if (!timeToReceive) return 0
@@ -12,16 +13,30 @@ const tipsetKeyFormatter = (block) => {
   return `${block.parentstateroot}-${block.height}`
 }
 
-const createBlock = (block, blockParentInfo, tipsets) => {
+const calcX = (block, blocksAtHeight) => {
+  const blocksAtCurrentHeight = blocksAtHeight[block.height]
+  const centerBlock = (blocksAtCurrentHeight.length - 1) / 2
+  const positionOfCurrentBlock = findIndex(blocksAtCurrentHeight, { block: block.block, filler: false })
+  let xPos = (positionOfCurrentBlock - centerBlock) / blocksAtCurrentHeight.length / 2
+  // console.log('x pos is', xPos, centerBlock, positionOfCurrentBlock, blocksAtCurrentHeight)
+  // if (positionOfCurrentBlock % 2) {
+  //   xPos *= -1
+  // }
+  return xPos
+}
+
+const createBlock = (block, blockParentInfo, tipsets, miners, blocksAtHeight) => {
   const blockId = block.block
   const timeToReceive = parseInt(block.syncedtimestamp) - parseInt(block.parenttimestamp)
   const tipsetKey = tipsetKeyFormatter(block)
-
   return {
     id: blockId,
     key: blockId,
     height: block.height,
+    group: tipsets[tipsetKey],
+    label: block.miner,
     miner: block.miner,
+    minerColor: miners[block.miner],
     parentWeight: block.parentweight,
     timeToReceive: `${timeToReceive}s`,
     weirdTime: isWeirdTime(timeToReceive),
@@ -29,15 +44,16 @@ const createBlock = (block, blockParentInfo, tipsets) => {
     minerPower: blockParentInfo[blockId] && blockParentInfo[blockId].power,
     weight: block.weight,
     tipset: tipsets[tipsetKey],
+    x: calcX(block, blocksAtHeight),
+    y: block.height,
   }
 }
 
-const createEdge = (block, isBlockOrphan, timeToReceive) => {
+const createEdge = (block, isBlockOrphan, timeToReceive, blockIndices) => {
   const blockId = block.block
-
   return {
-    sourcename: blockId,
-    targetname: block.parent,
+    from: blockIndices[blockId],
+    to: blockIndices[block.parent],
     key: `${blockId}-${block.parent}-e`,
     time: timeToReceive,
     edgeWeirdTime: isWeirdTime(timeToReceive),
@@ -45,42 +61,47 @@ const createEdge = (block, isBlockOrphan, timeToReceive) => {
   }
 }
 
-const createEmptyEdges = (block, isBlockOrphan) => {
-  const blockId = block.block
-  const edgesToBeAdded = []
+// const createEmptyEdges = (block, isBlockOrphan, blocks) => {
+//   const blockId = block.block
+//   const edgesToBeAdded = []
 
-  edgesToBeAdded.push({
-    sourcename: `${blockId}-empty`,
-    targetname: block.parent,
-    key: `${blockId}-${block.parent}-eb`,
-    edgeWeirdTime: isWeirdTime(),
-    time: 0,
-    isOrphan: 0,
-  })
+//   edgesToBeAdded.push({
+//     from: `${blockId}-empty`,
+//     to: block.parent,
+//     key: `${blockId}-${block.parent}-eb`,
+//     edgeWeirdTime: isWeirdTime(),
+//     time: 0,
+//     isOrphan: 0,
+//   })
 
-  edgesToBeAdded.push({
-    sourcename: blockId,
-    targetname: `${blockId}-empty`,
-    key: `${blockId}-${block.parent}-ep`,
-    edgeWeirdTime: isWeirdTime(),
-    time: 0,
-    isOrphan: isBlockOrphan,
-  })
+//   edgesToBeAdded.push({
+//     from: blockId,
+//     to: `${blockId}-empty`,
+//     key: `${blockId}-${block.parent}-ep`,
+//     edgeWeirdTime: isWeirdTime(),
+//     time: 0,
+//     isOrphan: isBlockOrphan,
+//   })
 
-  return edgesToBeAdded
-}
+//   return edgesToBeAdded
+// }
 
-const blocksToChain = (blocksArr, bhRangeEnd) => {
+const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
   // format chain as expected by dc.graph.js
   const chain = {
     nodes: [],
     edges: [],
   }
 
+  // const heightRange = bhRangeEnd - bhRangeStart
+
   // used to store info for data transformations necessary to parse query data to right format
   const blocks = {}
   const blockParentInfo = {}
+  const blockIndices = {}
   const tipsets = {}
+  const miners = {}
+  const blocksAtHeight = {}
 
   blocksArr.forEach((block, index) => {
     blockParentInfo[block.parent] = { power: block.parentpower }
@@ -88,6 +109,23 @@ const blocksToChain = (blocksArr, bhRangeEnd) => {
 
     if (!tipsets[tipsetKey]) {
       tipsets[tipsetKey] = index
+    }
+    if (!miners[block.miner]) {
+      miners[block.miner] = index
+    }
+
+    const blockInfoForHeight = { block: block.block, tipsetGroup: tipsets[tipsetKey], index: index, filler: false }
+    if (!blocksAtHeight[block.height]) {
+      blocksAtHeight[block.height] = [blockInfoForHeight]
+    } else if (findIndex(blocksAtHeight[block.height], { tipsetGroup: tipsets[tipsetKey] }) === -1) {
+      // if new tipset insert blank before to space
+      blocksAtHeight[block.height].push({ ...blockInfoForHeight, filler: true })
+      blocksAtHeight[block.height].push(blockInfoForHeight)
+      blocksAtHeight[block.height] = orderBy(blocksAtHeight[block.height], ['tipsetGroup', 'filler'], ['asc', 'desc'])
+    } else if (findIndex(blocksAtHeight[block.height], { block: block.block }) === -1) {
+      // @todo: improve performance by finding better place to insert and using splice and maintain sorted array
+      blocksAtHeight[block.height].push(blockInfoForHeight)
+      blocksAtHeight[block.height] = orderBy(blocksAtHeight[block.height], ['tipsetGroup', 'filler'], ['asc', 'desc'])
     }
   })
 
@@ -99,7 +137,9 @@ const blocksToChain = (blocksArr, bhRangeEnd) => {
     // block.block may appear multiple times because there are many parent child relationships
     // we want to only add the node once but add all the edges to represent the different parent/child relationships
     if (!blocks[blockId]) {
-      chain.nodes.push(createBlock(block, blockParentInfo, tipsets))
+      const chainLength = chain.nodes.push(createBlock(block, blockParentInfo, tipsets, miners, blocksAtHeight))
+      blockIndices[blockId] = chainLength - 1
+      blocks[blockId] = index
     }
 
     const isDirectParent = Number(block.parentheight) === Number(block.height) - 1
@@ -108,28 +148,32 @@ const blocksToChain = (blocksArr, bhRangeEnd) => {
       return blockParentInfo[block.block] && bhRangeEnd !== block.height ? 0 : 1
     }
 
-    const createEmptyBlock = (block) => ({
-      key: `${block.block}-empty`,
-      height: null,
-      miner: '0',
-      parentWeight: block.parentweight,
-      weirdTime: isWeirdTime(),
-      tipset: 1,
-    })
+    // const createEmptyBlock = (block) => ({
+    //   key: `${block.block}-empty`,
+    //   height: null,
+    //   miner: '0',
+    //   parentWeight: block.parentweight,
+    //   weirdTime: isWeirdTime(),
+    //   tipset: 1,
+    //   x: 0,
+    //   y: 0,
+    // })
 
-    if (isDirectParent) {
-      const newEdge = createEdge(block, isOrphan(block), timeToReceive)
-
+    if (isDirectParent && blockIndices[blockId] && blockIndices[block.parent]) {
+      const newEdge = createEdge(block, isOrphan(block), timeToReceive, blockIndices)
       chain.edges.push(newEdge)
-    } else if (!blocks[blockId]) {
-      const newEmptyBlock = createEmptyBlock(block)
-      const newEmptyEdges = createEmptyEdges(block, isOrphan(block))
-
-      chain.nodes.push(newEmptyBlock)
-      chain.edges.push(...newEmptyEdges)
     }
-    blocks[blockId] = true
+    // @todo: need to add back this feature of adding empty nodes when skip parent
+    // else if (!blocks[blockId]) {
+    //   const newEmptyBlock = createEmptyBlock(block)
+    //   const newEmptyEdges = createEmptyEdges(block, isOrphan(block), blocks)
+
+    //   chain.nodes.push(newEmptyBlock)
+    //   chain.edges.push(...newEmptyEdges)
+    // }
   })
+  // push fake nodes so that chain renders in only half the available width for easier zooomoing
+  chain.nodes.push({ y: 0, x: -1 }, { y: 0, x: 1 })
 
   return chain
 }
@@ -142,7 +186,7 @@ export const getChain = async (blockRange, startDate, endDate, miner) => {
     miner,
   })
 
-  return blocksToChain(blocksArr, blockRange[1])
+  return blocksToChain(blocksArr, blockRange[1], blockRange[0])
 }
 
 export const fetchMore = async (blockRange, maxBlock, startDate, endDate, miner, chain, paging, inverse) => {
