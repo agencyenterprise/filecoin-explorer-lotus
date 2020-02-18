@@ -23,7 +23,7 @@ const NodeModalComponent = ({ node, close }) => {
         <CloseButton src={times} onClick={close} />
       </Block>
       {data.map((d) => (
-        <Block>
+        <Block key={d.title}>
           <Title>{d.title}</Title>
           <Content>{node[d.key]}</Content>
         </Block>

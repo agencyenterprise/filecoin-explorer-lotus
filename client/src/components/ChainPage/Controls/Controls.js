@@ -13,10 +13,10 @@ import { FilterItem } from './FilterItem'
 import { RangeInputs } from './RangeInputs'
 
 const nodeLabelOptions = [
-  { value: 'heightLabel', label: 'show height' },
-  { value: 'parentWeightLabel', label: 'show parent weight' },
-  { value: 'disableMinerColor', label: 'disable miner color' },
-  { value: 'disableTipsetColor', label: 'disable tipset color' },
+  { value: 'showHeightRuler', label: 'Block height ruler' },
+  { value: 'showParentWeight', label: 'Show parent weight' },
+  { value: 'disableMinerColor', label: 'Disable miner color' },
+  { value: 'disableTipsetColor', label: 'Disable tipset color' },
 ]
 
 const ControlsComponent = ({ maxBlock }) => {

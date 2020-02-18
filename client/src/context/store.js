@@ -1,13 +1,15 @@
 import React, { createContext, useReducer } from 'react'
 
 const initialState = {
-  nodeCheckbox: {
-    heightLabel: true,
-  },
   range: [0, 0],
   currentSection: 1,
   selectedNode: {},
   isNodeModalOpen: false,
+  loading: false,
+  chain: {
+    nodes: [],
+    edges: [],
+  },
   filter: {
     blockRange: [],
     minBlock: 0,
@@ -15,6 +17,7 @@ const initialState = {
     miner: '',
     startDate: '',
     endDate: '',
+    showHeightRuler: true,
   },
 }
 
@@ -26,16 +29,6 @@ const { Provider } = store
 const StateProvider = ({ children }) => {
   const [state, dispatch] = useReducer((state, action) => {
     switch (action.type) {
-      case 'CHANGE_NODE_CHECKBOX':
-        const { key, value } = action.payload
-
-        return {
-          ...state,
-          nodeCheckbox: {
-            ...state.nodeCheckbox,
-            [key]: value,
-          },
-        }
       case 'CHANGE_RANGE':
         const { range } = action.payload
 
@@ -57,6 +50,16 @@ const StateProvider = ({ children }) => {
         return {
           ...state,
           isNodeModalOpen: false,
+        }
+      case 'CHANGE_LOADING':
+        return {
+          ...state,
+          loading: action.payload,
+        }
+      case 'CHANGE_CHAIN':
+        return {
+          ...state,
+          chain: action.payload,
         }
       case 'CHANGE_FILTER':
         const { key: filterKey, value: filterValue } = action.payload

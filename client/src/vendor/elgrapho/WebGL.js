@@ -408,7 +408,6 @@ WebGL.prototype = {
     let gl = layer.scene.context
     let shaderProgram = this.getPointOutlineShaderProgram()
     let buffers = this.buffers.points
-    console.log('scene point outlines')
 
     gl.uniformMatrix4fv(shaderProgram.projectionMatrixUniform, false, projectionMatrix)
     gl.uniformMatrix4fv(shaderProgram.modelViewMatrixUniform, false, modelViewMatrix)

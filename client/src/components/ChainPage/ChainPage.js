@@ -1,4 +1,3 @@
-import debounce from 'lodash/debounce'
 import React, { useContext, useEffect } from 'react'
 import { getBlockRange } from '../../api'
 import { changeFilter as changeFilterAction } from '../../context/filter/actions'
@@ -39,6 +38,8 @@ const ChainPageComponent = () => {
     }
 
     fetchBlockRange()
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return (
