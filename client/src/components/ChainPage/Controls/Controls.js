@@ -9,6 +9,7 @@ import { DatePicker } from '../../shared/DatePicker'
 import { Input } from '../../shared/Input'
 import { Controls, DashedLine, Title } from './controls.styled'
 import { RangeInputs } from './RangeInputs'
+import { FilterItem } from './FilterItem'
 
 const nodeLabelOptions = [
   { value: 'heightLabel', label: 'show height' },
@@ -40,16 +41,18 @@ const ControlsComponent = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [maxBlock])
 
-  const changeNodeLabel = (event) => {
-    const { value, checked } = event.target
+  const changeNodeLabel = (value, checked) => {
     dispatch({ type: 'CHANGE_NODE_CHECKBOX', payload: { key: value, value: checked } })
   }
 
   const options = nodeLabelOptions.map((item, i) => (
     <Fragment key={item.value}>
-      <Checkbox checked={nodeCheckbox[item.value]} onChange={changeNodeLabel} value={item.value}>
-        {item.label}
-      </Checkbox>
+      <FilterItem
+        label={item.label}
+        value={item.value}
+        checked={nodeCheckbox[item.value]}
+        onChange={(e) => changeNodeLabel(item.value, e.target.checked)}
+      />
       {i < nodeLabelOptions.length - 1 && <DashedLine />}
     </Fragment>
   ))
