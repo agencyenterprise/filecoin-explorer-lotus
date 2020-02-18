@@ -8,6 +8,14 @@ const initialState = {
   currentSection: 1,
   selectedNode: {},
   isNodeModalOpen: false,
+  filter: {
+    blockRange: [],
+    minBlock: 0,
+    maxBlock: 0,
+    miner: '',
+    startDate: '',
+    endDate: '',
+  },
 }
 
 const store = createContext(initialState)
@@ -35,11 +43,6 @@ const StateProvider = ({ children }) => {
           ...state,
           range,
         }
-      case 'CHANGE_CURRENT_SECTION':
-        return {
-          ...state,
-          currentSection: action.payload,
-        }
       case 'SELECTED_NODE':
         return {
           ...state,
@@ -54,6 +57,16 @@ const StateProvider = ({ children }) => {
         return {
           ...state,
           isNodeModalOpen: false,
+        }
+      case 'CHANGE_FILTER':
+        const { key: filterKey, value: filterValue } = action.payload
+
+        return {
+          ...state,
+          filter: {
+            ...state.filter,
+            [filterKey]: filterValue,
+          },
         }
       default:
         throw new Error()

@@ -1,6 +1,8 @@
 import debounce from 'lodash/debounce'
-import React, { useEffect, useState } from 'react'
+import React, { useContext, useEffect } from 'react'
 import { getBlockRange } from '../../api'
+import { changeFilter as changeFilterAction } from '../../context/filter/actions'
+import { store } from '../../context/store'
 import { constants } from '../../utils'
 import { ChainPage, ChartAndRange, RangeContainer } from './chain-page.styled'
 import { Controls } from './Controls'
@@ -8,12 +10,12 @@ import { LaGrapha } from './LaGrapha'
 import { Range } from './Range'
 
 const ChainPageComponent = () => {
-  const [blockRange, setBlockRange] = useState([])
-  const [minBlock, setMinBlock] = useState(0)
-  const [maxBlock, setMaxBlock] = useState(0)
-  const [startDate, setStartDate] = useState('')
-  const [endDate, setEndDate] = useState('')
-  const [miner, setMiner] = useState('')
+  const { state, dispatch } = useContext(store)
+  const { startDate, endDate, blockRange, miner, minBlock, maxBlock } = state.filter
+
+  const changeFilter = (payload) => {
+    changeFilterAction(dispatch, payload)
+  }
 
   useEffect(() => {
     const fetchBlockRange = async () => {
@@ -21,14 +23,17 @@ const ChainPageComponent = () => {
 
       if (res && res.minHeight) {
         if (res.minHeight) {
-          setMinBlock(Number(res.minHeight))
+          changeFilter({ key: 'minBlock', value: Number(res.minHeight) })
         }
 
         if (res.maxHeight) {
           const _maxBlock = Number(res.maxHeight)
 
-          setMaxBlock(_maxBlock)
-          setBlockRange([Math.max(0, _maxBlock - constants.initialBlockRangeLimit), _maxBlock])
+          changeFilter({ key: 'maxBlock', value: _maxBlock })
+          changeFilter({
+            key: 'blockRange',
+            value: [Math.max(0, _maxBlock - constants.initialBlockRangeLimit), _maxBlock],
+          })
         }
       }
     }
@@ -39,36 +44,12 @@ const ChainPageComponent = () => {
   return (
     <ChainPage id="main">
       <ChartAndRange>
-        <LaGrapha
-          blockRange={blockRange}
-          maxBlock={maxBlock}
-          startDate={startDate}
-          endDate={endDate}
-          miner={miner}
-          style={{ flex: 1 }}
-        />
+        <LaGrapha blockRange={blockRange} maxBlock={maxBlock} startDate={startDate} endDate={endDate} miner={miner} />
         <RangeContainer>
-          <Range
-            minBlock={minBlock}
-            maxBlock={maxBlock}
-            debouncedUpdateBlockHeightFilter={debounce((blockRange) => {
-              setBlockRange(blockRange)
-            }, 500)}
-          />
+          <Range minBlock={minBlock} maxBlock={maxBlock} />
         </RangeContainer>
       </ChartAndRange>
-      <Controls
-        minBlock={minBlock}
-        maxBlock={maxBlock}
-        debouncedUpdateBlockHeightFilter={debounce((blockRange) => {
-          setBlockRange(blockRange)
-        }, 500)}
-        startDate={startDate}
-        endDate={endDate}
-        setStartDate={setStartDate}
-        setEndDate={setEndDate}
-        setMiner={setMiner}
-      />
+      <Controls maxBlock={maxBlock} />
     </ChainPage>
   )
 }
