@@ -23,14 +23,6 @@ export const SliderCheckbox = styled.div`
     }
   }
 
-  span {
-    font-weight: 600;
-    font-size: 12px;
-    line-height: 16px;
-    letter-spacing: 0.02em;
-    color: #212121;
-  }
-
   label {
     position: relative;
     padding-left: 56px;
@@ -72,4 +64,14 @@ export const SliderCheckbox = styled.div`
       width: 18px;
     }
   }
+`
+
+export const Indicator = styled.span`
+  color: #c7c7c7;
+  font-weight: 600;
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 0.02em;
+
+  ${({ active }) => active && 'color: #212121;'}
 `

@@ -1,11 +1,11 @@
 import React from 'react'
-import { SliderCheckbox } from './filter-item.styled'
+import { Indicator, SliderCheckbox } from './filter-item.styled'
 
 const FilterItemComponent = ({ label, checked, onChange, value }) => (
   <SliderCheckbox>
     <input type="checkbox" id={value} checked={checked} onChange={onChange} />
     <label htmlFor={value}>{label}</label>
-    <span>{checked ? 'On' : 'Off'}</span>
+    <Indicator active={checked}>{checked ? 'On' : 'Off'}</Indicator>
   </SliderCheckbox>
 )
 
