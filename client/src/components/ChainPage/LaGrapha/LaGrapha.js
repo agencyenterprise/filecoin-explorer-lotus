@@ -1,9 +1,12 @@
 import React, { Component } from 'react'
+import { openNodeModal, closeNodeModal } from '../../../context/node-modal/actions'
+import { selectNode } from '../../../context/selected-node/actions'
 import { store } from '../../../context/store'
 import ElGrapho from '../../../vendor/elgrapho/ElGrapho'
 import { Loader } from '../../shared/Loader'
 import { getChain } from '../Charts/chartLayoutHelpers/getChain'
-import { LaGrapha } from './la-grapha.styled'
+import { LaGrapha, LaGraphaWrapper } from './la-grapha.styled'
+import { NodeModal } from './NodeModal/NodeModal'
 import { tooltip } from './tooltip'
 
 class LaGraphaComponent extends Component {
@@ -70,6 +73,7 @@ class LaGraphaComponent extends Component {
           darkMode: true,
           nodeOutline: false,
         })
+
         graph.tooltipTemplate = function(index, el) {
           const data = chain.nodes[index]
           const tooltipTable = tooltip(data)
@@ -78,7 +82,15 @@ class LaGraphaComponent extends Component {
           }
           el.appendChild(tooltipTable)
         }
+
         graph.fire('zoom-to-point', { zoomY, y })
+
+        const { dispatch } = this.context
+
+        graph.on('node-click', ({ node }) => {
+          selectNode(dispatch, node)
+          openNodeModal(dispatch)
+        })
       }
 
       this.setState({ loading: false })
@@ -87,12 +99,17 @@ class LaGraphaComponent extends Component {
 
   render() {
     const { loading } = this.state
+    const {
+      state: { selectedNode, isNodeModalOpen },
+      dispatch,
+    } = this.context
 
     return (
-      <>
+      <LaGraphaWrapper>
         {loading && <Loader />}
         <LaGrapha ref={this.laGraphaRef} />
-      </>
+        {isNodeModalOpen && <NodeModal node={selectedNode} close={() => closeNodeModal(dispatch)} />}
+      </LaGraphaWrapper>
     )
   }
 }

@@ -823,6 +823,11 @@ ElGrapho.prototype = {
     this.dirty = true
   },
   selectNode: function(index) {
+    this.fire(Enums.events.NODE_CLICK, {
+      index,
+      node: this.model.nodes[index],
+    })
+
     this.selectedIndex = index
     this.hoverDirty = true
   },
