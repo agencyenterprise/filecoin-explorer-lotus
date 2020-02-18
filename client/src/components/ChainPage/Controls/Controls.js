@@ -1,5 +1,7 @@
+import debounce from 'lodash/debounce'
 import React, { Fragment, useContext, useEffect } from 'react'
 import 'react-datepicker/dist/react-datepicker.css'
+import { changeFilter as changeFilterAction } from '../../../context/filter/actions'
 import { changeRange } from '../../../context/range/actions'
 import { store } from '../../../context/store'
 import { constants } from '../../../utils'
@@ -7,30 +9,25 @@ import { Block } from '../../shared/Block'
 import { DatePicker } from '../../shared/DatePicker'
 import { Input } from '../../shared/Input'
 import { Controls, DashedLine, Title } from './controls.styled'
-import { RangeInputs } from './RangeInputs'
 import { FilterItem } from './FilterItem'
+import { RangeInputs } from './RangeInputs'
 
 const nodeLabelOptions = [
   { value: 'heightLabel', label: 'show height' },
   { value: 'parentWeightLabel', label: 'show parent weight' },
-  // { value: 'weight', label: 'weight contributed by the block' },
   { value: 'disableMinerColor', label: 'disable miner color' },
   { value: 'disableTipsetColor', label: 'disable tipset color' },
 ]
 
-const ControlsComponent = ({
-  debouncedUpdateBlockHeightFilter,
-  startDate,
-  endDate,
-  setStartDate,
-  setEndDate,
-  setMiner,
-  maxBlock,
-}) => {
+const ControlsComponent = ({ maxBlock }) => {
   const {
-    state: { nodeCheckbox, range },
+    state: { filter, range },
     dispatch,
   } = useContext(store)
+
+  const debouncedBlockRangeChange = debounce((blockRange) => {
+    changeFilter({ key: 'blockRange', value: blockRange })
+  }, 500)
 
   useEffect(() => {
     if (maxBlock !== range[0]) {
@@ -40,8 +37,8 @@ const ControlsComponent = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [maxBlock])
 
-  const changeNodeLabel = (value, checked) => {
-    dispatch({ type: 'CHANGE_NODE_CHECKBOX', payload: { key: value, value: checked } })
+  const changeFilter = (payload) => {
+    changeFilterAction(dispatch, payload)
   }
 
   const options = nodeLabelOptions.map((item, i) => (
@@ -49,8 +46,8 @@ const ControlsComponent = ({
       <FilterItem
         label={item.label}
         value={item.value}
-        checked={nodeCheckbox[item.value]}
-        onChange={(e) => changeNodeLabel(item.value, e.target.checked)}
+        checked={filter[item.value]}
+        onChange={(e) => changeFilter({ key: item.value, value: e.target.checked })}
       />
       {i < nodeLabelOptions.length - 1 && <DashedLine />}
     </Fragment>
@@ -59,7 +56,7 @@ const ControlsComponent = ({
   const onChangeRangeInput = (newInternalBlockRange) => {
     const newRange = changeRange(dispatch, range, newInternalBlockRange)
 
-    debouncedUpdateBlockHeightFilter(newRange)
+    debouncedBlockRangeChange(newRange)
   }
 
   return (
@@ -76,7 +73,7 @@ const ControlsComponent = ({
         <Input
           placeholder="Miner Address"
           onBlur={(e) => {
-            setMiner(e.target.value)
+            changeFilter({ key: 'miner', value: e.target.value })
           }}
           onKeyPress={(e) => {
             if (e.key === 'Enter') {
@@ -90,7 +87,7 @@ const ControlsComponent = ({
         <Input
           placeholder="Enter block CID"
           onBlur={(e) => {
-            console.log(e.target.value)
+            changeFilter({ key: 'cid', value: e.target.value })
           }}
           onKeyPress={(e) => {
             if (e.key === 'Enter') {
@@ -101,8 +98,16 @@ const ControlsComponent = ({
       </Block>
       <Block>
         <Title>Narrow date range</Title>
-        <DatePicker selected={startDate} onChange={setStartDate} placeholderText="Start date, mm/dd/yyyy" />
-        <DatePicker selected={endDate} onChange={setEndDate} placeholderText="End date, mm/dd/yyyy" />
+        <DatePicker
+          selected={filter.startDate}
+          onChange={(date) => changeFilter({ key: 'startDate', value: date })}
+          placeholderText="Start date, mm/dd/yyyy"
+        />
+        <DatePicker
+          selected={filter.endDate}
+          onChange={(date) => changeFilter({ key: 'endDate', value: date })}
+          placeholderText="End date, mm/dd/yyyy"
+        />
       </Block>
     </Controls>
   )
