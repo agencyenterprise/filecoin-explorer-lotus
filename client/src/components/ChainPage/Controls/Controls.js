@@ -73,7 +73,7 @@ const ControlsComponent = ({
         {options}
       </Block>
       <Block>
-        <Title>Find Miner</Title>
+        <Title>Find by Miner</Title>
         <Input
           placeholder="Miner Address"
           onBlur={(e) => {
@@ -87,13 +87,22 @@ const ControlsComponent = ({
         />
       </Block>
       <Block>
-        <Title>Narrow date range</Title>
-        <DatePicker
-          selected={startDate}
-          onChange={setStartDate}
-          placeholderText="Start date, mm/dd/yyyy"
-          style={{ width: '100%' }}
+        <Title>Find by Cid</Title>
+        <Input
+          placeholder="Enter block CID"
+          onBlur={(e) => {
+            console.log(e.target.value)
+          }}
+          onKeyPress={(e) => {
+            if (e.key === 'Enter') {
+              e.target.blur()
+            }
+          }}
         />
+      </Block>
+      <Block>
+        <Title>Narrow date range</Title>
+        <DatePicker selected={startDate} onChange={setStartDate} placeholderText="Start date, mm/dd/yyyy" />
         <DatePicker selected={endDate} onChange={setEndDate} placeholderText="End date, mm/dd/yyyy" />
       </Block>
     </Controls>
