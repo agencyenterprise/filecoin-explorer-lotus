@@ -55,7 +55,7 @@ export const Name = styled.div`
 `
 
 export const Amount = styled.div`
-  width: 50px;
+  width: 65px;
   display: flex;
   flex-direction: column;
   align-items: flex-end;

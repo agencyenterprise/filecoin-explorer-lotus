@@ -72,10 +72,13 @@ const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
   const tipsets = {}
   const miners = {}
   const blocksAtHeight = {}
+  const minerCount = {}
 
   blocksArr.forEach((block, index) => {
     blockParentInfo[block.parent] = { power: block.parentpower }
     const tipsetKey = tipsetKeyFormatter(block)
+
+    minerCount[block.miner] = minerCount[block.miner] ? minerCount[block.miner] + 1 : 1
 
     if (!tipsets[tipsetKey]) {
       tipsets[tipsetKey] = index
@@ -126,6 +129,7 @@ const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
 
   // push fake nodes so that chain renders in only half the available width for easier zooomoing
   chain.nodes.push({ y: 0, x: -1 }, { y: 0, x: 1 })
+  chain.miners = minerCount
 
   return chain
 }
@@ -139,43 +143,42 @@ export const getChain = async ({ blockRange, startDate, endDate, miner, cid }) =
     cid,
   })
 
-  return blocksToChain(blocksArr, blockRange[1], blockRange[0])
+  const chain = blocksToChain(blocksArr, blockRange[1], blockRange[0])
+  const miners = mapMiners(chain)
+
+  return {
+    ...chain,
+    miners,
+  }
 }
 
-export const fetchMore = async (blockRange, maxBlock, startDate, endDate, miner, chain, paging, inverse) => {
-  let from = blockRange[0] - 10 * paging.bottom
-  let to = blockRange[0] - 10 * (paging.bottom - 1)
+const toDecimal = (n) => Math.round(n * 100) / 100
+const palette = ['#3ED2DC', '#DB5669', '#F5BBBA', '#FDC963', '#FE7763', '#27346A', '#E58E7B', '#2D5942']
 
-  if (inverse) {
-    from = blockRange[1] + 10 * (paging.top - 1)
-    to = blockRange[1] + 10 * paging.top
-  }
+const mapMiners = (chain) => {
+  const total = Object.values(chain.miners).reduce((total, current) => total + current, 0)
 
-  if (from < 0) {
-    from = 0
-  }
+  const mMiners = Object.keys(chain.miners).map((key) => {
+    const value = chain.miners[key]
 
-  if (to > maxBlock) {
-    to = maxBlock
-  }
-
-  if (from === to) {
-    return chain
-  }
-
-  const blocksArr = await getChainData({
-    blockRange: [from, to],
-    startDate,
-    endDate,
-    miner,
+    return {
+      name: key,
+      total: value,
+      percentage: toDecimal((100 * value) / total),
+    }
   })
 
-  const chainToAppend = blocksToChain(blocksArr, blockRange[1])
+  const sortedMiners = mMiners.sort((a, b) => b.total - a.total)
 
-  const newChain = {
-    nodes: [...chainToAppend.nodes, ...chain.nodes],
-    edges: [...chainToAppend.edges, ...chain.edges],
-  }
+  let paletteIndex = 0
+  const minersWithColor = sortedMiners.map((miner) => {
+    if (paletteIndex >= palette.length) paletteIndex = 0
 
-  return newChain
+    return {
+      ...miner,
+      color: palette[paletteIndex++],
+    }
+  })
+
+  return minersWithColor
 }

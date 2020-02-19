@@ -1,59 +1,30 @@
-import React, { useEffect } from 'react'
+import React, { useContext, useEffect } from 'react'
+import { store } from '../../../../context/store'
 import { DashedLine } from '../controls.styled'
 import { Amount, Data, Miner, Miners, Name, Number, ProgressBar, Txs } from './miners.styled'
 
 const d3 = window.d3
 
-const total = 960
-const fakedata = [
-  {
-    name: 't001',
-    color: '#3ED2DC',
-    total: 320,
-    percentage: Math.round((100 * 320) / total),
-  },
-  {
-    name: 't002',
-    color: '#DB5669',
-    total: 280,
-    percentage: Math.round((100 * 280) / total),
-  },
-  {
-    name: 't003',
-    color: '#F5BBBA',
-    total: 160,
-    percentage: Math.round((100 * 160) / total),
-  },
-  {
-    name: 't004',
-    color: '#FDC963',
-    total: 100,
-    percentage: Math.round((100 * 100) / total),
-  },
-  {
-    name: 't005',
-    color: '#FE7763',
-    total: 40,
-    percentage: Math.round((100 * 40) / total),
-  },
-  {
-    name: 't006',
-    color: '#27346A',
-    total: 30,
-    percentage: Math.round((100 * 30) / total),
-  },
-  {
-    name: 't007',
-    color: '#E58E7B',
-    total: 30,
-    percentage: Math.round((100 * 30) / total),
-  },
-]
-
 const MinersComponent = () => {
+  const {
+    state: { chain },
+  } = useContext(store)
+
   useEffect(() => {
+    console.log(chain.miners)
+
+    drawGraph()
+  }, [chain.miners])
+
+  const drawGraph = () => {
     const width = 242
     const height = 336
+
+    // clear previous graphs
+    const treeMapNode = document.querySelector('#treemap')
+    while (treeMapNode.firstChild) {
+      treeMapNode.removeChild(treeMapNode.lastChild)
+    }
 
     const svg = d3
       .select('#treemap')
@@ -62,9 +33,8 @@ const MinersComponent = () => {
       .attr('height', height)
       .append('g')
 
-    const root = d3.hierarchy({ children: fakedata }).sum((d) => d.total)
+    const root = d3.hierarchy({ children: chain.miners }).sum((d) => d.total)
 
-    // Then d3.treemap computes the position of each element of the hierarchy
     d3
       .treemap()
       .size([width, height])
@@ -92,7 +62,9 @@ const MinersComponent = () => {
       .attr('font-size', '12px')
       .attr('font-weight', '500')
       .attr('fill', '#212121')
-  }, [])
+  }
+
+  const miners = (chain && chain.miners) || []
 
   return (
     <>
@@ -100,15 +72,15 @@ const MinersComponent = () => {
       <DashedLine />
       <Miners>
         <div>
-          <span>309</span> Miners
+          <span>{miners.length}</span> Miners
         </div>
         <div>
-          <span>42</span> Countries
+          <span>?</span> Countries
         </div>
       </Miners>
       <DashedLine />
-      {fakedata.map((miner) => (
-        <Miner>
+      {miners.map((miner) => (
+        <Miner key={miner.name}>
           <Data>
             <ProgressBar percentage={miner.percentage || 0} color={miner.color} />
             <Name>{miner.name}</Name>
