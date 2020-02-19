@@ -11,6 +11,8 @@ import { Input } from '../../shared/Input'
 import { Controls, DashedLine, Title } from './controls.styled'
 import { FilterItem } from './FilterItem'
 import { RangeInputs } from './RangeInputs'
+import { ReceivedBlocks } from './ReceivedBlocks'
+import { Orphans } from './Orphans'
 
 const nodeLabelOptions = [
   { value: 'showHeightRuler', label: 'Block height ruler' },
@@ -108,6 +110,17 @@ const ControlsComponent = ({ maxBlock }) => {
           onChange={(date) => changeFilter({ key: 'endDate', value: date })}
           placeholderText="End date, mm/dd/yyyy"
         />
+      </Block>
+      <Block>
+        <Title>Time block received after parent</Title>
+        <ReceivedBlocks amount={562} percentage={97.4} kind="less than 48s" />
+        <ReceivedBlocks amount={12} percentage={2.1} kind="between 48 - 51s" />
+        <ReceivedBlocks amount={3} percentage={0.5} kind="between 51 - 60s" />
+        <ReceivedBlocks amount={0} percentage={0} kind="more than 60s" />
+      </Block>
+      <Block>
+        <Title>Orphans</Title>
+        <Orphans total={15420} orphans={5300} />
       </Block>
     </Controls>
   )

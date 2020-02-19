@@ -3,12 +3,14 @@ import styled from 'styled-components'
 export const ChainPage = styled.div`
   display: flex;
   height: 100%;
+  overflow: hidden;
 `
 
 export const ChartAndRange = styled.div`
   display: flex;
   flex-direction: column;
   flex: 1;
+  overflow: hidden;
 `
 
 export const RangeContainer = styled.div`
