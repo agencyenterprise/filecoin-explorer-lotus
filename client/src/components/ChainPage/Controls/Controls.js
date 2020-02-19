@@ -10,10 +10,10 @@ import { DatePicker } from '../../shared/DatePicker'
 import { Input } from '../../shared/Input'
 import { Controls, DashedLine, Title } from './controls.styled'
 import { FilterItem } from './FilterItem'
+import { Miners } from './Miners'
 import { Orphans } from './Orphans'
 import { RangeInputs } from './RangeInputs'
 import { ReceivedBlocks } from './ReceivedBlocks'
-import { TreeMap } from './TreeMap'
 
 const nodeLabelOptions = [
   { value: 'showHeightRuler', label: 'Block height ruler' },
@@ -127,7 +127,7 @@ const ControlsComponent = ({ maxBlock }) => {
         <Title>
           Miner distribution {filter.blockRange[0]} - {filter.blockRange[1]}
         </Title>
-        <TreeMap />
+        <Miners />
       </Block>
     </Controls>
   )

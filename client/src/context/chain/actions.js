@@ -11,7 +11,7 @@ export const fetchGraph = async (dispatch, payload) => {
   } catch (error) {
     console.error('Error in request', error)
 
-    toast.error('An error has occurred.')
+    toast.error('An error has occurred while fetching node chain.')
   }
 
   dispatch({ type: 'CHANGE_LOADING', payload: false })
