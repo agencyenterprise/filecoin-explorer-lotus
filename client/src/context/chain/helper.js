@@ -130,12 +130,13 @@ const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
   return chain
 }
 
-export const getChain = async ({ blockRange, startDate, endDate, miner }) => {
+export const getChain = async ({ blockRange, startDate, endDate, miner, cid }) => {
   const blocksArr = await getChainData({
     blockRange: [blockRange[0], blockRange[1]],
     startDate,
     endDate,
     miner,
+    cid,
   })
 
   return blocksToChain(blocksArr, blockRange[1], blockRange[0])

@@ -1,6 +1,6 @@
 import { db } from '../'
 
-export const getChain = async ({ startBlock, endBlock, startDate, endDate, miner, skip, limit, sortOrder }) => {
+export const getChain = async ({ startBlock, endBlock, startDate, endDate, miner, cid, skip, limit, sortOrder }) => {
   const maxLimit = 500
   let wheres = []
   let whereArgs = []
@@ -28,6 +28,10 @@ export const getChain = async ({ startBlock, endBlock, startDate, endDate, miner
   if (miner) {
     whereArgs.push(miner)
     wheres.push(`main_block.miner = $${whereArgs.length}`)
+  }
+
+  if (cid) {
+    wheres.push(`main_block.cid LIKE '%${cid}%'`)
   }
 
   skip = Number(skip)
@@ -79,6 +83,7 @@ export const getChain = async ({ startBlock, endBlock, startDate, endDate, miner
 
     ${limit ? `LIMIT ${limit}` : ''}
     `
+
   const { rows } = await db.query(query, whereArgs)
 
   return rows

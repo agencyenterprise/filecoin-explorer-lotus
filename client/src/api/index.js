@@ -1,7 +1,7 @@
 import axios from 'axios'
 import { config } from '../config'
 
-export const getChainData = async ({ blockRange, startDate, endDate, miner }) => {
+export const getChainData = async ({ blockRange, startDate, endDate, miner, cid }) => {
   const { data } = await axios.get(`${config.apiUrl}/chain`, {
     params: {
       startBlock: blockRange[0],
@@ -9,6 +9,7 @@ export const getChainData = async ({ blockRange, startDate, endDate, miner }) =>
       startDate,
       endDate,
       miner,
+      cid,
     },
   })
 
