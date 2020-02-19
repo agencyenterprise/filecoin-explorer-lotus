@@ -10,9 +10,10 @@ import { DatePicker } from '../../shared/DatePicker'
 import { Input } from '../../shared/Input'
 import { Controls, DashedLine, Title } from './controls.styled'
 import { FilterItem } from './FilterItem'
+import { Orphans } from './Orphans'
 import { RangeInputs } from './RangeInputs'
 import { ReceivedBlocks } from './ReceivedBlocks'
-import { Orphans } from './Orphans'
+import { TreeMap } from './TreeMap'
 
 const nodeLabelOptions = [
   { value: 'showHeightRuler', label: 'Block height ruler' },
@@ -121,6 +122,12 @@ const ControlsComponent = ({ maxBlock }) => {
       <Block>
         <Title>Orphans</Title>
         <Orphans total={15420} orphans={5300} />
+      </Block>
+      <Block>
+        <Title>
+          Miner distribution {filter.blockRange[0]} - {filter.blockRange[1]}
+        </Title>
+        <TreeMap />
       </Block>
     </Controls>
   )
