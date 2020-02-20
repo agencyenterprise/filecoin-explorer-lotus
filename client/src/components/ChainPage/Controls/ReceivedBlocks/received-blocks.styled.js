@@ -10,6 +10,7 @@ export const Amount = styled.div`
   display: flex;
   flex-direction: column;
   color: #424242;
+  width: 52px;
 `
 
 export const Number = styled.div`
@@ -30,7 +31,7 @@ export const Data = styled.div`
   display: flex;
   flex-direction: column;
   flex: 1;
-  margin-left: 20px;
+  margin-left: 10px;
 `
 
 export const ProgressBar = styled.div`
