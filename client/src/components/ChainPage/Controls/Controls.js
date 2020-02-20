@@ -62,8 +62,6 @@ const ControlsComponent = ({ maxBlock }) => {
     debouncedBlockRangeChange(newRange)
   }
 
-  const orphans = (chain && chain.orphans) || {}
-
   return (
     <Controls id="controls">
       <Block>
@@ -116,10 +114,26 @@ const ControlsComponent = ({ maxBlock }) => {
       </Block>
       <Block>
         <Title>Time block received after parent</Title>
-        <ReceivedBlocks amount={562} percentage={97.4} kind="less than 48s" />
-        <ReceivedBlocks amount={12} percentage={2.1} kind="between 48 - 51s" />
-        <ReceivedBlocks amount={3} percentage={0.5} kind="between 51 - 60s" />
-        <ReceivedBlocks amount={0} percentage={0} kind="more than 60s" />
+        <ReceivedBlocks
+          amount={chain.timeToReceive.under48.total}
+          percentage={chain.timeToReceive.under48.percentage}
+          kind="less than 48s"
+        />
+        <ReceivedBlocks
+          amount={chain.timeToReceive.between48and51.total}
+          percentage={chain.timeToReceive.between48and51.percentage}
+          kind="between 48 - 51s"
+        />
+        <ReceivedBlocks
+          amount={chain.timeToReceive.between51and60.total}
+          percentage={chain.timeToReceive.between51and60.percentage}
+          kind="between 51 - 60s"
+        />
+        <ReceivedBlocks
+          amount={chain.timeToReceive.above60.total}
+          percentage={chain.timeToReceive.above60.percentage}
+          kind="more than 60s"
+        />
       </Block>
       <Block>
         <Title>Orphans</Title>

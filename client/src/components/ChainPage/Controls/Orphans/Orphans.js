@@ -5,7 +5,11 @@ const OrphansComponent = ({ total, orphans }) => {
   const outerCircleDiameter = 210
   const innerCiclePercentage = (100 * orphans) / total / 100
 
-  const innerCicleDiameter = innerCiclePercentage * outerCircleDiameter
+  let innerCicleDiameter = innerCiclePercentage * outerCircleDiameter
+
+  if (!innerCicleDiameter || innerCicleDiameter < 20) {
+    innerCicleDiameter = 20
+  }
 
   return (
     <Orphans>

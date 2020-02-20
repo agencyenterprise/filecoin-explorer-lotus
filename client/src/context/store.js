@@ -14,6 +14,29 @@ const initialState = {
     total: 0,
     miners: [],
     orphans: [],
+    timeToReceive: {
+      total: 0,
+      under48: {
+        total: 0,
+        percentage: 0,
+        nodes: [],
+      },
+      between48and51: {
+        total: 0,
+        percentage: 0,
+        nodes: [],
+      },
+      between51and60: {
+        total: 0,
+        percentage: 0,
+        nodes: [],
+      },
+      above60: {
+        total: 0,
+        percentage: 0,
+        nodes: [],
+      },
+    },
   },
   filter: {
     blockRange: [],

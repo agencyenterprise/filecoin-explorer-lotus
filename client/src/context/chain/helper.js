@@ -7,6 +7,7 @@ const isWeirdTime = (timeToReceive) => {
   if (timeToReceive <= 48) return 1
   if (timeToReceive <= 51) return 2
   if (timeToReceive <= 60) return 3
+
   return 4
 }
 
@@ -25,8 +26,9 @@ const calcX = (block, blocksAtHeight) => {
 
 const createBlock = (block, blockParentInfo, tipsets, miners, blocksAtHeight) => {
   const blockId = block.block
-  const timeToReceive = parseInt(block.syncedtimestamp) - parseInt(block.parenttimestamp)
+  const timeToReceive = Number(block.syncedtimestamp) - Number(block.parenttimestamp || 0)
   const tipsetKey = tipsetKeyFormatter(block)
+
   return {
     id: blockId,
     key: blockId,
@@ -36,6 +38,7 @@ const createBlock = (block, blockParentInfo, tipsets, miners, blocksAtHeight) =>
     miner: block.miner,
     minerColor: miners[block.miner],
     parentWeight: block.parentweight,
+    timeToReceiveRaw: timeToReceive,
     timeToReceive: `${timeToReceive}s`,
     weirdTime: isWeirdTime(timeToReceive),
     blockCid: blockId,
@@ -107,7 +110,7 @@ const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
     const blockId = block.block
 
     // @todo: check if should be comparing parent timestamp or parent synced timestamp
-    const timeToReceive = parseInt(block.syncedtimestamp) - parseInt(block.parenttimestamp)
+    const timeToReceive = parseInt(block.syncedtimestamp || 0) - parseInt(block.parenttimestamp || 0)
     // block.block may appear multiple times because there are many parent child relationships
     // we want to only add the node once but add all the edges to represent the different parent/child relationships
     if (!blocks[blockId]) {
@@ -146,13 +149,63 @@ export const getChain = async ({ blockRange, startDate, endDate, miner, cid }) =
 
   const chain = blocksToChain(blocksArr, blockRange[1], blockRange[0])
   const miners = mapMiners(chain)
+  const timeToReceive = mapTimeToReceive(chain)
 
   return {
     chain,
     total: chain.nodes.length,
     miners,
     orphans,
+    timeToReceive,
   }
+}
+
+const mapTimeToReceive = (chain) => {
+  const table = {
+    under48: {
+      total: 0,
+      percentage: 0,
+      nodes: [],
+    },
+    between48and51: {
+      total: 0,
+      percentage: 0,
+      nodes: [],
+    },
+    between51and60: {
+      total: 0,
+      percentage: 0,
+      nodes: [],
+    },
+    above60: {
+      total: 0,
+      percentage: 0,
+      nodes: [],
+    },
+  }
+
+  chain.nodes.forEach((node) => {
+    if (node.timeToReceiveRaw < 48000) {
+      table.under48.nodes.push(node)
+    } else if (node.timeToReceiveRaw >= 48000 && node.timeToReceiveRaw < 51000) {
+      table.between48and51.nodes.push(node)
+    } else if (node.timeToReceiveRaw >= 51000 && node.timeToReceiveRaw < 60000) {
+      table.between51and60.nodes.push(node)
+    } else {
+      table.above60.nodes.push(node)
+    }
+  })
+
+  const total = chain.nodes.length
+
+  Object.keys(table).forEach((key) => {
+    table[key].total = table[key].nodes.length
+    table[key].percentage = toDecimal((table[key].total * 100) / total)
+  })
+
+  table.total = total
+
+  return table
 }
 
 const toDecimal = (n) => Math.round(n * 100) / 100
