@@ -24,7 +24,7 @@ const nodeLabelOptions = [
 
 const ControlsComponent = ({ maxBlock }) => {
   const {
-    state: { filter, range },
+    state: { chain, filter, range },
     dispatch,
   } = useContext(store)
 
@@ -61,6 +61,8 @@ const ControlsComponent = ({ maxBlock }) => {
 
     debouncedBlockRangeChange(newRange)
   }
+
+  const orphans = (chain && chain.orphans) || {}
 
   return (
     <Controls id="controls">
@@ -121,7 +123,7 @@ const ControlsComponent = ({ maxBlock }) => {
       </Block>
       <Block>
         <Title>Orphans</Title>
-        <Orphans total={15420} orphans={5300} />
+        <Orphans total={chain.total} orphans={chain.orphans.length} />
       </Block>
       <Block>
         <Title>

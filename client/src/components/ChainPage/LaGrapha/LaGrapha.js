@@ -40,10 +40,12 @@ const LaGraphaComponent = () => {
     // @todo: improve this calc
     const y = desiredInitialRange / 2 - height / 2
 
-    if (chain.nodes.length > 0) {
+    const { nodes, edges } = chain.chain
+
+    if (nodes.length > 0) {
       const model = {
-        nodes: chain.nodes,
-        edges: chain.edges,
+        nodes,
+        edges,
         steps: 1,
       }
 
@@ -59,7 +61,7 @@ const LaGraphaComponent = () => {
       })
 
       graph.tooltipTemplate = (index, el) => {
-        const data = chain.nodes[index]
+        const data = nodes[index]
         const tooltipTable = tooltip(data)
         while (el.firstChild) {
           el.removeChild(el.firstChild)

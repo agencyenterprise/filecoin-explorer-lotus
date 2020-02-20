@@ -7,8 +7,13 @@ const initialState = {
   isNodeModalOpen: false,
   loading: false,
   chain: {
-    nodes: [],
-    edges: [],
+    chain: {
+      nodes: [],
+      edges: [],
+    },
+    total: 0,
+    miners: [],
+    orphans: [],
   },
   filter: {
     blockRange: [],

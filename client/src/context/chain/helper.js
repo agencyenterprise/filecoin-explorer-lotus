@@ -136,7 +136,7 @@ const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
 }
 
 export const getChain = async ({ blockRange, startDate, endDate, miner, cid }) => {
-  const blocksArr = await getChainData({
+  const { chain: blocksArr, orphans } = await getChainData({
     blockRange: [blockRange[0], blockRange[1]],
     startDate,
     endDate,
@@ -148,8 +148,10 @@ export const getChain = async ({ blockRange, startDate, endDate, miner, cid }) =
   const miners = mapMiners(chain)
 
   return {
-    ...chain,
+    chain,
+    total: chain.nodes.length,
     miners,
+    orphans,
   }
 }
 
