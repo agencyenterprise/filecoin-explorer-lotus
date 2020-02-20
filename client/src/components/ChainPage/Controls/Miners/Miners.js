@@ -14,6 +14,8 @@ const MinersComponent = () => {
     console.log(chain.miners)
 
     drawGraph()
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chain.miners])
 
   const drawGraph = () => {

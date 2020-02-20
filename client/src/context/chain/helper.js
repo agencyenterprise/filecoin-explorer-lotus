@@ -1,5 +1,6 @@
+import { findIndex, orderBy } from 'lodash'
 import { getChainData } from '../../api'
-import { orderBy, findIndex } from 'lodash'
+import { palette } from '../../utils/palette'
 
 const isWeirdTime = (timeToReceive) => {
   if (!timeToReceive) return 0
@@ -153,7 +154,6 @@ export const getChain = async ({ blockRange, startDate, endDate, miner, cid }) =
 }
 
 const toDecimal = (n) => Math.round(n * 100) / 100
-const palette = ['#3ED2DC', '#DB5669', '#F5BBBA', '#FDC963', '#FE7763', '#27346A', '#E58E7B', '#2D5942']
 
 const mapMiners = (chain) => {
   const total = Object.values(chain.miners).reduce((total, current) => total + current, 0)
