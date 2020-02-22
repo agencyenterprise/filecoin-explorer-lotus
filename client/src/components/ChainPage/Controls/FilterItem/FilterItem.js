@@ -3,7 +3,7 @@ import { Indicator, SliderCheckbox } from './filter-item.styled'
 
 const FilterItemComponent = ({ label, checked, onChange, value }) => (
   <SliderCheckbox>
-    <input type="checkbox" id={value} checked={checked} onChange={onChange} />
+    <input disabled type="checkbox" id={value} checked={checked} onChange={onChange} />
     <label htmlFor={value}>{label}</label>
     <Indicator active={checked}>{checked ? 'On' : 'Off'}</Indicator>
   </SliderCheckbox>

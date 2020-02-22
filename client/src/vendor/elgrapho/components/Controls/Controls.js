@@ -25,10 +25,10 @@ const Controls = function(config) {
     icon: moveIcon,
     evtName: 'pan',
   })
-  this.resetButton = this.addButton({
-    icon: resetIcon,
-    evtName: 'reset',
-  })
+  // this.resetButton = this.addButton({
+  //   icon: resetIcon,
+  //   evtName: 'reset',
+  // })
   this.zoomInButton = this.addButton({
     icon: zoomInIcon,
     evtName: 'zoom-in',
