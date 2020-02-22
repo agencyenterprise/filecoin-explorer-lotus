@@ -1,6 +1,0 @@
-{
-  "name": "Data Source",
-  "requirements": [],
-  "capabilities": ["wild"],
-  "extras": ["script"]
-}
