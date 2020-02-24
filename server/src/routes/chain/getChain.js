@@ -1,4 +1,5 @@
 import { getChain as getChainData, getOrphans } from '../../services/db/chain'
+import { blocksToChain } from '../../services/elgrapho/formatAsModel'
 
 export const getChain = async (req, res) => {
   const { startBlock, endBlock, startDate, endDate, miner, cid, skip, limit, sortOrder } = req.query
@@ -15,7 +16,8 @@ export const getChain = async (req, res) => {
     sortOrder,
   }
 
-  const chain = await getChainData(query)
+  const blocksArr = await getChainData(query)
+  const chain = blocksToChain(blocksArr, endBlock, startBlock)
   const orphans = await getOrphans(query)
 
   res.json({

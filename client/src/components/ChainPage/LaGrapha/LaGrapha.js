@@ -34,11 +34,10 @@ const LaGraphaComponent = () => {
     const height = window.innerHeight
     const width = window.innerWidth - 306
     const numEpochsDisplayed = blockRange[1] - blockRange[0]
-    const desiredInitialRange = 50
+    const desiredInitialRange = 15
     const zoomY = numEpochsDisplayed / desiredInitialRange
-
-    // @todo: improve this calc
-    const y = desiredInitialRange / 2 - height / 2
+    // y for pan is calculated as the desired y midpoint minus the current y modpoint. the 0.95 is because have to account for 5% padding
+    const y = (desiredInitialRange * ((height * 0.95) / numEpochsDisplayed)) / 2 - (height * 0.95) / 2
 
     const { nodes, edges } = chain.chain
 
@@ -58,6 +57,7 @@ const LaGraphaComponent = () => {
         edgeSize: 0.3,
         nodeSize: 1,
         nodeOutline: false,
+        darkMode: 1,
       })
 
       graph.tooltipTemplate = (index, el) => {
