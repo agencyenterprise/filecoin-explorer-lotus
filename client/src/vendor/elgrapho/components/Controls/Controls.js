@@ -3,7 +3,7 @@ const zoomOutIcon = require('../../icons/out/zoomOutIcon.svg')
 const moveIcon = require('../../icons/out/moveIcon.svg')
 const selectIcon = require('../../icons/out/selectIcon.svg')
 const boxZoomIcon = require('../../icons/out/boxZoomIcon.svg')
-const resetIcon = require('../../icons/out/resetIcon.svg')
+// const resetIcon = require('../../icons/out/resetIcon.svg')
 
 const Controls = function(config) {
   this.graph = config.graph
@@ -25,10 +25,10 @@ const Controls = function(config) {
     icon: moveIcon,
     evtName: 'pan',
   })
-  this.resetButton = this.addButton({
-    icon: resetIcon,
-    evtName: 'reset',
-  })
+  // this.resetButton = this.addButton({
+  //   icon: resetIcon,
+  //   evtName: 'reset',
+  // })
   this.zoomInButton = this.addButton({
     icon: zoomInIcon,
     evtName: 'zoom-in',

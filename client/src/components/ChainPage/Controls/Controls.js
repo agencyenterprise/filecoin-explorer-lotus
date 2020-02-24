@@ -51,6 +51,7 @@ const ControlsComponent = ({ maxBlock }) => {
         value={item.value}
         checked={filter[item.value]}
         onChange={(e) => changeFilter({ key: item.value, value: e.target.checked })}
+        disabled
       />
       {i < nodeLabelOptions.length - 1 && <DashedLine />}
     </Fragment>

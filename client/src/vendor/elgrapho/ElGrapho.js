@@ -292,27 +292,17 @@ ElGrapho.prototype = {
     }
 
     let xFactor
-    let skip
 
     switch (this.zoomX) {
-      case 1:
-      case 2:
-        skip = true
-      case 4:
-        xFactor = 650
-        break
       case 0.5:
-        skip = true
         xFactor = 1330
         break
       default:
-        xFactor = 650
+        xFactor = this.width * 0.473
         break
     }
 
     this.heights.heightsAdded.forEach((label, i) => {
-      if (skip && i % 2 === 0) return
-
       let x = xFactor
       let y = (label.y * -1 * halfHeight * this.zoomY - this.panY) / scale + 5
 
