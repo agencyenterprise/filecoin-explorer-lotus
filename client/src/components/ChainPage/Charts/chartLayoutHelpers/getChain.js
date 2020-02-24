@@ -61,32 +61,29 @@ const createEdge = (block, isBlockOrphan, timeToReceive, blockIndices) => {
   }
 }
 
-// const createEmptyEdges = (block, isBlockOrphan, blocks) => {
-//   const blockId = block.block
-//   const edgesToBeAdded = []
+const createEmptyEdges = (block, isBlockOrphan) => {
+  const blockId = block.block
+  const edgesToBeAdded = []
 
-//   edgesToBeAdded.push({
-//     from: `${blockId}-empty`,
-//     to: block.parent,
-//     key: `${blockId}-${block.parent}-eb`,
-//     edgeWeirdTime: isWeirdTime(),
-//     time: 0,
-//     isOrphan: 0,
-//   })
+  edgesToBeAdded.push({
+    from: blockIndices[`${blockId}-e`],
+    to: blockIndices[block.parent],
+    key: `${blockId}-${block.parent}-eb`,
+    isOrphan: 0,
+  })
 
-//   edgesToBeAdded.push({
-//     from: blockId,
-//     to: `${blockId}-empty`,
-//     key: `${blockId}-${block.parent}-ep`,
-//     edgeWeirdTime: isWeirdTime(),
-//     time: 0,
-//     isOrphan: isBlockOrphan,
-//   })
+  edgesToBeAdded.push({
+    from: blockIndices[blockId],
+    to: blockIndices[`${blockId}-e`],
+    key: `${blockId}-${block.parent}-ep`,
+    isOrphan: isBlockOrphan,
+  })
 
-//   return edgesToBeAdded
-// }
+  return edgesToBeAdded
+}
 
 const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
+  console.log('blocks to chain')
   // format chain as expected by dc.graph.js
   const chain = {
     nodes: [],
@@ -99,9 +96,14 @@ const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
   const blocks = {}
   const blockParentInfo = {}
   const blockIndices = {}
+  const emptyBlocksInserted = 0
   const tipsets = {}
+  const tipsetChain = {}
   const miners = {}
   const blocksAtHeight = {}
+
+  // keep track of tipsetchain
+  // parent tipset position order first
 
   blocksArr.forEach((block, index) => {
     blockParentInfo[block.parent] = { power: block.parentpower }
@@ -109,6 +111,7 @@ const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
 
     if (!tipsets[tipsetKey]) {
       tipsets[tipsetKey] = index
+      tipsetChain[block.height].push(tipsetKey)
     }
     if (!miners[block.miner]) {
       miners[block.miner] = index
@@ -128,6 +131,7 @@ const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
       blocksAtHeight[block.height] = orderBy(blocksAtHeight[block.height], ['tipsetGroup', 'filler'], ['asc', 'desc'])
     }
   })
+  console.log('tipsetChain', tipsetChain)
 
   blocksArr.forEach((block, index) => {
     const blockId = block.block
@@ -139,7 +143,7 @@ const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
     if (!blocks[blockId]) {
       const chainLength = chain.nodes.push(createBlock(block, blockParentInfo, tipsets, miners, blocksAtHeight))
       blockIndices[blockId] = chainLength - 1
-      blocks[blockId] = index
+      blocks[blockId] = index + emptyBlocksInserted
     }
 
     const isDirectParent = Number(block.parentheight) === Number(block.height) - 1
@@ -148,29 +152,35 @@ const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
       return blockParentInfo[block.block] && bhRangeEnd !== block.height ? 0 : 1
     }
 
-    // const createEmptyBlock = (block) => ({
-    //   key: `${block.block}-empty`,
-    //   height: null,
-    //   miner: '0',
-    //   parentWeight: block.parentweight,
-    //   weirdTime: isWeirdTime(),
-    //   tipset: 1,
-    //   x: 0,
-    //   y: 0,
-    // })
+    const createEmptyBlock = (block, blocksAtHeight) => {
+      const blockId = block.block
+      return {
+        id: blockId,
+        key: blockId,
+        height: block.height,
+        group: null,
+        label: null,
+        miner: null,
+        minerColor: null,
+        x: calcX(block, blocksAtHeight),
+        y: block.height,
+      }
+    }
 
     if (isDirectParent && blockIndices[blockId] && blockIndices[block.parent]) {
       const newEdge = createEdge(block, isOrphan(block), timeToReceive, blockIndices)
       chain.edges.push(newEdge)
     }
-    // @todo: need to add back this feature of adding empty nodes when skip parent
-    // else if (!blocks[blockId]) {
-    //   const newEmptyBlock = createEmptyBlock(block)
-    //   const newEmptyEdges = createEmptyEdges(block, isOrphan(block), blocks)
+    // @todo: fix blocksAtHeight with empties
+    else if (!blocks[blockId]) {
+      const newEmptyBlock = createEmptyBlock(block, blocksAtHeight)
+      const newEmptyEdges = createEmptyEdges(block, isOrphan(block), blocks)
 
-    //   chain.nodes.push(newEmptyBlock)
-    //   chain.edges.push(...newEmptyEdges)
-    // }
+      chain.nodes.push(newEmptyBlock)
+      chain.edges.push(...newEmptyEdges)
+      emptyBlocksInserted += 1
+      blocks[`${blockId}-e`] = index + emptyBlocksInserted
+    }
   })
   // push fake nodes so that chain renders in only half the available width for easier zooomoing
   chain.nodes.push({ y: 0, x: -1 }, { y: 0, x: 1 })

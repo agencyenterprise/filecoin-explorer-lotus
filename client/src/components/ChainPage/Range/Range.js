@@ -20,7 +20,7 @@ const RangeComponent = ({ minBlock, maxBlock }) => {
 
   useEffect(() => {
     if (maxBlock !== range[0]) {
-      changeRange(dispatch, range, [Math.max(0, maxBlock - constants.initialBlockRangeLimit), maxBlock])
+      changeRange(dispatch, range, [Math.max(1, maxBlock - constants.initialBlockRangeLimit), maxBlock])
     }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps

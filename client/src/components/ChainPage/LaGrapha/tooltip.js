@@ -9,17 +9,19 @@ export const tooltip = (data) => {
   let toolTipInfo = {}
 
   let hasValues = false
+  let presentInfoCount = 0
 
-  ;['height', 'parentWeight', 'timeToReceive', 'blockCid', 'miner', 'minerPower'].forEach((key, index) => {
+  ;['height', 'parentWeight', 'timeToReceive', 'blockCid', 'miner', 'minerPower'].forEach((key) => {
     if (data[key] !== undefined) {
       hasValues = true
 
       const value = Number(data[key])
       if (isNaN(value)) {
-        toolTipInfo[toSentence(key)] = { value: data[key], position: index }
+        toolTipInfo[toSentence(key)] = { value: data[key], position: presentInfoCount }
       } else {
-        toolTipInfo[toSentence(key)] = { value, position: index }
+        toolTipInfo[toSentence(key)] = { value, position: presentInfoCount }
       }
+      presentInfoCount += 1
     }
   })
 

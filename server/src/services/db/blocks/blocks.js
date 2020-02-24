@@ -40,6 +40,7 @@ export const getBlockRange = async () => {
   if (!rows || !rows.length) {
     return {}
   }
+  console.log('min block range is', rows[0])
 
   return rows[0]
 }

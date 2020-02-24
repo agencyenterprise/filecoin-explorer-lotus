@@ -12,19 +12,32 @@ const isWeirdTime = (timeToReceive) => {
 const tipsetKeyFormatter = (block) => {
   return `${block.parentstateroot}-${block.height}`
 }
+const blockXPos = {}
 
-const calcX = (block, blocksAtHeight) => {
-  const blocksAtCurrentHeight = blocksAtHeight[block.height]
-  const centerBlock = (blocksAtCurrentHeight.length - 1) / 2
-  const positionOfCurrentBlock = findIndex(blocksAtCurrentHeight, { block: block.block, filler: false })
-  let xPos = (positionOfCurrentBlock - centerBlock) / blocksAtCurrentHeight.length / 2
+// todo: need to update this to minimize length of edges or some simplified version that will accurately show side chains forming
+// maybe will be easier to calculate if tipsets aren't randomly ordered but ordered so that like tipsets are at similar x positions
+const calcX = (block, blocksAtTipset, tipsetsAtHeight, empty) => {
+  const numTipsets = tipsetsAtHeight[block.height].length
+  const centerTipset = Math.floor(numTipsets / 2)
+  const tipsetKeyDefault = tipsetKeyFormatter(block)
+  const tipsetKey = empty ? `${block.block}-e` : tipsetKeyDefault
+  const positionOfCurrentTipset = findIndex(tipsetsAtHeight[block.height], { tipset: tipsetKey })
+  // add some padding around the tipset area
+  // need to update this calc here to account for ones in the middle
+  const tipsetMidPoint = (positionOfCurrentTipset - centerTipset) / numTipsets
+  // from range -1 to 1
+  const tipsetArea = (1 / numTipsets) * 0.7
+  const tipsetStartingPoint = tipsetMidPoint - tipsetArea / 2
+  const numBlocksInTipset = blocksAtTipset[tipsetKey].length
+  const positionOfCurrentBlock = blocksAtTipset[tipsetKey].indexOf(block.block) + 1
+  const xPos = tipsetStartingPoint + tipsetArea * (1 / (numBlocksInTipset + 1)) * positionOfCurrentBlock
 
   return xPos
 }
 
-const createBlock = (block, blockParentInfo, tipsets, miners, blocksAtHeight) => {
+const createBlock = (block, blockParentInfo, tipsets, miners, blocksAtTipset, tipsetsAtHeight) => {
   const blockId = block.block
-  const timeToReceive = parseInt(block.syncedtimestamp) - parseInt(block.parenttimestamp)
+  const timeToReceive = parseInt(block.syncedtimestamp) - parseInt(block.timestamp)
   const tipsetKey = tipsetKeyFormatter(block)
   return {
     id: blockId,
@@ -41,7 +54,7 @@ const createBlock = (block, blockParentInfo, tipsets, miners, blocksAtHeight) =>
     minerPower: blockParentInfo[blockId] && blockParentInfo[blockId].power,
     weight: block.weight,
     tipset: tipsets[tipsetKey],
-    x: calcX(block, blocksAtHeight),
+    x: blockXPos[block.block],
     y: block.height,
   }
 }
@@ -58,6 +71,28 @@ const createEdge = (block, isBlockOrphan, timeToReceive, blockIndices) => {
   }
 }
 
+const createEmptyEdges = (block, isBlockOrphan, blockIndices) => {
+  const blockId = block.block
+  const edgesToBeAdded = []
+  if (blockIndices[block.parent]) {
+    edgesToBeAdded.push({
+      from: blockIndices[`${blockId}-e`],
+      to: blockIndices[block.parent],
+      key: `${blockId}-${block.parent}-eb`,
+      isOrphan: 0,
+    })
+  }
+
+  edgesToBeAdded.push({
+    from: blockIndices[blockId],
+    to: blockIndices[`${blockId}-e`],
+    key: `${blockId}-${block.parent}-ep`,
+    isOrphan: isBlockOrphan,
+  })
+
+  return edgesToBeAdded
+}
+
 const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
   // format chain as expected by dc.graph.js
   const chain = {
@@ -71,33 +106,184 @@ const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
   const blockIndices = {}
   const tipsets = {}
   const miners = {}
-  const blocksAtHeight = {}
+  const blocksAtTipset = {}
+  const tipsetsAtHeight = {}
+  const blockInfo = {}
+  const blockParents = {}
 
   blocksArr.forEach((block, index) => {
-    blockParentInfo[block.parent] = { power: block.parentpower }
-    const tipsetKey = tipsetKeyFormatter(block)
+    const isDirectParent = Number(block.parentheight) === Number(block.height) - 1
+    if (isDirectParent && block.height > 1) {
+      blockParents[block.block]
+        ? blockParents[block.block].push(block.parent)
+        : (blockParents[block.block] = [block.parent])
+    } else {
+      blockParents[`${block.block}-e`]
+        ? blockParents[`${block.block}-e`].push(block.parent)
+        : (blockParents[`${block.block}-e`] = [block.parent])
 
-    if (!tipsets[tipsetKey]) {
-      tipsets[tipsetKey] = index
-    }
-    if (!miners[block.miner]) {
-      miners[block.miner] = index
+      blockParents[block.block]
+        ? blockParents[block.block].push(`${block.block}-e`)
+        : (blockParents[block.block] = [`${block.block}-e`])
     }
 
-    const blockInfoForHeight = { block: block.block, tipsetGroup: tipsets[tipsetKey], index: index, filler: false }
-    if (!blocksAtHeight[block.height]) {
-      blocksAtHeight[block.height] = [blockInfoForHeight]
-    } else if (findIndex(blocksAtHeight[block.height], { tipsetGroup: tipsets[tipsetKey] }) === -1) {
-      // if new tipset insert blank before to space
-      blocksAtHeight[block.height].push({ ...blockInfoForHeight, filler: true })
-      blocksAtHeight[block.height].push(blockInfoForHeight)
-      blocksAtHeight[block.height] = orderBy(blocksAtHeight[block.height], ['tipsetGroup', 'filler'], ['asc', 'desc'])
-    } else if (findIndex(blocksAtHeight[block.height], { block: block.block }) === -1) {
-      // @todo: improve performance by finding better place to insert and using splice and maintain sorted array
-      blocksAtHeight[block.height].push(blockInfoForHeight)
-      blocksAtHeight[block.height] = orderBy(blocksAtHeight[block.height], ['tipsetGroup', 'filler'], ['asc', 'desc'])
+    // blocksArr has duplicate blocks to establish the block - parent relationship, but we only need to do this for each unique block
+    if (!blockInfo[block.block]) {
+      blockParentInfo[block.parent] = { power: block.parentpower, parentstateroot: block.parentstateroot }
+      const tipsetKey = tipsetKeyFormatter(block)
+      // make groups for tipsets and miners to be used in select tool
+      if (!tipsets[tipsetKey]) {
+        tipsets[tipsetKey] = index
+      }
+      if (!miners[block.miner]) {
+        miners[block.miner] = index
+      }
+
+      // save what blocks are in each tipset so can calc x for each specific block after placing tipsets
+      if (!blocksAtTipset[tipsetKey]) {
+        blocksAtTipset[tipsetKey] = [block.block]
+      } else {
+        blocksAtTipset[tipsetKey].push(block.block)
+      }
+
+      // organize tipsets for each height so can place them along x axis
+      if (!tipsetsAtHeight[block.height]) {
+        tipsetsAtHeight[block.height] = [{ tipset: tipsetKey, parentweight: block.parentweight, numBlocks: 1 }]
+      } else if (findIndex(tipsetsAtHeight[block.height], { tipset: tipsetKey }) === -1) {
+        tipsetsAtHeight[block.height].push({ tipset: tipsetKey, parentweight: block.parentweight, numBlocks: 1 })
+      } else {
+        const tipsetIndex = findIndex(tipsetsAtHeight[block.height], { tipset: tipsetKey })
+        tipsetsAtHeight[block.height][tipsetIndex].numBlocks += 1
+      }
+
+      // empty blocks will be added to indicate nodes that have a parent from a previous epoch(skipped an epoch in chain)
+      // need to add that here to use in our calculation of where to place tipsets on x axis
+      if (!isDirectParent && block.height > 1) {
+        const emptyNode = { tipset: `${block.block}-e`, parentweight: 0, numBlocks: 0, empty: true }
+        tipsetsAtHeight[block.height - 1]
+          ? tipsetsAtHeight[block.height - 1].push(emptyNode)
+          : (tipsetsAtHeight[block.height - 1] = [emptyNode])
+
+        blocksAtTipset[`${block.block}-e`]
+          ? blocksAtTipset[`${block.block}-e`].push(`${block.block}-e`)
+          : (blocksAtTipset[`${block.block}-e`] = [`${block.block}-e`])
+
+        blockInfo[`${block.block}-e`] = { block: block.block, height: block.height - 1 }
+      }
     }
+    blockInfo[block.block] = block
   })
+
+  // find semi-optimal ordering for tipsets at same y axis position so can place them along x axis appropriately
+  // we care about -- 1. heaviest tipset should be in center for easier visualization 2. minimize edge crossings
+
+  const tipsetXPos = {}
+  // put heaviest tipset in middle
+  const orderHeaviestTipset = (tipsets) => {
+    let heaviestTipset = tipsets[0]
+    const middlePosition = Math.floor(tipsets.length / 2)
+    if (tipsets.length > 1) {
+      let heaviestTipsetsIndex = 0
+      tipsets.forEach((tipset, index) => {
+        if (tipset.parentweight > heaviestTipset.parentweight) {
+          heaviestTipset = tipset
+          heaviestTipsetsIndex = index
+        }
+      })
+
+      const currentMiddle = tipsets[middlePosition]
+      tipsets[middlePosition] = heaviestTipset
+      tipsets[heaviestTipsetsIndex] = currentMiddle
+    }
+    return { heaviestTipset }
+  }
+
+  // calcXPositions of nodes at height
+  const calcXPosOfNodesAtHeight = (height) => {
+    for (let t of tipsetsAtHeight[height]) {
+      if (blocksAtTipset[t.tipset]) {
+        const { empty } = t
+        for (let blockCID of blocksAtTipset[t.tipset]) {
+          const block = blockInfo[blockCID]
+          if (empty) {
+            console.log(empty, blockCID)
+            console.log(block)
+            console.log('x', calcX(block, blocksAtTipset, tipsetsAtHeight, empty))
+          }
+          blockXPos[blockCID] = calcX(block, blocksAtTipset, tipsetsAtHeight, empty)
+        }
+      }
+    }
+  }
+
+  const orderTipsetsAtHeightByPrevVertexMedian = (height) => {
+    // put heaviest in middle and then put surrounding tipsets around it
+    const { heaviestTipset } = orderHeaviestTipset(tipsetsAtHeight[height])
+    // for each block in tipset, find the x value of the parents and then find the median
+    const tipsetMedianXPos = {}
+    const tipsetsToLeft = []
+    const tipsetsToRight = []
+    for (let tipset of tipsetsAtHeight[height]) {
+      const parentXPos = []
+      // blocks in same tipset have same parents so only need to check parents of one block
+      for (let blockParent of blockParents[blocksAtTipset[tipset.tipset][0]]) {
+        if (blockXPos[blockParent] || blockXPos[blockParent] === 0) {
+          parentXPos.push(blockXPos[blockParent])
+        }
+      }
+      // get left median of xpos
+      const sortedParentXPos = parentXPos.sort((a, b) => a - b)
+      let median
+      const midPosition = (sortedParentXPos.length - 1) / 2
+      if (midPosition === parseInt(midPosition)) {
+        median = sortedParentXPos[midPosition]
+      } else {
+        median = (sortedParentXPos[Math.floor(midPosition)] + sortedParentXPos[Math.ceil(midPosition)]) / 2
+      }
+      tipsetMedianXPos[tipset.tipset] = median
+    }
+
+    const medianOfHeaviestTipset = tipsetMedianXPos[heaviestTipset.tipset]
+
+    for (let tipset of tipsetsAtHeight[height]) {
+      if (tipset.tipset !== heaviestTipset.tipset) {
+        if (tipsetMedianXPos[tipset.tipset] < medianOfHeaviestTipset) {
+          tipsetsToLeft.push({ ...tipset, median: tipsetMedianXPos[tipset.tipset] })
+        } else {
+          tipsetsToRight.push({ ...tipset, median: tipsetMedianXPos[tipset.tipset] })
+        }
+      }
+    }
+    tipsetsToLeft.sort((a, b) => {
+      return a.median < b.median ? -1 : 1
+    })
+    tipsetsToRight.sort((a, b) => {
+      return a.median < b.median ? -1 : 1
+    })
+    // force them to be equal so that heaviest always in middle
+    while (tipsetsToLeft.length < tipsetsToRight.length) {
+      tipsetsToLeft.unshift('faketipset')
+    }
+
+    while (tipsetsToRight.length < tipsetsToLeft.length) {
+      tipsetsToRight.push('faketipset')
+    }
+
+    tipsetsAtHeight[height] = [...tipsetsToLeft, ...[heaviestTipset], ...tipsetsToRight]
+    calcXPosOfNodesAtHeight(height)
+  }
+  // get x positions for first height
+  orderHeaviestTipset(tipsetsAtHeight[bhRangeStart])
+  calcXPosOfNodesAtHeight(bhRangeStart)
+
+  for (let height in tipsetsAtHeight) {
+    orderTipsetsAtHeightByPrevVertexMedian(height)
+  }
+
+  for (let k in tipsetsAtHeight) {
+    const tipsets = tipsetsAtHeight[k]
+    orderHeaviestTipset(tipsets)
+  }
 
   blocksArr.forEach((block, index) => {
     const blockId = block.block
@@ -107,9 +293,10 @@ const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
     // block.block may appear multiple times because there are many parent child relationships
     // we want to only add the node once but add all the edges to represent the different parent/child relationships
     if (!blocks[blockId]) {
-      const chainLength = chain.nodes.push(createBlock(block, blockParentInfo, tipsets, miners, blocksAtHeight))
+      const chainLength = chain.nodes.push(
+        createBlock(block, blockParentInfo, tipsets, miners, blocksAtTipset, tipsetsAtHeight),
+      )
       blockIndices[blockId] = chainLength - 1
-      blocks[blockId] = index
     }
 
     const isDirectParent = Number(block.parentheight) === Number(block.height) - 1
@@ -117,11 +304,34 @@ const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
     const isOrphan = (block) => {
       return blockParentInfo[block.block] && bhRangeEnd !== block.height ? 0 : 1
     }
+    const createEmptyBlock = (block, blocksAtTipset, tipsetsAtHeight) => {
+      const blockId = block.block
+      return {
+        id: blockId,
+        key: blockId,
+        height: block.height,
+        parentweight: 0,
+        group: null,
+        label: 'empty',
+        miner: null,
+        minerColor: null,
+        x: blockXPos[block.block],
+        y: block.height,
+      }
+    }
 
     if (isDirectParent && blockIndices[blockId] && blockIndices[block.parent]) {
       const newEdge = createEdge(block, isOrphan(block), timeToReceive, blockIndices)
       chain.edges.push(newEdge)
+    } else if (!blocks[blockId] && block.height > 1) {
+      const emptyBlock = { ...block, block: `${block.block}-e`, height: block.height - 1 }
+      const newEmptyBlock = createEmptyBlock(emptyBlock, blocksAtTipset, tipsetsAtHeight)
+      const chainLength = chain.nodes.push(newEmptyBlock)
+      blockIndices[`${blockId}-e`] = chainLength - 1
+      const newEmptyEdges = createEmptyEdges(block, isOrphan(block), blockIndices)
+      chain.edges.push(...newEmptyEdges)
     }
+    blocks[blockId] = index
   })
 
   // push fake nodes so that chain renders in only half the available width for easier zooomoing
