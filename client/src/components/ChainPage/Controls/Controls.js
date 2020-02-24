@@ -40,10 +40,6 @@ const ControlsComponent = ({ maxBlock }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [maxBlock])
 
-  const changeFilter = (payload) => {
-    changeFilterAction(dispatch, payload)
-  }
-
   const options = nodeLabelOptions.map((item, i) => (
     <Fragment key={item.value}>
       <FilterItem
@@ -63,6 +59,15 @@ const ControlsComponent = ({ maxBlock }) => {
     debouncedBlockRangeChange(newRange)
   }
 
+  const changeFilter = (key, value) => {
+    const allEmpty = !filter[key] && !value
+    const notChanged = filter[key] === value
+
+    if (allEmpty || notChanged) return
+
+    changeFilterAction(dispatch, { key, value })
+  }
+
   return (
     <Controls id="controls">
       <Block>
@@ -76,9 +81,7 @@ const ControlsComponent = ({ maxBlock }) => {
         <Title>Find by Miner</Title>
         <Input
           placeholder="Miner Address"
-          onBlur={(e) => {
-            changeFilter({ key: 'miner', value: e.target.value })
-          }}
+          onBlur={(e) => changeFilter('miner', e.target.value)}
           onKeyPress={(e) => {
             if (e.key === 'Enter') {
               e.target.blur()
@@ -90,9 +93,7 @@ const ControlsComponent = ({ maxBlock }) => {
         <Title>Find by Cid</Title>
         <Input
           placeholder="Enter block CID"
-          onBlur={(e) => {
-            changeFilter({ key: 'cid', value: e.target.value })
-          }}
+          onBlur={(e) => changeFilter('cid', e.target.value)}
           onKeyPress={(e) => {
             if (e.key === 'Enter') {
               e.target.blur()
@@ -104,12 +105,12 @@ const ControlsComponent = ({ maxBlock }) => {
         <Title>Narrow date range</Title>
         <DatePicker
           selected={filter.startDate}
-          onChange={(date) => changeFilter({ key: 'startDate', value: date })}
+          onChange={(date) => changeFilter('startDate', date)}
           placeholderText="Start date, mm/dd/yyyy"
         />
         <DatePicker
           selected={filter.endDate}
-          onChange={(date) => changeFilter({ key: 'endDate', value: date })}
+          onChange={(date) => changeFilter('endDate', date)}
           placeholderText="End date, mm/dd/yyyy"
         />
       </Block>

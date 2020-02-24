@@ -180,7 +180,7 @@ export const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
 
   const tipsetXPos = {}
   // put heaviest tipset in middle
-  const orderHeaviestTipset = (tipsets) => {
+  const orderHeaviestTipset = (tipsets = []) => {
     let heaviestTipset = tipsets[0]
     const middlePosition = Math.floor(tipsets.length / 2)
     if (tipsets.length > 1) {
@@ -201,7 +201,9 @@ export const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
 
   // calcXPositions of nodes at height
   const calcXPosOfNodesAtHeight = (height) => {
-    for (let t of tipsetsAtHeight[height]) {
+    const tipsetsCurrentHeight = tipsetsAtHeight[height] || []
+
+    for (let t of tipsetsCurrentHeight) {
       if (blocksAtTipset[t.tipset]) {
         const { empty } = t
         for (let blockCID of blocksAtTipset[t.tipset]) {
@@ -213,13 +215,15 @@ export const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
   }
 
   const orderTipsetsAtHeightByPrevVertexMedian = (height) => {
+    const tipsetsCurrentHeight = tipsetsAtHeight[height] || []
+
     // put heaviest in middle and then put surrounding tipsets around it
-    const { heaviestTipset } = orderHeaviestTipset(tipsetsAtHeight[height])
+    const { heaviestTipset } = orderHeaviestTipset(tipsetsCurrentHeight)
     // for each block in tipset, find the x value of the parents and then find the median
     const tipsetMedianXPos = {}
     const tipsetsToLeft = []
     const tipsetsToRight = []
-    for (let tipset of tipsetsAtHeight[height]) {
+    for (let tipset of tipsetsCurrentHeight) {
       const parentXPos = []
       // blocks in same tipset have same parents so only need to check parents of one block
       for (let blockParent of blockParents[blocksAtTipset[tipset.tipset][0]]) {
@@ -241,7 +245,7 @@ export const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
 
     const medianOfHeaviestTipset = tipsetMedianXPos[heaviestTipset.tipset]
 
-    for (let tipset of tipsetsAtHeight[height]) {
+    for (let tipset of tipsetsCurrentHeight) {
       if (tipset.tipset !== heaviestTipset.tipset) {
         if (tipsetMedianXPos[tipset.tipset] < medianOfHeaviestTipset) {
           tipsetsToLeft.push({ ...tipset, median: tipsetMedianXPos[tipset.tipset] })
