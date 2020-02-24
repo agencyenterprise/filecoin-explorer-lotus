@@ -1,4 +1,5 @@
 import React, { useContext, useEffect } from 'react'
+import { toast } from 'react-toastify'
 import { getBlockRange } from '../../api'
 import { changeFilter as changeFilterAction } from '../../context/filter/actions'
 import { store } from '../../context/store'
@@ -18,22 +19,27 @@ const ChainPageComponent = () => {
 
   useEffect(() => {
     const fetchBlockRange = async () => {
-      const res = await getBlockRange()
+      try {
+        const res = await getBlockRange()
 
-      if (res && res.minHeight) {
-        if (res.minHeight) {
-          changeFilter({ key: 'minBlock', value: Number(res.minHeight) })
+        if (res && res.minHeight) {
+          if (res.minHeight) {
+            changeFilter({ key: 'minBlock', value: Number(res.minHeight) })
+          }
+
+          if (res.maxHeight) {
+            const _maxBlock = Number(res.maxHeight)
+
+            changeFilter({ key: 'maxBlock', value: _maxBlock })
+            changeFilter({
+              key: 'blockRange',
+              value: [Math.max(0, _maxBlock - constants.initialBlockRangeLimit), _maxBlock],
+            })
+          }
         }
-
-        if (res.maxHeight) {
-          const _maxBlock = Number(res.maxHeight)
-
-          changeFilter({ key: 'maxBlock', value: _maxBlock })
-          changeFilter({
-            key: 'blockRange',
-            value: [Math.max(0, _maxBlock - constants.initialBlockRangeLimit), _maxBlock],
-          })
-        }
+      } catch (error) {
+        console.error('Error when fetching range', error)
+        toast.error('An error has occurred while fetching block range.')
       }
     }
 

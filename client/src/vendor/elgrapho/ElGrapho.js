@@ -1,3 +1,4 @@
+/* eslint-disable no-fallthrough */
 const UUID = require('./UUID')
 const WebGL = require('./WebGL')
 const Profiler = require('./Profiler')
@@ -17,6 +18,7 @@ const BoxZoom = require('./components/BoxZoom/BoxZoom')
 const Dom = require('./Dom')
 const Loading = require('./components/Loading/Loading')
 const Labels = require('./Labels')
+const Heights = require('./Heights')
 
 const Tree = require('./layouts/Tree')
 const Cluster = require('./layouts/Cluster')
@@ -117,9 +119,14 @@ ElGrapho.prototype = {
       contextType: '2d',
     }))
 
+    let rulerLayer = (this.rulerLayer = new Concrete.Layer({
+      contextType: '2d',
+    }))
+
     viewport.add(mainLayer)
     viewport.add(hoverLayer)
     viewport.add(labelsLayer)
+    viewport.add(rulerLayer)
 
     this.webgl = new WebGL({
       layer: mainLayer,
@@ -148,6 +155,7 @@ ElGrapho.prototype = {
     this.initComponents()
 
     this.labels = new Labels()
+    this.heights = new Heights()
 
     this.listen()
 
@@ -233,6 +241,86 @@ ElGrapho.prototype = {
 
       this.count.update(model.nodes.length, model.edges.length, model.steps)
     }
+  },
+  renderRuler: function(scale) {
+    let halfHeight = this.height / 2
+
+    // build labels view model
+    this.heights.clear()
+    let positions = this.vertices.points.positions
+
+    let lastHeight = Number.NEGATIVE_INFINITY
+    this.model.nodes.forEach((node, n) => {
+      if (node.height === lastHeight) {
+        return
+      }
+
+      lastHeight = node.height
+
+      let index = n * 2
+      this.heights.addLabel(`${node.height}`, positions[index], positions[index + 1])
+    })
+
+    // render
+    let rulerScene = this.rulerLayer.scene
+    let rulerContext = rulerScene.context
+
+    rulerContext.save()
+
+    rulerContext.translate(this.width / 2, this.height / 2)
+    rulerContext.scale(scale, scale)
+    rulerContext.textAlign = 'center'
+
+    const fontSize = 15
+
+    rulerContext.font = `${fontSize}px Arco Perpetuo Pro`
+
+    if (this.darkMode) {
+      rulerContext.fillStyle = '#eee'
+    } else {
+      rulerContext.fillStyle = '#ABABAB'
+    }
+
+    rulerContext.lineWidth = 3
+    rulerContext.lineJoin = 'round'
+
+    // too much work to handle ruler on more zooms
+    if (this.zoomX <= 0.25) {
+      rulerContext.restore()
+
+      return
+    }
+
+    let xFactor
+    let skip
+
+    switch (this.zoomX) {
+      case 1:
+      case 2:
+        skip = true
+      case 4:
+        xFactor = 650
+        break
+      case 0.5:
+        skip = true
+        xFactor = 1330
+        break
+      default:
+        xFactor = 650
+        break
+    }
+
+    this.heights.heightsAdded.forEach((label, i) => {
+      if (skip && i % 2 === 0) return
+
+      let x = xFactor
+      let y = (label.y * -1 * halfHeight * this.zoomY - this.panY) / scale + 5
+
+      rulerContext.beginPath()
+      rulerContext.fillText(label.str, x, y)
+    })
+
+    rulerContext.restore()
   },
   renderLabels: function(scale) {
     let that = this

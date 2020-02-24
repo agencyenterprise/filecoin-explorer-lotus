@@ -12,17 +12,17 @@ import { tooltip } from './tooltip'
 const LaGraphaComponent = () => {
   const { state, dispatch } = useContext(store)
   const { chain, loading, filter, selectedNode, isNodeModalOpen } = state
-  const { blockRange, startDate, endDate, miner } = filter
+  const { blockRange, startDate, endDate, miner, cid } = filter
 
   const laGraphaRef = useRef()
 
   useEffect(() => {
     if (!blockRange[1]) return
 
-    fetchGraph(dispatch, { blockRange, startDate, endDate, miner })
+    fetchGraph(dispatch, { blockRange, startDate, endDate, miner, cid })
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [blockRange, startDate, endDate, miner])
+  }, [blockRange, startDate, endDate, miner, cid])
 
   useEffect(() => {
     buildGraph()
@@ -39,10 +39,12 @@ const LaGraphaComponent = () => {
     // y for pan is calculated as the desired y midpoint minus the current y modpoint. the 0.95 is because have to account for 5% padding
     const y = (desiredInitialRange * ((height * 0.95) / numEpochsDisplayed)) / 2 - (height * 0.95) / 2
 
-    if (chain.nodes.length > 0) {
+    const { nodes, edges } = chain.chain
+
+    if (nodes.length > 0) {
       const model = {
-        nodes: chain.nodes,
-        edges: chain.edges,
+        nodes,
+        edges,
         steps: 1,
       }
 
@@ -59,7 +61,7 @@ const LaGraphaComponent = () => {
       })
 
       graph.tooltipTemplate = (index, el) => {
-        const data = chain.nodes[index]
+        const data = nodes[index]
         const tooltipTable = tooltip(data)
         while (el.firstChild) {
           el.removeChild(el.firstChild)

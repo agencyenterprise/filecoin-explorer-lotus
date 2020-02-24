@@ -105,6 +105,7 @@ export const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
   const blockIndices = {}
   const tipsets = {}
   const miners = {}
+  const minerCount = {}
   const blocksAtTipset = {}
   const tipsetsAtHeight = {}
   const blockInfo = {}
@@ -128,6 +129,7 @@ export const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
 
     // blocksArr has duplicate blocks to establish the block - parent relationship, but we only need to do this for each unique block
     if (!blockInfo[block.block]) {
+      minerCount[block.miner] = minerCount[block.miner] ? minerCount[block.miner] + 1 : 1
       blockParentInfo[block.parent] = { power: block.parentpower, parentstateroot: block.parentstateroot }
       const tipsetKey = tipsetKeyFormatter(block)
       // make groups for tipsets and miners to be used in select tool
@@ -330,6 +332,7 @@ export const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
 
   // push fake nodes so that chain renders in only half the available width for easier zooomoing
   chain.nodes.push({ y: 0, x: -1 }, { y: 0, x: 1 })
+  chain.miners = minerCount
 
   return chain
 }

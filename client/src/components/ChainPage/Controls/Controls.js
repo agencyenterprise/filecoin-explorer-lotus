@@ -10,7 +10,10 @@ import { DatePicker } from '../../shared/DatePicker'
 import { Input } from '../../shared/Input'
 import { Controls, DashedLine, Title } from './controls.styled'
 import { FilterItem } from './FilterItem'
+import { Miners } from './Miners'
+import { Orphans } from './Orphans'
 import { RangeInputs } from './RangeInputs'
+import { ReceivedBlocks } from './ReceivedBlocks'
 
 const nodeLabelOptions = [
   { value: 'showHeightRuler', label: 'Block height ruler' },
@@ -21,7 +24,7 @@ const nodeLabelOptions = [
 
 const ControlsComponent = ({ maxBlock }) => {
   const {
-    state: { filter, range },
+    state: { chain, filter, range },
     dispatch,
   } = useContext(store)
 
@@ -108,6 +111,39 @@ const ControlsComponent = ({ maxBlock }) => {
           onChange={(date) => changeFilter({ key: 'endDate', value: date })}
           placeholderText="End date, mm/dd/yyyy"
         />
+      </Block>
+      <Block>
+        <Title>Time block received after parent</Title>
+        <ReceivedBlocks
+          amount={chain.timeToReceive.under48.total}
+          percentage={chain.timeToReceive.under48.percentage}
+          kind="less than 48s"
+        />
+        <ReceivedBlocks
+          amount={chain.timeToReceive.between48and51.total}
+          percentage={chain.timeToReceive.between48and51.percentage}
+          kind="between 48 - 51s"
+        />
+        <ReceivedBlocks
+          amount={chain.timeToReceive.between51and60.total}
+          percentage={chain.timeToReceive.between51and60.percentage}
+          kind="between 51 - 60s"
+        />
+        <ReceivedBlocks
+          amount={chain.timeToReceive.above60.total}
+          percentage={chain.timeToReceive.above60.percentage}
+          kind="more than 60s"
+        />
+      </Block>
+      <Block>
+        <Title>Orphans</Title>
+        <Orphans total={chain.total} orphans={chain.orphans.length} />
+      </Block>
+      <Block>
+        <Title>
+          Miner distribution {filter.blockRange[0]} - {filter.blockRange[1]}
+        </Title>
+        <Miners />
       </Block>
     </Controls>
   )
