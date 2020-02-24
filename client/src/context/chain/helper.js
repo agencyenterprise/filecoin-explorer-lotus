@@ -312,7 +312,7 @@ const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
         height: block.height,
         parentweight: 0,
         group: null,
-        label: 'empty',
+        label: 'skipped',
         miner: null,
         minerColor: null,
         x: blockXPos[block.block],

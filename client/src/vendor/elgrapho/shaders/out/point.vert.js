@@ -51,7 +51,7 @@ void main() {
     gl_PointSize = nodeSize * MAX_NODE_SIZE * zoom;
   }
 
-  float validColor = mod(aVertexColor, 8.0);
+  
 
   // gl_VertexID
 
@@ -65,7 +65,11 @@ void main() {
     gl_Position.z = -0.2;
   }
 
-  if (!isFocused) {
+  float validColor = mod(aVertexColor, 8.0);
+
+  if( aVertexColor == 0.0) {
+    vVertexColor = vec4(220.0/255.0, 220.0/255.0, 220.0/255.0, globalAlpha);
+  } else if (!isFocused) {
     if (darkMode) {
       vVertexColor = vec4(60.0/255.0, 60.0/255.0, 60.0/255.0, globalAlpha);
     }
