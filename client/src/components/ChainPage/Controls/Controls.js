@@ -29,7 +29,7 @@ const ControlsComponent = ({ maxBlock }) => {
   } = useContext(store)
 
   const debouncedBlockRangeChange = debounce((blockRange) => {
-    changeFilter({ key: 'blockRange', value: blockRange })
+    changeFilter('blockRange', blockRange)
   }, 500)
 
   useEffect(() => {
@@ -47,7 +47,7 @@ const ControlsComponent = ({ maxBlock }) => {
         value={item.value}
         checked={filter[item.value]}
         disabled={item.disabled}
-        onChange={(e) => changeFilter({ key: item.value, value: e.target.checked })}
+        onChange={(e) => changeFilter(item.value, e.target.checked)}
       />
       {i < nodeLabelOptions.length - 1 && <DashedLine />}
     </Fragment>
