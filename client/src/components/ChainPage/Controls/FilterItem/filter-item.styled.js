@@ -21,6 +21,10 @@ export const SliderCheckbox = styled.div`
       left: 21px;
       background-color: #212121;
     }
+
+    &:disabled {
+      cursor: not-allowed;
+    }
   }
 
   label {
@@ -31,6 +35,8 @@ export const SliderCheckbox = styled.div`
     line-height: 16px;
     letter-spacing: 0.02em;
     flex: 1;
+
+    cursor: ${({ disabled }) => (disabled ? 'not-allowed' : 'pointer')};
 
     &:before,
     &:after {

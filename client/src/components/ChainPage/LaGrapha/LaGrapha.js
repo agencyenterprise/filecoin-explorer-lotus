@@ -12,7 +12,7 @@ import { tooltip } from './tooltip'
 const LaGraphaComponent = () => {
   const { state, dispatch } = useContext(store)
   const { chain, loading, filter, selectedNode, isNodeModalOpen } = state
-  const { blockRange, startDate, endDate, miner, cid } = filter
+  const { blockRange, startDate, endDate, miner, cid, showHeightRuler } = filter
 
   const laGraphaRef = useRef()
 
@@ -28,7 +28,7 @@ const LaGraphaComponent = () => {
     buildGraph()
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chain])
+  }, [chain, showHeightRuler])
 
   const buildGraph = () => {
     const height = window.innerHeight
@@ -46,6 +46,7 @@ const LaGraphaComponent = () => {
         nodes,
         edges,
         steps: 1,
+        showRuler: showHeightRuler,
       }
 
       const graph = new ElGrapho({

@@ -106,14 +106,15 @@ let ElGraphoCollection = {
         )
 
         graph.labelsLayer.scene.clear()
+        graph.rulerLayer.scene.clear()
 
         if (graph.hasLabels) {
           graph.renderLabels(scale)
         }
 
-        graph.rulerLayer.scene.clear()
-
-        graph.renderRuler(scale)
+        if (graph.model.showRuler) {
+          graph.renderRuler(scale)
+        }
       }
 
       if (graph.dirty || graph.hoverDirty) {

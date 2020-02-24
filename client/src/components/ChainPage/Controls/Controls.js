@@ -17,9 +17,9 @@ import { ReceivedBlocks } from './ReceivedBlocks'
 
 const nodeLabelOptions = [
   { value: 'showHeightRuler', label: 'Block height ruler' },
-  { value: 'showParentWeight', label: 'Show parent weight' },
-  { value: 'disableMinerColor', label: 'Disable miner color' },
-  { value: 'disableTipsetColor', label: 'Disable tipset color' },
+  { value: 'showParentWeight', label: 'Show parent weight', disabled: true },
+  { value: 'disableMinerColor', label: 'Disable miner color', disabled: true },
+  { value: 'disableTipsetColor', label: 'Disable tipset color', disabled: true },
 ]
 
 const ControlsComponent = ({ maxBlock }) => {
@@ -50,8 +50,8 @@ const ControlsComponent = ({ maxBlock }) => {
         label={item.label}
         value={item.value}
         checked={filter[item.value]}
+        disabled={item.disabled}
         onChange={(e) => changeFilter({ key: item.value, value: e.target.checked })}
-        disabled
       />
       {i < nodeLabelOptions.length - 1 && <DashedLine />}
     </Fragment>
