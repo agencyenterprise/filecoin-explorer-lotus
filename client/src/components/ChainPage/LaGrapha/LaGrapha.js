@@ -1,17 +1,16 @@
-import debounce from 'lodash/debounce'
-import clone from 'lodash/clone'
 import { faCircleNotch } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import debounce from 'lodash/debounce'
 import React, { useContext, useEffect, useRef, useState } from 'react'
 import { fetchGraph } from '../../../context/chain/actions'
 import { closeNodeModal, openNodeModal } from '../../../context/node-modal/actions'
 import { selectNode } from '../../../context/selected-node/actions'
 import { store } from '../../../context/store'
+import { download } from '../../../utils/download'
 import ElGrapho from '../../../vendor/elgrapho/ElGrapho'
 import { Loader } from '../../shared/Loader'
-import { LaGrapha, LaGraphaWrapper, SaveSvg } from './la-grapha.styled'
+import { LaGrapha, LaGraphaWrapper, SaveGraph } from './la-grapha.styled'
 import { NodeModal } from './NodeModal/NodeModal'
-import { getSVGString } from './svg'
 import { tooltip } from './tooltip'
 
 const LaGraphaComponent = () => {
@@ -79,32 +78,17 @@ const LaGraphaComponent = () => {
     return blob
   }
 
-  const saveSvg = () => {
+  const exportGraph = () => {
     if (buildingSvg) return
-
-    const download = (blob, name) => {
-      const hiddenInput = document.getElementById('hidden-input')
-      const url = window.URL.createObjectURL(blob)
-
-      hiddenInput.href = url
-      hiddenInput.download = name
-      hiddenInput.click()
-
-      window.URL.revokeObjectURL(url)
-    }
 
     setBuildingSvg(true)
 
     const canvas = document.getElementsByClassName('concrete-scene-canvas')[0]
 
-    // const { width, height } = canvas.getBoundingClientRect()
-
-    // const svgString = getSVGString(canvas, width, height)
     const data = canvas.toDataURL()
     const blob = dataURItoBlob(data)
-    // const blob = new Blob(dataURItoBlob(data))
 
-    download(blob, 'graph.png')
+    download(blob, 'graph.png', laGraphaRef.current)
 
     setBuildingSvg(false)
   }
@@ -169,15 +153,12 @@ const LaGraphaComponent = () => {
       {loading && <Loader light={graphRendered} />}
       <LaGrapha ref={laGraphaRef} />
       {!loading && (
-        <SaveSvg disabled={buildingSvg} onClick={saveSvg}>
-          {buildingSvg && <FontAwesomeIcon icon={faCircleNotch} style={{ marginRight: '5px' }} spin />}
+        <SaveGraph disabled={buildingSvg} onClick={exportGraph}>
+          {buildingSvg && <FontAwesomeIcon icon={faCircleNotch} spin />}
           Save Graph
-        </SaveSvg>
+        </SaveGraph>
       )}
       {isNodeModalOpen && <NodeModal node={selectedNode} close={() => closeNodeModal(dispatch)} />}
-      <a href="javascript:;" id="hidden-input">
-        file input
-      </a>
     </LaGraphaWrapper>
   )
 }

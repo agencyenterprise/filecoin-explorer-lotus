@@ -17,7 +17,7 @@ export const LaGrapha = styled.div`
   overflow: hidden;
 `
 
-export const SaveSvg = styled.button`
+export const SaveGraph = styled.button`
   background-color: #ffffff;
   color: #212121;
   font-weight: 600;
@@ -42,5 +42,9 @@ export const SaveSvg = styled.button`
     cursor: default;
     background-color: #212121;
     color: #e9e9e9;
+  }
+
+  svg {
+    margin-right: 5px;
   }
 `
