@@ -15,8 +15,8 @@ import { tooltip } from './tooltip'
 
 const LaGraphaComponent = () => {
   const { state, dispatch } = useContext(store)
-  const { chain, loading, filter, selectedNode, isNodeModalOpen } = state
-  const { blockRange, startDate, endDate, miner, cid } = filter
+  const { chain, loading: loadingData, filter, selectedNode, isNodeModalOpen } = state
+  const { blockRange, startDate, endDate, miner, cid, showHeightRuler } = filter
 
   const [loadingGraph, setLoading] = useState(false)
   const [buildingSvg, setBuildingSvg] = useState(false)
