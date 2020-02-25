@@ -3,7 +3,7 @@ const UUID = require('./UUID')
 const WebGL = require('./WebGL')
 const Profiler = require('./Profiler')
 const ElGraphoCollection = require('./ElGraphoCollection')
-const Controls = require('./components/Controls/Controls')
+// const Controls = require('./components/Controls/Controls')
 const Count = require('./components/Count/Count')
 const Events = require('./Events')
 const Concrete = require('concretejs')
@@ -26,6 +26,7 @@ const Chord = require('./layouts/Chord')
 const ForceDirected = require('./layouts/ForceDirected')
 const Hairball = require('./layouts/Hairball')
 const RadialTree = require('./layouts/RadialTree')
+const debounce = require('lodash/debounce')
 
 const ZOOM_FACTOR = 2
 const START_SCALE = 1
@@ -229,10 +230,10 @@ ElGrapho.prototype = {
   initComponents: function() {
     let model = this.model
 
-    this.controls = new Controls({
-      container: this.wrapper,
-      graph: this,
-    })
+    // this.controls = new Controls({
+    //   container: this.wrapper,
+    //   graph: this,
+    // })
 
     this.loading = new Loading({
       container: this.wrapper,
@@ -522,29 +523,40 @@ ElGrapho.prototype = {
     //   ),
     // )
 
-    this.addListener(document, 'mousedown', function(evt) {
-      if (Dom.closest(evt.target, '.el-grapho-controls')) {
-        return
-      }
-      if (that.interactionMode === Enums.interactionMode.BOX_ZOOM) {
-        let mousePos = that.getMousePosition(evt)
-        that.zoomBoxAnchor = {
-          x: mousePos.x,
-          y: mousePos.y,
+    this.addListener(
+      document,
+      'wheel',
+      debounce((evt) => {
+        if (evt.deltaY < 0) {
+          that.zoomOut()
+
+          return
         }
-        BoxZoom.create(evt.clientX, evt.clientY)
-      }
-    })
+
+        let mousePos = that.getMousePosition(evt)
+
+        let viewportWidth = viewport.width
+        let viewportHeight = viewport.height
+
+        let viewportCenterX = viewportWidth / 2
+        let viewportCenterY = viewportHeight / 2
+
+        let panX = (viewportCenterX - mousePos.x) * that.zoomX
+        let panY = (mousePos.y - viewportCenterY) * that.zoomY
+
+        that.zoomToPoint(panX, panY, ZOOM_FACTOR, ZOOM_FACTOR)
+      }, 200),
+    )
 
     this.addListener(viewport.container, 'mousedown', function(evt) {
       if (Dom.closest(evt.target, '.el-grapho-controls')) {
         return
       }
-      if (that.interactionMode === Enums.interactionMode.PAN) {
-        let mousePos = that.getMousePosition(evt)
-        that.panStart = mousePos
-        Tooltip.hide()
-      }
+      // if (that.interactionMode === Enums.interactionMode.PAN) {
+      let mousePos = that.getMousePosition(evt)
+      that.panStart = mousePos
+      Tooltip.hide()
+      // }
     })
 
     this.addListener(document, 'mousemove', function(evt) {
@@ -561,17 +573,17 @@ ElGrapho.prototype = {
           let mousePos = that.getMousePosition(evt)
           let dataIndex = viewport.getIntersection(mousePos.x, mousePos.y)
 
-          if (that.interactionMode === Enums.interactionMode.PAN) {
-            if (that.panStart) {
-              let mouseDiff = {
-                x: mousePos.x - that.panStart.x,
-                y: mousePos.y - that.panStart.y,
-              }
-
-              viewport.scene.canvas.style.marginLeft = mouseDiff.x + 'px'
-              viewport.scene.canvas.style.marginTop = mouseDiff.y + 'px'
+          // if (that.interactionMode === Enums.interactionMode.PAN) {
+          if (that.panStart) {
+            let mouseDiff = {
+              x: mousePos.x - that.panStart.x,
+              y: mousePos.y - that.panStart.y,
             }
+
+            viewport.scene.canvas.style.marginLeft = mouseDiff.x + 'px'
+            viewport.scene.canvas.style.marginTop = mouseDiff.y + 'px'
           }
+          // }
 
           // if panning or zoom boxing hide tooltip
           if (that.panStart || that.zoomBoxAnchor) {
@@ -727,30 +739,30 @@ ElGrapho.prototype = {
         }
       }
 
-      if (that.interactionMode === Enums.interactionMode.PAN) {
-        let mousePos = that.getMousePosition(evt)
+      // if (that.interactionMode === Enums.interactionMode.PAN) {
+      let mousePos = that.getMousePosition(evt)
 
-        if (!mousePos || !that.panStart) return
+      if (!mousePos || !that.panStart) return
 
-        let mouseDiff = {
-          x: mousePos.x - that.panStart.x,
-          y: mousePos.y - that.panStart.y,
-        }
-
-        // that.panX += mouseDiff.x / that.scale;
-        // that.panY -= mouseDiff.y / that.scale;
-        that.panX += mouseDiff.x
-        that.panY -= mouseDiff.y
-
-        that.panStart = null
-
-        viewport.scene.canvas.style.marginLeft = 0
-        viewport.scene.canvas.style.marginTop = 0
-
-        that.dirty = true
-        that.hitDirty = true
-        that.hoverDirty = true
+      let mouseDiff = {
+        x: mousePos.x - that.panStart.x,
+        y: mousePos.y - that.panStart.y,
       }
+
+      // that.panX += mouseDiff.x / that.scale;
+      // that.panY -= mouseDiff.y / that.scale;
+      that.panX += mouseDiff.x
+      that.panY -= mouseDiff.y
+
+      that.panStart = null
+
+      viewport.scene.canvas.style.marginLeft = 0
+      viewport.scene.canvas.style.marginTop = 0
+
+      that.dirty = true
+      that.hitDirty = true
+      that.hoverDirty = true
+      // }
     })
 
     this.addListener(viewport.container, 'mouseout', function() {
