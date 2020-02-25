@@ -1,3 +1,4 @@
+import debounce from 'lodash/debounce'
 import React, { useContext, useEffect, useRef, useState } from 'react'
 import { fetchGraph } from '../../../context/chain/actions'
 import { closeNodeModal, openNodeModal } from '../../../context/node-modal/actions'
@@ -20,6 +21,18 @@ const LaGraphaComponent = () => {
   const graphRendered = !!document.getElementsByClassName('concrete-scene-canvas')[0]
 
   const laGraphaRef = useRef()
+
+  useEffect(() => {
+    const handleResize = debounce(() => {
+      buildGraph()
+    }, 500)
+
+    window.addEventListener('resize', handleResize)
+
+    return () => {
+      window.removeEventListener('resize', handleResize)
+    }
+  })
 
   useEffect(() => {
     if (!blockRange[1]) return
