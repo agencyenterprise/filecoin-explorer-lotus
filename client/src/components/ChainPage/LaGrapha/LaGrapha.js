@@ -1,6 +1,7 @@
 import debounce from 'lodash/debounce'
 import findIndex from 'lodash/findIndex'
 import React, { useContext, useEffect, useRef, useState } from 'react'
+import { toast } from 'react-toastify'
 import { fetchGraph } from '../../../context/chain/actions'
 import { closeNodeModal, openNodeModal } from '../../../context/node-modal/actions'
 import { selectNode } from '../../../context/selected-node/actions'
@@ -92,13 +93,24 @@ const LaGraphaComponent = () => {
         el.appendChild(tooltipTable)
       }
 
-      window.addEventListener('select-node', (e) => {
+      // @todo: make graph acessible outside so we can remove this logic from here
+      const onSelectNode = (e) => {
         const cid = e.detail
         const index = findIndex(model.nodes, { id: cid })
+
+        if (index < 0) {
+          toast.warn('Not found')
+
+          return
+        }
+
         graph.fire('select-node', { index })
         // @todo: update to use current zoom and adjust for position currently in graph
         graph.fire('zoom-to-point', { y: model.nodes[index].y * zoomY * zoomY })
-      })
+      }
+
+      window.removeEventListener('select-node', onSelectNode)
+      window.addEventListener('select-node', onSelectNode)
 
       graph.fire('zoom-to-point', { zoomY, y })
 

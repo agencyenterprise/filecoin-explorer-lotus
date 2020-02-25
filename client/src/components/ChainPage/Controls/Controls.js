@@ -14,7 +14,6 @@ import { Miners } from './Miners'
 import { Orphans } from './Orphans'
 import { RangeInputs } from './RangeInputs'
 import { ReceivedBlocks } from './ReceivedBlocks'
-import { faWindowClose } from '@fortawesome/free-solid-svg-icons'
 
 const nodeLabelOptions = [
   { value: 'showHeightRuler', label: 'Block height ruler' },
