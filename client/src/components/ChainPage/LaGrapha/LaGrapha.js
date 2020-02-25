@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useRef } from 'react'
+import React, { useContext, useEffect, useRef, useState } from 'react'
 import { fetchGraph } from '../../../context/chain/actions'
 import { closeNodeModal, openNodeModal } from '../../../context/node-modal/actions'
 import { selectNode } from '../../../context/selected-node/actions'
@@ -11,8 +11,13 @@ import { tooltip } from './tooltip'
 
 const LaGraphaComponent = () => {
   const { state, dispatch } = useContext(store)
-  const { chain, loading, filter, selectedNode, isNodeModalOpen } = state
+  const { chain, loading: loadingData, filter, selectedNode, isNodeModalOpen } = state
   const { blockRange, startDate, endDate, miner, cid, showHeightRuler } = filter
+
+  const [loadingGraph, setLoading] = useState(false)
+
+  const loading = loadingData || loadingGraph
+  const graphRendered = !!document.getElementsByClassName('concrete-scene-canvas')[0]
 
   const laGraphaRef = useRef()
 
@@ -31,6 +36,8 @@ const LaGraphaComponent = () => {
   }, [chain, showHeightRuler])
 
   const buildGraph = () => {
+    setLoading(true)
+
     const height = window.innerHeight
     const width = window.innerWidth - 306
     const numEpochsDisplayed = blockRange[1] - blockRange[0]
@@ -59,6 +66,9 @@ const LaGraphaComponent = () => {
         nodeSize: 1,
         nodeOutline: false,
         darkMode: 1,
+        callback: () => {
+          setLoading(false)
+        },
       })
 
       graph.tooltipTemplate = (index, el) => {
@@ -81,7 +91,7 @@ const LaGraphaComponent = () => {
 
   return (
     <LaGraphaWrapper>
-      {loading && <Loader />}
+      {loading && <Loader light={graphRendered} />}
       <LaGrapha ref={laGraphaRef} />
       {isNodeModalOpen && <NodeModal node={selectedNode} close={() => closeNodeModal(dispatch)} />}
     </LaGraphaWrapper>

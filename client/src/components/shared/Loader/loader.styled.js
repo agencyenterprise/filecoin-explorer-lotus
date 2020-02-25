@@ -13,6 +13,8 @@ export const Loader = styled.div`
   color: #212121;
   flex-direction: column;
 
+  ${({ light }) => light && 'color: white;'}
+
   span {
     margin-top: 20px;
     text-transform: uppercase;

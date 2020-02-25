@@ -160,6 +160,10 @@ ElGrapho.prototype = {
     this.listen()
 
     ElGraphoCollection.graphs.push(this)
+
+    if (config.callback) {
+      config.callback()
+    }
   },
   setSize: function(width, height) {
     this.width = width
