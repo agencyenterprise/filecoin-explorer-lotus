@@ -11,7 +11,6 @@ const isWeirdTime = (timeToReceive) => {
 const tipsetKeyFormatter = (block) => {
   return `${block.parentstateroot}-${block.height}`
 }
-const blockXPos = {}
 
 // todo: need to update this to minimize length of edges or some simplified version that will accurately show side chains forming
 // maybe will be easier to calculate if tipsets aren't randomly ordered but ordered so that like tipsets are at similar x positions
@@ -34,7 +33,7 @@ const calcX = (block, blocksAtTipset, tipsetsAtHeight, empty) => {
   return xPos
 }
 
-const createBlock = (block, blockParentInfo, tipsets, miners, blocksAtTipset, tipsetsAtHeight) => {
+const createBlock = (block, blockParentInfo, tipsets, miners, blockXPos) => {
   const blockId = block.block
   const timeToReceive = parseInt(block.syncedtimestamp) - parseInt(block.timestamp)
   const tipsetKey = tipsetKeyFormatter(block)
@@ -94,6 +93,7 @@ const createEmptyEdges = (block, isBlockOrphan, blockIndices) => {
 
 export const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
   // format chain as expected by elgrapho
+  const blockXPos = {}
   const chain = {
     nodes: [],
     edges: [],
@@ -113,7 +113,7 @@ export const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
 
   blocksArr.forEach((block, index) => {
     const isDirectParent = Number(block.parentheight) === Number(block.height) - 1
-    if (isDirectParent && block.height > 1) {
+    if (isDirectParent) {
       blockParents[block.block]
         ? blockParents[block.block].push(block.parent)
         : (blockParents[block.block] = [block.parent])
@@ -159,7 +159,7 @@ export const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
 
       // empty blocks will be added to indicate nodes that have a parent from a previous epoch(skipped an epoch in chain)
       // need to add that here to use in our calculation of where to place tipsets on x axis
-      if (!isDirectParent && block.height > 1) {
+      if (!isDirectParent && block.height > parseInt(bhRangeStart) + 1) {
         const emptyNode = { tipset: `${block.block}-e`, parentweight: 0, numBlocks: 0, empty: true }
         tipsetsAtHeight[block.height - 1]
           ? tipsetsAtHeight[block.height - 1].push(emptyNode)
@@ -178,7 +178,6 @@ export const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
   // find semi-optimal ordering for tipsets at same y axis position so can place them along x axis appropriately
   // we care about -- 1. heaviest tipset should be in center for easier visualization 2. minimize edge crossings
 
-  const tipsetXPos = {}
   // put heaviest tipset in middle
   const orderHeaviestTipset = (tipsets = []) => {
     let heaviestTipset = tipsets[0]
@@ -280,21 +279,16 @@ export const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
     orderTipsetsAtHeightByPrevVertexMedian(height)
   }
 
-  for (let k in tipsetsAtHeight) {
-    const tipsets = tipsetsAtHeight[k]
-    orderHeaviestTipset(tipsets)
-  }
-
   blocksArr.forEach((block, index) => {
     const blockId = block.block
 
     // @todo: check if should be comparing parent timestamp or parent synced timestamp
-    const timeToReceive = parseInt(block.syncedtimestamp) - parseInt(block.parenttimestamp)
+    const timeToReceive = parseInt(block.syncedtimestamp) - parseInt(block.timestamp)
     // block.block may appear multiple times because there are many parent child relationships
     // we want to only add the node once but add all the edges to represent the different parent/child relationships
     if (!blocks[blockId]) {
       const chainLength = chain.nodes.push(
-        createBlock(block, blockParentInfo, tipsets, miners, blocksAtTipset, tipsetsAtHeight),
+        createBlock(block, blockParentInfo, tipsets, miners, blockXPos, bhRangeEnd, bhRangeStart),
       )
       blockIndices[blockId] = chainLength - 1
     }
@@ -304,7 +298,7 @@ export const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
     const isOrphan = (block) => {
       return blockParentInfo[block.block] && bhRangeEnd !== block.height ? 0 : 1
     }
-    const createEmptyBlock = (block, blocksAtTipset, tipsetsAtHeight) => {
+    const createEmptyBlock = (block, blockXPos) => {
       const blockId = block.block
       return {
         id: blockId,
@@ -319,13 +313,12 @@ export const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
         y: block.height,
       }
     }
-
     if (isDirectParent && blockIndices[blockId] && blockIndices[block.parent]) {
       const newEdge = createEdge(block, isOrphan(block), timeToReceive, blockIndices)
       chain.edges.push(newEdge)
-    } else if (!blocks[blockId] && block.height > 1) {
+    } else if (!blocks[blockId] && block.height > parseInt(bhRangeStart) + 1) {
       const emptyBlock = { ...block, block: `${block.block}-e`, height: block.height - 1 }
-      const newEmptyBlock = createEmptyBlock(emptyBlock, blocksAtTipset, tipsetsAtHeight)
+      const newEmptyBlock = createEmptyBlock(emptyBlock, blockXPos)
       const chainLength = chain.nodes.push(newEmptyBlock)
       blockIndices[`${blockId}-e`] = chainLength - 1
       const newEmptyEdges = createEmptyEdges(block, isOrphan(block), blockIndices)
@@ -337,6 +330,5 @@ export const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
   // push fake nodes so that chain renders in only half the available width for easier zooomoing
   chain.nodes.push({ y: 0, x: -1 }, { y: 0, x: 1 })
   chain.miners = minerCount
-
   return chain
 }

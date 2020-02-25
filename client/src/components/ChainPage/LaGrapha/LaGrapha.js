@@ -1,4 +1,5 @@
 import debounce from 'lodash/debounce'
+import clone from 'lodash/clone'
 import React, { useContext, useEffect, useRef, useState } from 'react'
 import { fetchGraph } from '../../../context/chain/actions'
 import { closeNodeModal, openNodeModal } from '../../../context/node-modal/actions'
@@ -36,7 +37,6 @@ const LaGraphaComponent = () => {
 
   useEffect(() => {
     if (!blockRange[1]) return
-
     fetchGraph(dispatch, { blockRange, startDate, endDate, miner, cid })
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -60,12 +60,12 @@ const LaGraphaComponent = () => {
     const y = (desiredInitialRange * ((height * 0.95) / numEpochsDisplayed)) / 2 - (height * 0.95) / 2
 
     const { nodes, edges } = chain.chain
+    console.log('chain is', clone(nodes[0]))
 
     if (nodes.length > 0) {
       const model = {
         nodes,
         edges,
-        steps: 1,
         showRuler: showHeightRuler,
       }
 
