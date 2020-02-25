@@ -33,7 +33,7 @@ const calcX = (block, blocksAtTipset, tipsetsAtHeight, empty) => {
   return xPos
 }
 
-const createBlock = (block, blockParentInfo, tipsets, miners, blockXPos) => {
+const createBlock = (block, blockParentInfo, tipsets, miners, blockXPos, start, range) => {
   const blockId = block.block
   const timeToReceive = parseInt(block.syncedtimestamp) - parseInt(block.timestamp)
   const tipsetKey = tipsetKeyFormatter(block)
@@ -53,7 +53,7 @@ const createBlock = (block, blockParentInfo, tipsets, miners, blockXPos) => {
     weight: block.weight,
     tipset: tipsets[tipsetKey],
     x: blockXPos[block.block],
-    y: block.height,
+    y: (block.height - start) / range,
   }
 }
 
@@ -93,6 +93,8 @@ const createEmptyEdges = (block, isBlockOrphan, blockIndices) => {
 
 export const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
   // format chain as expected by elgrapho
+  const range = bhRangeEnd - bhRangeStart || 1
+  const start = bhRangeStart || 0
   const blockXPos = {}
   const chain = {
     nodes: [],
@@ -288,7 +290,7 @@ export const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
     // we want to only add the node once but add all the edges to represent the different parent/child relationships
     if (!blocks[blockId]) {
       const chainLength = chain.nodes.push(
-        createBlock(block, blockParentInfo, tipsets, miners, blockXPos, bhRangeEnd, bhRangeStart),
+        createBlock(block, blockParentInfo, tipsets, miners, blockXPos, start, range),
       )
       blockIndices[blockId] = chainLength - 1
     }
@@ -310,7 +312,7 @@ export const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
         miner: null,
         minerColor: null,
         x: blockXPos[block.block],
-        y: block.height,
+        y: (block.height - start) / range,
       }
     }
     if (isDirectParent && blockIndices[blockId] && blockIndices[block.parent]) {

@@ -56,6 +56,8 @@ const LaGraphaComponent = () => {
     const numEpochsDisplayed = blockRange[1] - blockRange[0]
     const desiredInitialRange = 15
     const zoomY = numEpochsDisplayed / desiredInitialRange
+    console.log('num epochs displayed', numEpochsDisplayed)
+    console.log('zoom y is', zoomY)
     // y for pan is calculated as the desired y midpoint minus the current y modpoint. the 0.95 is because have to account for 5% padding
     const y = (desiredInitialRange * ((height * 0.95) / numEpochsDisplayed)) / 2 - (height * 0.95) / 2
 
