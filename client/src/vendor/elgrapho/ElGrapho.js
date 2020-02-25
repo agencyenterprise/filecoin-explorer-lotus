@@ -473,6 +473,12 @@ ElGrapho.prototype = {
       that.zoomToPoint(x || 0, y || 0, zoomX || 1, zoomY || 1)
     })
 
+    this.on('select-node', function(e) {
+      const { index } = e
+      that.selectNode(index)
+      that.selectGroup(that.vertices.points.glowColors[index])
+    })
+
     this.on('zoom-in', function() {
       that.zoomIn()
     })
@@ -809,6 +815,7 @@ ElGrapho.prototype = {
         endTime: new Date().getTime() + 300,
         prop: 'panY',
       })
+      console.log('start end', that.panY, (that.panY + panY / that.zoomY) * zoomY)
       this.dirty = true
     } else {
       this.panX = (this.panX + panX / this.zoomX) * zoomX

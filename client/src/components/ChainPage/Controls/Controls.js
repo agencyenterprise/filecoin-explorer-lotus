@@ -14,12 +14,11 @@ import { Miners } from './Miners'
 import { Orphans } from './Orphans'
 import { RangeInputs } from './RangeInputs'
 import { ReceivedBlocks } from './ReceivedBlocks'
+import { faWindowClose } from '@fortawesome/free-solid-svg-icons'
 
 const nodeLabelOptions = [
   { value: 'showHeightRuler', label: 'Block height ruler' },
   { value: 'showParentWeight', label: 'Show parent weight', disabled: true },
-  { value: 'disableMinerColor', label: 'Disable miner color', disabled: true },
-  { value: 'disableTipsetColor', label: 'Disable tipset color', disabled: true },
 ]
 
 const ControlsComponent = ({ maxBlock }) => {
@@ -78,6 +77,19 @@ const ControlsComponent = ({ maxBlock }) => {
         {options}
       </Block>
       <Block>
+        <Title>Narrow date range</Title>
+        <DatePicker
+          selected={filter.startDate}
+          onChange={(date) => changeFilter('startDate', date)}
+          placeholderText="Start date, mm/dd/yyyy"
+        />
+        <DatePicker
+          selected={filter.endDate}
+          onChange={(date) => changeFilter('endDate', date)}
+          placeholderText="End date, mm/dd/yyyy"
+        />
+      </Block>
+      <Block>
         <Title>Find by Miner</Title>
         <Input
           placeholder="Miner Address"
@@ -93,7 +105,9 @@ const ControlsComponent = ({ maxBlock }) => {
         <Title>Find by Cid</Title>
         <Input
           placeholder="Enter block CID"
-          onBlur={(e) => changeFilter('cid', e.target.value)}
+          onBlur={(e) => {
+            window.dispatchEvent(new CustomEvent('select-node', { detail: e.target.value }))
+          }}
           onKeyPress={(e) => {
             if (e.key === 'Enter') {
               e.target.blur()
@@ -101,19 +115,7 @@ const ControlsComponent = ({ maxBlock }) => {
           }}
         />
       </Block>
-      <Block>
-        <Title>Narrow date range</Title>
-        <DatePicker
-          selected={filter.startDate}
-          onChange={(date) => changeFilter('startDate', date)}
-          placeholderText="Start date, mm/dd/yyyy"
-        />
-        <DatePicker
-          selected={filter.endDate}
-          onChange={(date) => changeFilter('endDate', date)}
-          placeholderText="End date, mm/dd/yyyy"
-        />
-      </Block>
+
       <Block>
         <Title>Time block received after parent</Title>
         <ReceivedBlocks

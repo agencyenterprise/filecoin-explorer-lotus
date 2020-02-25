@@ -1,5 +1,5 @@
 import debounce from 'lodash/debounce'
-import clone from 'lodash/clone'
+import findIndex from 'lodash/findIndex'
 import React, { useContext, useEffect, useRef, useState } from 'react'
 import { fetchGraph } from '../../../context/chain/actions'
 import { closeNodeModal, openNodeModal } from '../../../context/node-modal/actions'
@@ -60,7 +60,6 @@ const LaGraphaComponent = () => {
     const y = (desiredInitialRange * ((height * 0.95) / numEpochsDisplayed)) / 2 - (height * 0.95) / 2
 
     const { nodes, edges } = chain.chain
-    console.log('chain is', clone(nodes[0]))
 
     if (nodes.length > 0) {
       const model = {
@@ -92,6 +91,14 @@ const LaGraphaComponent = () => {
         }
         el.appendChild(tooltipTable)
       }
+
+      window.addEventListener('select-node', (e) => {
+        const cid = e.detail
+        const index = findIndex(model.nodes, { id: cid })
+        graph.fire('select-node', { index })
+        // @todo: update to use current zoom and adjust for position currently in graph
+        graph.fire('zoom-to-point', { y: model.nodes[index].y * zoomY * zoomY })
+      })
 
       graph.fire('zoom-to-point', { zoomY, y })
 
