@@ -12,8 +12,8 @@ export const Miners = styled.div`
     align-items: flex-end;
 
     span {
-      font-weight: bold;
-      font-size: 24px;
+      font-weight: 600;
+      font-size: 22px;
       display: block;
       width: 50px;
     }
