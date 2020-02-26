@@ -1,5 +1,5 @@
 import debounce from 'lodash/debounce'
-import React, { Fragment, useContext, useEffect, useState } from 'react'
+import React, { Fragment, useContext, useEffect } from 'react'
 import 'react-datepicker/dist/react-datepicker.css'
 import { changeFilter as changeFilterAction } from '../../../context/filter/actions'
 import { changeRange } from '../../../context/range/actions'

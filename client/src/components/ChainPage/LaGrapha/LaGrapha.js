@@ -166,9 +166,11 @@ const LaGraphaComponent = () => {
       window.graphInstance.tooltipTemplate = (index, el) => {
         const data = nodes[index]
         const tooltipTable = tooltip(data)
+
         while (el.firstChild) {
           el.removeChild(el.firstChild)
         }
+
         el.appendChild(tooltipTable)
       }
 
