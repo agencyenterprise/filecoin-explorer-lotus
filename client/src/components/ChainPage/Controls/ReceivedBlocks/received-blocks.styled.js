@@ -14,7 +14,7 @@ export const Amount = styled.div`
 `
 
 export const Number = styled.div`
-  font-weight: 500;
+  font-weight: 600;
   font-size: 20px;
   line-height: 24px;
 `
