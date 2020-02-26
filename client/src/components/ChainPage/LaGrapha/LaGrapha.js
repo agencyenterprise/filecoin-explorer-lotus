@@ -54,7 +54,7 @@ const LaGraphaComponent = () => {
       }
 
       if (!blockWithHeight) {
-        toast.error('This node was not found on our database.')
+        toast.error('This node was not found in our database.')
 
         return
       }
