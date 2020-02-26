@@ -91,9 +91,11 @@ const mapMiners = (chain) => {
   const minersWithColor = sortedMiners.map((miner) => {
     if (paletteIndex >= palette.length) paletteIndex = 0
 
+    const currentPalette = palette[paletteIndex++]
     return {
       ...miner,
-      color: palette[paletteIndex++],
+      color: currentPalette.color,
+      fontColor: currentPalette.isDark ? '#fff' : '#212121',
     }
   })
 

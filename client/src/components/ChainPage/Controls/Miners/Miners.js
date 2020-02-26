@@ -2,7 +2,6 @@ import React, { useContext, useEffect } from 'react'
 import { store } from '../../../../context/store'
 import { DashedLine } from '../controls.styled'
 import { Amount, Data, Miner, Miners, Name, Number, ProgressBar, Txs } from './miners.styled'
-
 const d3 = window.d3
 
 const MinersComponent = () => {
@@ -56,6 +55,25 @@ const MinersComponent = () => {
       .attr('width', (d) => d.x1 - d.x0 + 2)
       .attr('height', (d) => d.y1 - d.y0 + 2)
       .style('fill', (d) => d.data.color)
+      .on('mouseover', function(d) {
+        div
+          .transition()
+          .duration(200)
+          .style('opacity', 0.9)
+        div
+          .html(d.data.name)
+          .style('left', d3.event.pageX + 'px')
+          .style('top', d3.event.pageY + 'px')
+      })
+      .on('mouseout', function(d) {
+        div
+          .transition()
+          .duration(500)
+          .style('opacity', 0)
+      })
+
+    // Define the div for the tooltip
+    var div = d3.select('.d3-tooltip').style('opacity', 0)
 
     svg
       .selectAll('text')
@@ -64,10 +82,17 @@ const MinersComponent = () => {
       .append('text')
       .attr('x', (d) => d.x0 + 10)
       .attr('y', (d) => d.y0 + 25)
-      .text((d) => d.data.name)
+      .text((d) => {
+        const rectWidth = d.x1 - d.x0
+        const rectHeight = d.y1 - d.y0
+
+        if (rectWidth < 60 || rectHeight < 30) return ''
+
+        return d.data.name
+      })
       .attr('font-size', '12px')
       .attr('font-weight', '500')
-      .attr('fill', '#212121')
+      .attr('fill', (d) => d.data.fontColor)
   }
 
   const miners = (chain && chain.miners) || []

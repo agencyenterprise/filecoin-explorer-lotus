@@ -11,7 +11,6 @@ import { Input } from '../../shared/Input'
 import { Controls, DashedLine, Title } from './controls.styled'
 import { FilterItem } from './FilterItem'
 import { Miners } from './Miners'
-import { Orphans } from './Orphans'
 import { RangeInputs } from './RangeInputs'
 import { ReceivedBlocks } from './ReceivedBlocks'
 

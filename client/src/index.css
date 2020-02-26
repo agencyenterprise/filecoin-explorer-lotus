@@ -45,6 +45,18 @@ g.rect-hoverable > rect:hover {
   cursor: pointer;
 }
 
+div.d3-tooltip {
+  position: absolute;
+  text-align: center;
+  padding: 5px 10px;
+  font: 12px Arco Perpetuo Pro;
+  background: #212121;
+  color: white;
+  border: 0px;
+  border-radius: 8px;
+  pointer-events: none;
+}
+
 /* Tooltip */
 
 div.el-grapho-tooltip {
