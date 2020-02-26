@@ -2,8 +2,10 @@ import { faCircleNotch } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import debounce from 'lodash/debounce'
 import findIndex from 'lodash/findIndex'
+import findLastIndex from 'lodash/findLastIndex'
 import React, { useContext, useEffect, useRef, useState } from 'react'
 import { toast } from 'react-toastify'
+import { getBlockHeight } from '../../../api'
 import { fetchGraph } from '../../../context/chain/actions'
 import { closeNodeModal, openNodeModal } from '../../../context/node-modal/actions'
 import { selectNode } from '../../../context/selected-node/actions'
@@ -14,7 +16,6 @@ import { Loader } from '../../shared/Loader'
 import { LaGrapha, LaGraphaWrapper, SaveGraph } from './la-grapha.styled'
 import { NodeModal } from './NodeModal/NodeModal'
 import { tooltip } from './tooltip'
-import { getBlockHeight } from '../../../api'
 
 const LaGraphaComponent = () => {
   const { state, dispatch } = useContext(store)
@@ -35,6 +36,28 @@ const LaGraphaComponent = () => {
     nodes,
     edges,
     showRuler: showHeightRuler,
+  }
+
+  const height = window.innerHeight
+  const numEpochsDisplayed = blockRange[1] - blockRange[0]
+  const desiredInitialRange = 15
+
+  const y = (desiredInitialRange * ((height * 0.95) / numEpochsDisplayed)) / 2 - (height * 0.95) / 2
+
+  const onSelectMiners = (e) => {
+    // can basically simulate clicking on node to see all miners, choose first node in model to have this miner to zoom to
+    const minerId = e.detail
+    const index = findLastIndex(model.nodes, { miner: minerId })
+
+    if (index < 0) {
+      toast.warn('Miner not found.')
+
+      return
+    }
+
+    window.graphInstance.fire('select-group', { index, group: 'colors' })
+    // @todo: update to use current zoom and adjust for position currently in graph
+    window.graphInstance.fire('zoom-to-node', { nodeY: model.nodes[index].y, initialPanY: y })
   }
 
   const onSelectNode = async (e) => {
@@ -70,12 +93,6 @@ const LaGraphaComponent = () => {
       return
     }
 
-    const height = window.innerHeight
-    const numEpochsDisplayed = blockRange[1] - blockRange[0]
-    const desiredInitialRange = 15
-
-    const y = (desiredInitialRange * ((height * 0.95) / numEpochsDisplayed)) / 2 - (height * 0.95) / 2
-
     // y for pan is calculated as the desired y midpoint minus the current y midpoint. the 0.95 is because have to account for 5% padding
     window.graphInstance.fire('select-node', { index })
     // @todo: update to use current zoom and adjust for position currently in graph
@@ -89,12 +106,14 @@ const LaGraphaComponent = () => {
 
     // @todo: make graph acessible outside so we can remove this logic from here
 
-    window.addEventListener('select-node', onSelectNode)
     window.addEventListener('resize', handleResize)
+    window.addEventListener('select-node', onSelectNode)
+    window.addEventListener('select-miners', onSelectMiners)
 
     return () => {
-      window.removeEventListener('select-node', onSelectNode)
       window.removeEventListener('resize', handleResize)
+      window.removeEventListener('select-node', onSelectNode)
+      window.removeEventListener('select-miners', onSelectMiners)
     }
   })
 

@@ -16,6 +16,10 @@ const MinersComponent = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chain.miners])
 
+  const selectMiner = (miner) => {
+    window.dispatchEvent(new CustomEvent('select-miners', { detail: miner }))
+  }
+
   const drawGraph = () => {
     const width = 242
     const height = 336
@@ -32,6 +36,7 @@ const MinersComponent = () => {
       .attr('width', width)
       .attr('height', height)
       .append('g')
+      .attr('class', 'rect-hoverable')
 
     const root = d3.hierarchy({ children: chain.miners }).sum((d) => d.total)
 
@@ -45,6 +50,7 @@ const MinersComponent = () => {
       .data(root.leaves())
       .enter()
       .append('rect')
+      .on('click', (d) => selectMiner(d.data.name))
       .attr('x', (d) => d.x0)
       .attr('y', (d) => d.y0)
       .attr('width', (d) => d.x1 - d.x0 + 2)

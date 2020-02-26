@@ -40,6 +40,11 @@ div.dc-chart {
   font-weight: 800;
 }
 
+g.rect-hoverable > rect:hover {
+  opacity: 0.8;
+  cursor: pointer;
+}
+
 /* Tooltip */
 
 div.el-grapho-tooltip {
