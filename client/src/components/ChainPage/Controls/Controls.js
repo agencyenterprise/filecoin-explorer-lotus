@@ -152,10 +152,10 @@ const ControlsComponent = ({ maxBlock }) => {
           kind="more than 15s"
         />
       </Block>
-      <Block>
+      {/* <Block>
         <Title>Orphans</Title>
         <Orphans total={chain.total} orphans={chain.orphans.length} />
-      </Block>
+      </Block> */}
       <Block>
         <Title>
           Miner distribution {filter.blockRange[0]} - {filter.blockRange[1]}
