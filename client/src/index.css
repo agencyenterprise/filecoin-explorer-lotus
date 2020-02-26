@@ -32,6 +32,14 @@ div.dc-chart {
   stroke-width: 0;
 }
 
+.Toastify {
+  line-height: 18px;
+}
+
+.Toastify strong {
+  font-weight: 800;
+}
+
 /* Tooltip */
 
 div.el-grapho-tooltip {

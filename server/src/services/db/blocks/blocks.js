@@ -43,3 +43,19 @@ export const getBlockRange = async () => {
 
   return rows[0]
 }
+
+export const getBlockHeight = async (id) => {
+  const { rows } = await db.query(
+    `
+    SELECT
+      cid,
+      height
+    FROM
+      blocks
+    WHERE
+      cid = $1 `,
+    [id],
+  )
+
+  return rows[0]
+}

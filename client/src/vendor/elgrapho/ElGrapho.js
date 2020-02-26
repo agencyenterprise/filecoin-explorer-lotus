@@ -26,7 +26,6 @@ const Chord = require('./layouts/Chord')
 const ForceDirected = require('./layouts/ForceDirected')
 const Hairball = require('./layouts/Hairball')
 const RadialTree = require('./layouts/RadialTree')
-const debounce = require('lodash/debounce')
 
 const ZOOM_FACTOR = 2
 const START_SCALE = 1

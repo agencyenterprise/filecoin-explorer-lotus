@@ -1,5 +1,5 @@
 import debounce from 'lodash/debounce'
-import React, { Fragment, useContext, useEffect } from 'react'
+import React, { Fragment, useContext, useEffect, useState } from 'react'
 import 'react-datepicker/dist/react-datepicker.css'
 import { changeFilter as changeFilterAction } from '../../../context/filter/actions'
 import { changeRange } from '../../../context/range/actions'
@@ -94,7 +94,14 @@ const ControlsComponent = ({ maxBlock }) => {
         <Title>Find by Miner</Title>
         <Input
           placeholder="Miner Address"
-          onBlur={(e) => window.dispatchEvent(new CustomEvent('select-miners', { detail: e.target.value }))}
+          onBlur={(e) => {
+            const { value } = e.target
+
+            if (!value) return
+
+            window.dispatchEvent(new CustomEvent('select-miners', { detail: value }))
+            e.target.value = ''
+          }}
           onKeyPress={(e) => {
             if (e.key === 'Enter') {
               e.target.blur()
@@ -107,7 +114,12 @@ const ControlsComponent = ({ maxBlock }) => {
         <Input
           placeholder="Enter block CID"
           onBlur={(e) => {
-            window.dispatchEvent(new CustomEvent('select-node', { detail: e.target.value }))
+            const { value } = e.target
+
+            if (!value) return
+
+            window.dispatchEvent(new CustomEvent('select-node', { detail: value }))
+            e.target.value = ''
           }}
           onKeyPress={(e) => {
             if (e.key === 'Enter') {

@@ -21,3 +21,9 @@ export const getBlockRange = async () => {
 
   return data
 }
+
+export const getBlockHeight = async ({ cid }) => {
+  const { data } = await axios.get(`${config.apiUrl}/blocks/height/${cid}`)
+
+  return data
+}
