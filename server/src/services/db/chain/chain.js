@@ -61,7 +61,8 @@ export const getChain = async ({ startBlock, endBlock, startDate, endDate, miner
     parent_block.timestamp as parenttimestamp,
     parent_block.height as parentheight,
     heads.power as parentpower,
-    synced.add_ts as syncedtimestamp
+    synced.add_ts as syncedtimestamp,
+    (SELECT COUNT(*) FROM block_messages WHERE block_messages.block = main_block.cid) AS messages
   FROM
     blocks main_block
   LEFT JOIN
@@ -73,7 +74,6 @@ export const getChain = async ({ startBlock, endBlock, startDate, endDate, miner
   LEFT JOIN
     miner_heads heads ON heads.stateroot = main_block.parentstateroot and heads.addr = parent_block.miner
 
-
     ${wheres.length ? 'WHERE' : ''}
     ${wheres.join(' AND ')}
 
@@ -82,7 +82,7 @@ export const getChain = async ({ startBlock, endBlock, startDate, endDate, miner
     ${skip ? `OFFSET ${skip}` : ''}
 
     ${limit ? `LIMIT ${limit}` : ''}
-    `
+  `
 
   const { rows } = await db.query(query, whereArgs)
 

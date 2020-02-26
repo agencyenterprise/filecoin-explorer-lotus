@@ -37,6 +37,7 @@ const createBlock = (block, blockParentInfo, tipsets, miners, blockXPos, start, 
   const blockId = block.block
   const timeToReceive = parseInt(block.syncedtimestamp) - parseInt(block.timestamp)
   const tipsetKey = tipsetKeyFormatter(block)
+
   return {
     id: blockId,
     key: blockId,
@@ -54,6 +55,8 @@ const createBlock = (block, blockParentInfo, tipsets, miners, blockXPos, start, 
     tipset: tipsets[tipsetKey],
     x: blockXPos[block.block],
     y: (block.height - start) / range,
+    timestamp: block.timestamp,
+    messages: block.messages,
   }
 }
 
@@ -300,6 +303,7 @@ export const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
     const isOrphan = (block) => {
       return blockParentInfo[block.block] && bhRangeEnd !== block.height ? 0 : 1
     }
+
     const createEmptyBlock = (block, blockXPos) => {
       const blockId = block.block
       return {
@@ -313,8 +317,11 @@ export const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
         minerColor: null,
         x: blockXPos[block.block],
         y: (block.height - start) / range,
+        timestamp: block.timestamp,
+        messages: block.messages,
       }
     }
+
     if (isDirectParent && blockIndices[blockId] && blockIndices[block.parent]) {
       const newEdge = createEdge(block, isOrphan(block), timeToReceive, blockIndices)
       chain.edges.push(newEdge)
@@ -326,6 +333,7 @@ export const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
       const newEmptyEdges = createEmptyEdges(block, isOrphan(block), blockIndices)
       chain.edges.push(...newEmptyEdges)
     }
+
     blocks[blockId] = index
   })
 
