@@ -13,6 +13,7 @@ body,
 body {
   font-family: Arco Perpetuo Pro;
   color: #212121;
+  overflow-x: hidden;
 }
 
 div.dc-chart {
