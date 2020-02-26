@@ -62,7 +62,7 @@ export const Amount = styled.div`
 `
 
 export const Number = styled.div`
-  font-weight: bold;
+  font-weight: 600;
   font-size: 20px;
 `
 
