@@ -556,22 +556,46 @@ ElGrapho.prototype = {
       }
     })
 
+    this.addListener(document, 'touchstart', function(evt) {
+      console.log('evt', evt)
+      if (evt.touches.length === 2) {
+        console.log('two finger touch')
+      }
+    })
+
     this.addListener(
       viewport.container,
       'wheel',
       _.throttle(
         function(evt) {
-          console.log('mousepos is', evt)
-
-          let mouseDiff = {
-            x: 0,
-            y: evt.deltaY,
-          }
-
-          viewport.scene.canvas.style.marginLeft = mouseDiff.x + 'px'
-          viewport.scene.canvas.style.marginTop = mouseDiff.y + 'px'
-
           Tooltip.hide()
+          if (evt.ctrlKey) {
+            evt.preventDefault()
+            const zoomAmt = 0.05
+            const zoomIn = 1 + zoomAmt
+            const zoomOut = 1 - zoomAmt
+            if (evt.deltaY < 0) {
+              that.zoomX *= zoomIn
+              that.zoomY *= zoomIn
+              that.panY *= zoomIn
+            } else if (evt.deltaY > 0) {
+              that.zoomX *= zoomOut
+              that.zoomY *= zoomOut
+              that.panY *= zoomOut
+            }
+
+            // that.zoomToPoint(0, 0, 1.1, 1.1)
+            // console.log('delta y is', evt.deltaY)
+            // Your zoom/scale factor
+            // scale -= e.deltaY * 0.01
+          } else {
+            console.log('panning')
+            that.panY += evt.deltaY
+            that.panX -= evt.deltaX
+          }
+          that.dirty = true
+          that.hitDirty = true
+          that.hoverDirty = true
 
           // need trailing false because we hide the tooltip on mouseleave.  without trailing false, the tooltip sometimes would render afterwards
         },
@@ -726,6 +750,7 @@ ElGrapho.prototype = {
       }
     })
     this.addListener(viewport.container, 'mouseup', function(evt) {
+      console.log('mouseup')
       if (Dom.closest(evt.target, '.el-grapho-controls')) {
         return
       }
@@ -766,6 +791,7 @@ ElGrapho.prototype = {
 
       // that.panX += mouseDiff.x / that.scale;
       // that.panY -= mouseDiff.y / that.scale;
+      console.log('update panx')
       that.panX += mouseDiff.x
       that.panY -= mouseDiff.y
 
