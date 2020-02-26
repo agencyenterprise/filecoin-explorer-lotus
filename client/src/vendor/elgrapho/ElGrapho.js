@@ -476,20 +476,11 @@ ElGrapho.prototype = {
 
     this.on('zoom-to-node', function(e) {
       const { nodeY, initialPanY } = e
-      console.log('node y is', nodeY)
-      console.log('zoom is', that.zoomY)
-      console.log('pan is', that.panY)
-      console.log('initial pan is', initialPanY * that.zoomY)
       const yDiff = 0.95 - nodeY
+      console.log('y diff is', yDiff)
       const height = window.innerHeight
-      let y = (yDiff / 2) * height * 0.95 * that.zoomY * that.zoomY
-      console.log('pan already', that.panY - initialPanY * that.zoomY)
+      let y = (yDiff / 2) * height * that.zoomY * that.zoomY
       y = y - (that.panY - initialPanY * that.zoomY) * that.zoomY
-      console.log('original area', (height * 0.95) / 2)
-      console.log('area with zoom area', ((height * 0.95) / 2) * that.zoomY)
-      // const y = that.zoomY * ((height * 0.95) / 2)
-      // const y = ((yDiff * window.innerHeight) / 2) * that.zoomY * that.zoomY
-      console.log('y is', y)
       that.zoomToPoint(0, y, 1, 1)
     })
 
@@ -497,6 +488,11 @@ ElGrapho.prototype = {
       const { index } = e
       that.selectNode(index)
       that.selectGroup(that.vertices.points.glowColors[index])
+    })
+
+    this.on('select-group', function(e) {
+      const { index, group } = e
+      that.selectGroup(that.vertices.points[group][index])
     })
 
     this.on('zoom-in', function() {

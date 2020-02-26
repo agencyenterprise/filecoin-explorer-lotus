@@ -94,7 +94,7 @@ const ControlsComponent = ({ maxBlock }) => {
         <Title>Find by Miner</Title>
         <Input
           placeholder="Miner Address"
-          onBlur={(e) => changeFilter('miner', e.target.value)}
+          onBlur={(e) => window.dispatchEvent(new CustomEvent('select-miners', { detail: e.target.value }))}
           onKeyPress={(e) => {
             if (e.key === 'Enter') {
               e.target.blur()

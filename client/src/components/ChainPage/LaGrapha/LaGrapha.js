@@ -2,6 +2,7 @@ import { faCircleNotch } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import debounce from 'lodash/debounce'
 import findIndex from 'lodash/findIndex'
+import findLastIndex from 'lodash/findLastIndex'
 import React, { useContext, useEffect, useRef, useState } from 'react'
 import { toast } from 'react-toastify'
 import { fetchGraph } from '../../../context/chain/actions'
@@ -159,6 +160,25 @@ const LaGraphaComponent = () => {
 
       window.removeEventListener('select-node', onSelectNode)
       window.addEventListener('select-node', onSelectNode)
+
+      const onSelectMiners = (e) => {
+        // can basically simulate clicking on node to see all miners, choose first node in model to have this miner to zoom to
+        const minerId = e.detail
+        const index = findLastIndex(model.nodes, { miner: minerId })
+
+        if (index < 0) {
+          toast.warn('Not found')
+
+          return
+        }
+
+        graph.fire('select-group', { index, group: 'colors' })
+        // @todo: update to use current zoom and adjust for position currently in graph
+        graph.fire('zoom-to-node', { nodeY: model.nodes[index].y, initialPanY: y })
+      }
+
+      window.removeEventListener('select-miners', onSelectMiners)
+      window.addEventListener('select-miners', onSelectMiners)
 
       graph.fire('zoom-to-point', { zoomY, y })
 
