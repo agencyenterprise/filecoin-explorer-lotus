@@ -31,6 +31,9 @@ const debounce = require('lodash/debounce')
 const ZOOM_FACTOR = 2
 const START_SCALE = 1
 
+const evCache = new Array()
+const prevDiff = -1
+
 let ElGrapho = function(config) {
   let that = this
 
@@ -506,47 +509,35 @@ ElGrapho.prototype = {
       that.stepDown()
     })
 
-    // @todo: maybe implement this zoom in with mousewheel if we need
     // this.addListener(
-    //   viewport.container,
-    //   'mousewheel',
-    //   _.throttle(
-    //     function(e) {
-    //       if (e.deltaY < 0) {
-    //         that.fire('zoom-in')
-    //       } else if (e.deltaY > 0) {
-    //         that.fire('zoom-out')
-    //       }
-    //     },
-    //     10,
-    //     { trailing: false },
-    //   ),
+    //   document,
+    //   'wheel',
+    //   debounce((evt) => {
+    //     if (evt.deltaY < 0) {
+    //       that.zoomOut()
+
+    //       return
+    //     }
+
+    //     let mousePos = that.getMousePosition(evt)
+
+    //     let viewportWidth = viewport.width
+    //     let viewportHeight = viewport.height
+
+    //     let viewportCenterX = viewportWidth / 2
+    //     let viewportCenterY = viewportHeight / 2
+
+    //     let panX = (viewportCenterX - mousePos.x) * that.zoomX
+    //     let panY = (mousePos.y - viewportCenterY) * that.zoomY
+
+    //     that.zoomToPoint(panX, panY, ZOOM_FACTOR, ZOOM_FACTOR)
+    //   }, 200),
     // )
 
-    this.addListener(
-      document,
-      'wheel',
-      debounce((evt) => {
-        if (evt.deltaY < 0) {
-          that.zoomOut()
-
-          return
-        }
-
-        let mousePos = that.getMousePosition(evt)
-
-        let viewportWidth = viewport.width
-        let viewportHeight = viewport.height
-
-        let viewportCenterX = viewportWidth / 2
-        let viewportCenterY = viewportHeight / 2
-
-        let panX = (viewportCenterX - mousePos.x) * that.zoomX
-        let panY = (mousePos.y - viewportCenterY) * that.zoomY
-
-        that.zoomToPoint(panX, panY, ZOOM_FACTOR, ZOOM_FACTOR)
-      }, 200),
-    )
+    // this.addListener(viewport.container, 'pointerdown', (ev) => {
+    //   evCache.push(ev)
+    //   console.log('pointerDown', ev)
+    // })
 
     this.addListener(viewport.container, 'mousedown', function(evt) {
       if (Dom.closest(evt.target, '.el-grapho-controls')) {
@@ -564,6 +555,30 @@ ElGrapho.prototype = {
         BoxZoom.update(evt.clientX, evt.clientY)
       }
     })
+
+    this.addListener(
+      viewport.container,
+      'wheel',
+      _.throttle(
+        function(evt) {
+          console.log('mousepos is', evt)
+
+          let mouseDiff = {
+            x: 0,
+            y: evt.deltaY,
+          }
+
+          viewport.scene.canvas.style.marginLeft = mouseDiff.x + 'px'
+          viewport.scene.canvas.style.marginTop = mouseDiff.y + 'px'
+
+          Tooltip.hide()
+
+          // need trailing false because we hide the tooltip on mouseleave.  without trailing false, the tooltip sometimes would render afterwards
+        },
+        17,
+        { trailing: false },
+      ),
+    )
 
     this.addListener(
       viewport.container,
