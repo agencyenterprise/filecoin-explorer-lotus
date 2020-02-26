@@ -506,48 +506,6 @@ ElGrapho.prototype = {
       that.stepDown()
     })
 
-    // @todo: maybe implement this zoom in with mousewheel if we need
-    // this.addListener(
-    //   viewport.container,
-    //   'mousewheel',
-    //   _.throttle(
-    //     function(e) {
-    //       if (e.deltaY < 0) {
-    //         that.fire('zoom-in')
-    //       } else if (e.deltaY > 0) {
-    //         that.fire('zoom-out')
-    //       }
-    //     },
-    //     10,
-    //     { trailing: false },
-    //   ),
-    // )
-
-    this.addListener(
-      document,
-      'wheel',
-      debounce((evt) => {
-        if (evt.deltaY < 0) {
-          that.zoomOut()
-
-          return
-        }
-
-        let mousePos = that.getMousePosition(evt)
-
-        let viewportWidth = viewport.width
-        let viewportHeight = viewport.height
-
-        let viewportCenterX = viewportWidth / 2
-        let viewportCenterY = viewportHeight / 2
-
-        let panX = (viewportCenterX - mousePos.x) * that.zoomX
-        let panY = (mousePos.y - viewportCenterY) * that.zoomY
-
-        that.zoomToPoint(panX, panY, ZOOM_FACTOR, ZOOM_FACTOR)
-      }, 200),
-    )
-
     this.addListener(viewport.container, 'mousedown', function(evt) {
       if (Dom.closest(evt.target, '.el-grapho-controls')) {
         return
@@ -564,6 +522,54 @@ ElGrapho.prototype = {
         BoxZoom.update(evt.clientX, evt.clientY)
       }
     })
+
+    this.addListener(document, 'touchstart', function(evt) {
+      console.log('evt', evt)
+      if (evt.touches.length === 2) {
+        console.log('two finger touch')
+      }
+    })
+
+    this.addListener(
+      viewport.container,
+      'wheel',
+      _.throttle(
+        function(evt) {
+          Tooltip.hide()
+          if (evt.ctrlKey) {
+            evt.preventDefault()
+            const zoomAmt = 0.05
+            const zoomIn = 1 + zoomAmt
+            const zoomOut = 1 - zoomAmt
+            if (evt.deltaY < 0) {
+              that.zoomX *= zoomIn
+              that.zoomY *= zoomIn
+              that.panY *= zoomIn
+            } else if (evt.deltaY > 0) {
+              that.zoomX *= zoomOut
+              that.zoomY *= zoomOut
+              that.panY *= zoomOut
+            }
+
+            // that.zoomToPoint(0, 0, 1.1, 1.1)
+            // console.log('delta y is', evt.deltaY)
+            // Your zoom/scale factor
+            // scale -= e.deltaY * 0.01
+          } else {
+            console.log('panning')
+            that.panY += evt.deltaY
+            that.panX -= evt.deltaX
+          }
+          that.dirty = true
+          that.hitDirty = true
+          that.hoverDirty = true
+
+          // need trailing false because we hide the tooltip on mouseleave.  without trailing false, the tooltip sometimes would render afterwards
+        },
+        17,
+        { trailing: false },
+      ),
+    )
 
     this.addListener(
       viewport.container,
@@ -751,6 +757,7 @@ ElGrapho.prototype = {
 
       // that.panX += mouseDiff.x / that.scale;
       // that.panY -= mouseDiff.y / that.scale;
+      console.log('update panx')
       that.panX += mouseDiff.x
       that.panY -= mouseDiff.y
 
