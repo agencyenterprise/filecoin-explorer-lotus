@@ -19,6 +19,15 @@ const MinersComponent = () => {
     window.dispatchEvent(new CustomEvent('select-miners', { detail: miner }))
   }
 
+  const isTooSmall = ({ x1, y1, x0, y0 }) => {
+    const rectWidth = x1 - x0
+    const rectHeight = y1 - y0
+
+    if (rectWidth < 60 || rectHeight < 30) return true
+
+    return false
+  }
+
   const drawGraph = () => {
     const width = 242
     const height = 336
@@ -56,14 +65,16 @@ const MinersComponent = () => {
       .attr('height', (d) => d.y1 - d.y0 + 2)
       .style('fill', (d) => d.data.color)
       .on('mouseover', function(d) {
-        div
-          .transition()
-          .duration(200)
-          .style('opacity', 0.9)
-        div
-          .html(d.data.name)
-          .style('left', d3.event.pageX + 'px')
-          .style('top', d3.event.pageY + 'px')
+        if (isTooSmall(d)) {
+          div
+            .transition()
+            .duration(200)
+            .style('opacity', 0.9)
+          div
+            .html(d.data.name)
+            .style('left', d3.event.pageX + 'px')
+            .style('top', d3.event.pageY + 'px')
+        }
       })
       .on('mouseout', function(d) {
         div
@@ -83,10 +94,7 @@ const MinersComponent = () => {
       .attr('x', (d) => d.x0 + 10)
       .attr('y', (d) => d.y0 + 25)
       .text((d) => {
-        const rectWidth = d.x1 - d.x0
-        const rectHeight = d.y1 - d.y0
-
-        if (rectWidth < 60 || rectHeight < 30) return ''
+        if (isTooSmall(d)) return ''
 
         return d.data.name
       })
