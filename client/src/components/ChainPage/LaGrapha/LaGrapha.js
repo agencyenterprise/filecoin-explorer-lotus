@@ -1,3 +1,5 @@
+import { faCircleNotch } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import debounce from 'lodash/debounce'
 import findIndex from 'lodash/findIndex'
 import React, { useContext, useEffect, useRef, useState } from 'react'
@@ -6,9 +8,10 @@ import { fetchGraph } from '../../../context/chain/actions'
 import { closeNodeModal, openNodeModal } from '../../../context/node-modal/actions'
 import { selectNode } from '../../../context/selected-node/actions'
 import { store } from '../../../context/store'
+import { download } from '../../../utils/download'
 import ElGrapho from '../../../vendor/elgrapho/ElGrapho'
 import { Loader } from '../../shared/Loader'
-import { LaGrapha, LaGraphaWrapper } from './la-grapha.styled'
+import { LaGrapha, LaGraphaWrapper, SaveGraph } from './la-grapha.styled'
 import { NodeModal } from './NodeModal/NodeModal'
 import { tooltip } from './tooltip'
 
@@ -18,6 +21,7 @@ const LaGraphaComponent = () => {
   const { blockRange, startDate, endDate, miner, cid, showHeightRuler } = filter
 
   const [loadingGraph, setLoading] = useState(false)
+  const [buildingSvg, setBuildingSvg] = useState(false)
 
   const loading = loadingData || loadingGraph
   const graphRendered = !!document.getElementsByClassName('concrete-scene-canvas')[0]
@@ -49,6 +53,48 @@ const LaGraphaComponent = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chain, showHeightRuler])
 
+  function dataURItoBlob(dataURI) {
+    // convert base64 to raw binary data held in a string
+    // doesn't handle URLEncoded DataURIs - see SO answer #6850276 for code that does this
+    var byteString = atob(dataURI.split(',')[1])
+
+    // separate out the mime component
+    var mimeString = dataURI
+      .split(',')[0]
+      .split(':')[1]
+      .split(';')[0]
+
+    // write the bytes of the string to an ArrayBuffer
+    var ab = new ArrayBuffer(byteString.length)
+
+    // create a view into the buffer
+    var ia = new Uint8Array(ab)
+
+    // set the bytes of the buffer to the correct values
+    for (var i = 0; i < byteString.length; i++) {
+      ia[i] = byteString.charCodeAt(i)
+    }
+
+    // write the ArrayBuffer to a blob, and you're done
+    var blob = new Blob([ab], { type: mimeString })
+    return blob
+  }
+
+  const exportGraph = () => {
+    if (buildingSvg) return
+
+    setBuildingSvg(true)
+
+    const canvas = document.getElementsByClassName('concrete-scene-canvas')[0]
+
+    const data = canvas.toDataURL()
+    const blob = dataURItoBlob(data)
+
+    download(blob, 'graph.png', laGraphaRef.current)
+
+    setBuildingSvg(false)
+  }
+
   const buildGraph = () => {
     setLoading(true)
 
@@ -56,8 +102,10 @@ const LaGraphaComponent = () => {
     const width = window.innerWidth - 306
     const numEpochsDisplayed = blockRange[1] - blockRange[0]
     const desiredInitialRange = 15
+
     const zoomY = numEpochsDisplayed / desiredInitialRange
-    // y for pan is calculated as the desired y midpoint minus the current y modpoint. the 0.95 is because have to account for 5% padding
+
+    // y for pan is calculated as the desired y midpoint minus the current y midpoint. the 0.95 is because have to account for 5% padding
     const y = (desiredInitialRange * ((height * 0.95) / numEpochsDisplayed)) / 2 - (height * 0.95) / 2
 
     const { nodes, edges } = chain.chain
@@ -106,7 +154,7 @@ const LaGraphaComponent = () => {
 
         graph.fire('select-node', { index })
         // @todo: update to use current zoom and adjust for position currently in graph
-        graph.fire('zoom-to-point', { y: model.nodes[index].y * zoomY * zoomY })
+        graph.fire('zoom-to-node', { nodeY: model.nodes[index].y, initialPanY: y })
       }
 
       window.removeEventListener('select-node', onSelectNode)
@@ -125,6 +173,12 @@ const LaGraphaComponent = () => {
     <LaGraphaWrapper>
       {loading && <Loader light={graphRendered} />}
       <LaGrapha ref={laGraphaRef} />
+      {!loading && (
+        <SaveGraph disabled={buildingSvg} onClick={exportGraph}>
+          {buildingSvg && <FontAwesomeIcon icon={faCircleNotch} spin />}
+          Save Graph
+        </SaveGraph>
+      )}
       {isNodeModalOpen && <NodeModal node={selectedNode} close={() => closeNodeModal(dispatch)} />}
     </LaGraphaWrapper>
   )

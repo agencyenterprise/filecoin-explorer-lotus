@@ -3,7 +3,7 @@ const UUID = require('./UUID')
 const WebGL = require('./WebGL')
 const Profiler = require('./Profiler')
 const ElGraphoCollection = require('./ElGraphoCollection')
-const Controls = require('./components/Controls/Controls')
+// const Controls = require('./components/Controls/Controls')
 const Count = require('./components/Count/Count')
 const Events = require('./Events')
 const Concrete = require('concretejs')
@@ -26,6 +26,7 @@ const Chord = require('./layouts/Chord')
 const ForceDirected = require('./layouts/ForceDirected')
 const Hairball = require('./layouts/Hairball')
 const RadialTree = require('./layouts/RadialTree')
+const debounce = require('lodash/debounce')
 
 const ZOOM_FACTOR = 2
 const START_SCALE = 1
@@ -229,10 +230,10 @@ ElGrapho.prototype = {
   initComponents: function() {
     let model = this.model
 
-    this.controls = new Controls({
-      container: this.wrapper,
-      graph: this,
-    })
+    // this.controls = new Controls({
+    //   container: this.wrapper,
+    //   graph: this,
+    // })
 
     this.loading = new Loading({
       container: this.wrapper,
@@ -473,6 +474,25 @@ ElGrapho.prototype = {
       that.zoomToPoint(x || 0, y || 0, zoomX || 1, zoomY || 1)
     })
 
+    this.on('zoom-to-node', function(e) {
+      const { nodeY, initialPanY } = e
+      console.log('node y is', nodeY)
+      console.log('zoom is', that.zoomY)
+      console.log('pan is', that.panY)
+      console.log('initial pan is', initialPanY * that.zoomY)
+      const yDiff = 0.95 - nodeY
+      const height = window.innerHeight
+      let y = (yDiff / 2) * height * 0.95 * that.zoomY * that.zoomY
+      console.log('pan already', that.panY - initialPanY * that.zoomY)
+      y = y - (that.panY - initialPanY * that.zoomY) * that.zoomY
+      console.log('original area', (height * 0.95) / 2)
+      console.log('area with zoom area', ((height * 0.95) / 2) * that.zoomY)
+      // const y = that.zoomY * ((height * 0.95) / 2)
+      // const y = ((yDiff * window.innerHeight) / 2) * that.zoomY * that.zoomY
+      console.log('y is', y)
+      that.zoomToPoint(0, y, 1, 1)
+    })
+
     this.on('select-node', function(e) {
       const { index } = e
       that.selectNode(index)
@@ -511,46 +531,15 @@ ElGrapho.prototype = {
       that.stepDown()
     })
 
-    // @todo: maybe implement this zoom in with mousewheel if we need
-    // this.addListener(
-    //   viewport.container,
-    //   'mousewheel',
-    //   _.throttle(
-    //     function(e) {
-    //       if (e.deltaY < 0) {
-    //         that.fire('zoom-in')
-    //       } else if (e.deltaY > 0) {
-    //         that.fire('zoom-out')
-    //       }
-    //     },
-    //     10,
-    //     { trailing: false },
-    //   ),
-    // )
-
-    this.addListener(document, 'mousedown', function(evt) {
-      if (Dom.closest(evt.target, '.el-grapho-controls')) {
-        return
-      }
-      if (that.interactionMode === Enums.interactionMode.BOX_ZOOM) {
-        let mousePos = that.getMousePosition(evt)
-        that.zoomBoxAnchor = {
-          x: mousePos.x,
-          y: mousePos.y,
-        }
-        BoxZoom.create(evt.clientX, evt.clientY)
-      }
-    })
-
     this.addListener(viewport.container, 'mousedown', function(evt) {
       if (Dom.closest(evt.target, '.el-grapho-controls')) {
         return
       }
-      if (that.interactionMode === Enums.interactionMode.PAN) {
-        let mousePos = that.getMousePosition(evt)
-        that.panStart = mousePos
-        Tooltip.hide()
-      }
+      // if (that.interactionMode === Enums.interactionMode.PAN) {
+      let mousePos = that.getMousePosition(evt)
+      that.panStart = mousePos
+      Tooltip.hide()
+      // }
     })
 
     this.addListener(document, 'mousemove', function(evt) {
@@ -558,6 +547,48 @@ ElGrapho.prototype = {
         BoxZoom.update(evt.clientX, evt.clientY)
       }
     })
+
+    this.addListener(document, 'touchstart', function(evt) {
+      console.log('evt', evt)
+      if (evt.touches.length === 2) {
+        console.log('two finger touch')
+      }
+    })
+
+    this.addListener(
+      viewport.container,
+      'wheel',
+      _.throttle(
+        function(evt) {
+          Tooltip.hide()
+          if (evt.ctrlKey) {
+            evt.preventDefault()
+            const zoomAmt = 0.05
+            const zoomIn = 1 + zoomAmt
+            const zoomOut = 1 - zoomAmt
+            if (evt.deltaY < 0) {
+              that.zoomX *= zoomIn
+              that.zoomY *= zoomIn
+              that.panY *= zoomIn
+            } else if (evt.deltaY > 0) {
+              that.zoomX *= zoomOut
+              that.zoomY *= zoomOut
+              that.panY *= zoomOut
+            }
+          } else {
+            that.panY += evt.deltaY
+            that.panX -= evt.deltaX
+          }
+          that.dirty = true
+          that.hitDirty = true
+          that.hoverDirty = true
+
+          // need trailing false because we hide the tooltip on mouseleave.  without trailing false, the tooltip sometimes would render afterwards
+        },
+        17,
+        { trailing: false },
+      ),
+    )
 
     this.addListener(
       viewport.container,
@@ -567,17 +598,17 @@ ElGrapho.prototype = {
           let mousePos = that.getMousePosition(evt)
           let dataIndex = viewport.getIntersection(mousePos.x, mousePos.y)
 
-          if (that.interactionMode === Enums.interactionMode.PAN) {
-            if (that.panStart) {
-              let mouseDiff = {
-                x: mousePos.x - that.panStart.x,
-                y: mousePos.y - that.panStart.y,
-              }
-
-              viewport.scene.canvas.style.marginLeft = mouseDiff.x + 'px'
-              viewport.scene.canvas.style.marginTop = mouseDiff.y + 'px'
+          // if (that.interactionMode === Enums.interactionMode.PAN) {
+          if (that.panStart) {
+            let mouseDiff = {
+              x: mousePos.x - that.panStart.x,
+              y: mousePos.y - that.panStart.y,
             }
+
+            viewport.scene.canvas.style.marginLeft = mouseDiff.x + 'px'
+            viewport.scene.canvas.style.marginTop = mouseDiff.y + 'px'
           }
+          // }
 
           // if panning or zoom boxing hide tooltip
           if (that.panStart || that.zoomBoxAnchor) {
@@ -733,30 +764,31 @@ ElGrapho.prototype = {
         }
       }
 
-      if (that.interactionMode === Enums.interactionMode.PAN) {
-        let mousePos = that.getMousePosition(evt)
+      // if (that.interactionMode === Enums.interactionMode.PAN) {
+      let mousePos = that.getMousePosition(evt)
 
-        if (!mousePos || !that.panStart) return
+      if (!mousePos || !that.panStart) return
 
-        let mouseDiff = {
-          x: mousePos.x - that.panStart.x,
-          y: mousePos.y - that.panStart.y,
-        }
-
-        // that.panX += mouseDiff.x / that.scale;
-        // that.panY -= mouseDiff.y / that.scale;
-        that.panX += mouseDiff.x
-        that.panY -= mouseDiff.y
-
-        that.panStart = null
-
-        viewport.scene.canvas.style.marginLeft = 0
-        viewport.scene.canvas.style.marginTop = 0
-
-        that.dirty = true
-        that.hitDirty = true
-        that.hoverDirty = true
+      let mouseDiff = {
+        x: mousePos.x - that.panStart.x,
+        y: mousePos.y - that.panStart.y,
       }
+
+      // that.panX += mouseDiff.x / that.scale;
+      // that.panY -= mouseDiff.y / that.scale;
+      console.log('update panx')
+      that.panX += mouseDiff.x
+      that.panY -= mouseDiff.y
+
+      that.panStart = null
+
+      viewport.scene.canvas.style.marginLeft = 0
+      viewport.scene.canvas.style.marginTop = 0
+
+      that.dirty = true
+      that.hitDirty = true
+      that.hoverDirty = true
+      // }
     })
 
     this.addListener(viewport.container, 'mouseout', function() {
@@ -808,6 +840,8 @@ ElGrapho.prototype = {
         endTime: new Date().getTime() + 300,
         prop: 'panX',
       })
+      console.log('start', that.panY)
+      console.log('end', (that.panY + panY / that.zoomY) * zoomY)
       this.animations.push({
         startVal: that.panY,
         endVal: (that.panY + panY / that.zoomY) * zoomY,
@@ -815,7 +849,6 @@ ElGrapho.prototype = {
         endTime: new Date().getTime() + 300,
         prop: 'panY',
       })
-      console.log('start end', that.panY, (that.panY + panY / that.zoomY) * zoomY)
       this.dirty = true
     } else {
       this.panX = (this.panX + panX / this.zoomX) * zoomX

@@ -33,10 +33,11 @@ const calcX = (block, blocksAtTipset, tipsetsAtHeight, empty) => {
   return xPos
 }
 
-const createBlock = (block, blockParentInfo, tipsets, miners, blockXPos) => {
+const createBlock = (block, blockParentInfo, tipsets, miners, blockXPos, start, range) => {
   const blockId = block.block
   const timeToReceive = parseInt(block.syncedtimestamp) - parseInt(block.timestamp)
   const tipsetKey = tipsetKeyFormatter(block)
+
   return {
     id: blockId,
     key: blockId,
@@ -53,7 +54,9 @@ const createBlock = (block, blockParentInfo, tipsets, miners, blockXPos) => {
     weight: block.weight,
     tipset: tipsets[tipsetKey],
     x: blockXPos[block.block],
-    y: block.height,
+    y: (block.height - start) / range,
+    timestamp: block.timestamp,
+    messages: block.messages,
   }
 }
 
@@ -93,6 +96,8 @@ const createEmptyEdges = (block, isBlockOrphan, blockIndices) => {
 
 export const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
   // format chain as expected by elgrapho
+  const range = bhRangeEnd - bhRangeStart || 1
+  const start = bhRangeStart || 0
   const blockXPos = {}
   const chain = {
     nodes: [],
@@ -288,7 +293,7 @@ export const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
     // we want to only add the node once but add all the edges to represent the different parent/child relationships
     if (!blocks[blockId]) {
       const chainLength = chain.nodes.push(
-        createBlock(block, blockParentInfo, tipsets, miners, blockXPos, bhRangeEnd, bhRangeStart),
+        createBlock(block, blockParentInfo, tipsets, miners, blockXPos, start, range),
       )
       blockIndices[blockId] = chainLength - 1
     }
@@ -298,6 +303,7 @@ export const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
     const isOrphan = (block) => {
       return blockParentInfo[block.block] && bhRangeEnd !== block.height ? 0 : 1
     }
+
     const createEmptyBlock = (block, blockXPos) => {
       const blockId = block.block
       return {
@@ -310,9 +316,12 @@ export const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
         miner: null,
         minerColor: null,
         x: blockXPos[block.block],
-        y: block.height,
+        y: (block.height - start) / range,
+        timestamp: block.timestamp,
+        messages: block.messages,
       }
     }
+
     if (isDirectParent && blockIndices[blockId] && blockIndices[block.parent]) {
       const newEdge = createEdge(block, isOrphan(block), timeToReceive, blockIndices)
       chain.edges.push(newEdge)
@@ -324,6 +333,7 @@ export const blocksToChain = (blocksArr, bhRangeEnd, bhRangeStart) => {
       const newEmptyEdges = createEmptyEdges(block, isOrphan(block), blockIndices)
       chain.edges.push(...newEmptyEdges)
     }
+
     blocks[blockId] = index
   })
 

@@ -17,7 +17,9 @@ import { ReceivedBlocks } from './ReceivedBlocks'
 
 const nodeLabelOptions = [
   { value: 'showHeightRuler', label: 'Block height ruler' },
-  { value: 'showParentWeight', label: 'Show parent weight', disabled: true },
+  // { value: 'showParentWeight', label: 'Show parent weight', disabled: true },
+  // { value: 'disableMinerColor', label: 'Disable miner color', disabled: true },
+  // { value: 'disableTipsetColor', label: 'Disable tipset color', disabled: true },
 ]
 
 const ControlsComponent = ({ maxBlock }) => {
