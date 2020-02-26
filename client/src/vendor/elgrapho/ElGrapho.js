@@ -31,9 +31,6 @@ const debounce = require('lodash/debounce')
 const ZOOM_FACTOR = 2
 const START_SCALE = 1
 
-const evCache = new Array()
-const prevDiff = -1
-
 let ElGrapho = function(config) {
   let that = this
 
@@ -509,36 +506,6 @@ ElGrapho.prototype = {
       that.stepDown()
     })
 
-    // this.addListener(
-    //   document,
-    //   'wheel',
-    //   debounce((evt) => {
-    //     if (evt.deltaY < 0) {
-    //       that.zoomOut()
-
-    //       return
-    //     }
-
-    //     let mousePos = that.getMousePosition(evt)
-
-    //     let viewportWidth = viewport.width
-    //     let viewportHeight = viewport.height
-
-    //     let viewportCenterX = viewportWidth / 2
-    //     let viewportCenterY = viewportHeight / 2
-
-    //     let panX = (viewportCenterX - mousePos.x) * that.zoomX
-    //     let panY = (mousePos.y - viewportCenterY) * that.zoomY
-
-    //     that.zoomToPoint(panX, panY, ZOOM_FACTOR, ZOOM_FACTOR)
-    //   }, 200),
-    // )
-
-    // this.addListener(viewport.container, 'pointerdown', (ev) => {
-    //   evCache.push(ev)
-    //   console.log('pointerDown', ev)
-    // })
-
     this.addListener(viewport.container, 'mousedown', function(evt) {
       if (Dom.closest(evt.target, '.el-grapho-controls')) {
         return
@@ -750,7 +717,6 @@ ElGrapho.prototype = {
       }
     })
     this.addListener(viewport.container, 'mouseup', function(evt) {
-      console.log('mouseup')
       if (Dom.closest(evt.target, '.el-grapho-controls')) {
         return
       }
