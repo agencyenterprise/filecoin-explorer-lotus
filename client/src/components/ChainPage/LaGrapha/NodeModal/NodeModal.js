@@ -19,8 +19,6 @@ const NodeModalComponent = ({ node, close }) => {
     { title: 'State Root', key: '' },
   ]
 
-  console.log(node)
-
   const openFilscan = () => {
     const link = ` https://filscan.io/#/tipset?hash=${node.id}`
 

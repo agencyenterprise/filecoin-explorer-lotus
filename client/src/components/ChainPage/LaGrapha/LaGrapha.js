@@ -1,7 +1,10 @@
 import { faCircleNotch } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import debounce from 'lodash/debounce'
+import findIndex from 'lodash/findIndex'
+import findLastIndex from 'lodash/findLastIndex'
 import React, { useContext, useEffect, useRef, useState } from 'react'
+import { toast } from 'react-toastify'
 import { fetchGraph } from '../../../context/chain/actions'
 import { closeNodeModal, openNodeModal } from '../../../context/node-modal/actions'
 import { selectNode } from '../../../context/selected-node/actions'
@@ -103,7 +106,7 @@ const LaGraphaComponent = () => {
 
     const zoomY = numEpochsDisplayed / desiredInitialRange
 
-    // y for pan is calculated as the desired y midpoint minus the current y modpoint. the 0.95 is because have to account for 5% padding
+    // y for pan is calculated as the desired y midpoint minus the current y midpoint. the 0.95 is because have to account for 5% padding
     const y = (desiredInitialRange * ((height * 0.95) / numEpochsDisplayed)) / 2 - (height * 0.95) / 2
 
     const { nodes, edges } = chain.chain
@@ -138,6 +141,44 @@ const LaGraphaComponent = () => {
         }
         el.appendChild(tooltipTable)
       }
+
+      // @todo: make graph acessible outside so we can remove this logic from here
+      const onSelectNode = (e) => {
+        const cid = e.detail
+        const index = findIndex(model.nodes, { id: cid })
+
+        if (index < 0) {
+          toast.warn('Not found')
+
+          return
+        }
+
+        graph.fire('select-node', { index })
+        // @todo: update to use current zoom and adjust for position currently in graph
+        graph.fire('zoom-to-node', { nodeY: model.nodes[index].y, initialPanY: y })
+      }
+
+      window.removeEventListener('select-node', onSelectNode)
+      window.addEventListener('select-node', onSelectNode)
+
+      const onSelectMiners = (e) => {
+        // can basically simulate clicking on node to see all miners, choose first node in model to have this miner to zoom to
+        const minerId = e.detail
+        const index = findLastIndex(model.nodes, { miner: minerId })
+
+        if (index < 0) {
+          toast.warn('Not found')
+
+          return
+        }
+
+        graph.fire('select-group', { index, group: 'colors' })
+        // @todo: update to use current zoom and adjust for position currently in graph
+        graph.fire('zoom-to-node', { nodeY: model.nodes[index].y, initialPanY: y })
+      }
+
+      window.removeEventListener('select-miners', onSelectMiners)
+      window.addEventListener('select-miners', onSelectMiners)
 
       graph.fire('zoom-to-point', { zoomY, y })
 

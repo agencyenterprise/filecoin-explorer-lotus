@@ -474,6 +474,26 @@ ElGrapho.prototype = {
       that.zoomToPoint(x || 0, y || 0, zoomX || 1, zoomY || 1)
     })
 
+    this.on('zoom-to-node', function(e) {
+      const { nodeY, initialPanY } = e
+      const yDiff = 0.95 - nodeY
+      const height = window.innerHeight
+      let y = (yDiff / 2) * height * that.zoomY * that.zoomY
+      y = y - (that.panY - initialPanY * that.zoomY) * that.zoomY
+      that.zoomToPoint(0, y, 1, 1)
+    })
+
+    this.on('select-node', function(e) {
+      const { index } = e
+      that.selectNode(index)
+      that.selectGroup(that.vertices.points.glowColors[index])
+    })
+
+    this.on('select-group', function(e) {
+      const { index, group } = e
+      that.selectGroup(that.vertices.points[group][index])
+    })
+
     this.on('zoom-in', function() {
       that.zoomIn()
     })
@@ -523,13 +543,6 @@ ElGrapho.prototype = {
       }
     })
 
-    this.addListener(document, 'touchstart', function(evt) {
-      console.log('evt', evt)
-      if (evt.touches.length === 2) {
-        console.log('two finger touch')
-      }
-    })
-
     this.addListener(
       viewport.container,
       'wheel',
@@ -550,13 +563,7 @@ ElGrapho.prototype = {
               that.zoomY *= zoomOut
               that.panY *= zoomOut
             }
-
-            // that.zoomToPoint(0, 0, 1.1, 1.1)
-            // console.log('delta y is', evt.deltaY)
-            // Your zoom/scale factor
-            // scale -= e.deltaY * 0.01
           } else {
-            console.log('panning')
             that.panY += evt.deltaY
             that.panX -= evt.deltaX
           }
@@ -757,7 +764,6 @@ ElGrapho.prototype = {
 
       // that.panX += mouseDiff.x / that.scale;
       // that.panY -= mouseDiff.y / that.scale;
-      console.log('update panx')
       that.panX += mouseDiff.x
       that.panY -= mouseDiff.y
 

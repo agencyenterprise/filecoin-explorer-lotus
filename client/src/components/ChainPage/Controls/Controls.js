@@ -78,30 +78,6 @@ const ControlsComponent = ({ maxBlock }) => {
         {options}
       </Block>
       <Block>
-        <Title>Find by Miner</Title>
-        <Input
-          placeholder="Miner Address"
-          onBlur={(e) => changeFilter('miner', e.target.value)}
-          onKeyPress={(e) => {
-            if (e.key === 'Enter') {
-              e.target.blur()
-            }
-          }}
-        />
-      </Block>
-      <Block>
-        <Title>Find by Cid</Title>
-        <Input
-          placeholder="Enter block CID"
-          onBlur={(e) => changeFilter('cid', e.target.value)}
-          onKeyPress={(e) => {
-            if (e.key === 'Enter') {
-              e.target.blur()
-            }
-          }}
-        />
-      </Block>
-      <Block>
         <Title>Narrow date range</Title>
         <DatePicker
           selected={filter.startDate}
@@ -115,26 +91,53 @@ const ControlsComponent = ({ maxBlock }) => {
         />
       </Block>
       <Block>
-        <Title>Time block received after parent</Title>
+        <Title>Find by Miner</Title>
+        <Input
+          placeholder="Miner Address"
+          onBlur={(e) => window.dispatchEvent(new CustomEvent('select-miners', { detail: e.target.value }))}
+          onKeyPress={(e) => {
+            if (e.key === 'Enter') {
+              e.target.blur()
+            }
+          }}
+        />
+      </Block>
+      <Block>
+        <Title>Find by Cid</Title>
+        <Input
+          placeholder="Enter block CID"
+          onBlur={(e) => {
+            window.dispatchEvent(new CustomEvent('select-node', { detail: e.target.value }))
+          }}
+          onKeyPress={(e) => {
+            if (e.key === 'Enter') {
+              e.target.blur()
+            }
+          }}
+        />
+      </Block>
+
+      <Block>
+        <Title>Block sync delay</Title>
         <ReceivedBlocks
-          amount={chain.timeToReceive.under48.total}
-          percentage={chain.timeToReceive.under48.percentage}
-          kind="less than 48s"
+          amount={chain.timeToReceive.under3.total}
+          percentage={chain.timeToReceive.under3.percentage}
+          kind="less than 3s"
         />
         <ReceivedBlocks
-          amount={chain.timeToReceive.between48and51.total}
-          percentage={chain.timeToReceive.between48and51.percentage}
-          kind="between 48 - 51s"
+          amount={chain.timeToReceive.between3and6.total}
+          percentage={chain.timeToReceive.between3and6.percentage}
+          kind="between 3 - 6s"
         />
         <ReceivedBlocks
-          amount={chain.timeToReceive.between51and60.total}
-          percentage={chain.timeToReceive.between51and60.percentage}
-          kind="between 51 - 60s"
+          amount={chain.timeToReceive.between6and15.total}
+          percentage={chain.timeToReceive.between6and15.percentage}
+          kind="between 6 - 15s"
         />
         <ReceivedBlocks
-          amount={chain.timeToReceive.above60.total}
-          percentage={chain.timeToReceive.above60.percentage}
-          kind="more than 60s"
+          amount={chain.timeToReceive.above15.total}
+          percentage={chain.timeToReceive.above15.percentage}
+          kind="more than 15s"
         />
       </Block>
       <Block>

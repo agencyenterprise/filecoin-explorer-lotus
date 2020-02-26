@@ -16,22 +16,22 @@ const initialState = {
     orphans: [],
     timeToReceive: {
       total: 0,
-      under48: {
+      under3: {
         total: 0,
         percentage: 0,
         nodes: [],
       },
-      between48and51: {
+      between3and6: {
         total: 0,
         percentage: 0,
         nodes: [],
       },
-      between51and60: {
+      between6and15: {
         total: 0,
         percentage: 0,
         nodes: [],
       },
-      above60: {
+      above15: {
         total: 0,
         percentage: 0,
         nodes: [],
