@@ -118,26 +118,26 @@ const ControlsComponent = ({ maxBlock }) => {
       </Block>
 
       <Block>
-        <Title>Time block received after parent</Title>
+        <Title>Block sync delay</Title>
         <ReceivedBlocks
-          amount={chain.timeToReceive.under48.total}
-          percentage={chain.timeToReceive.under48.percentage}
-          kind="less than 48s"
+          amount={chain.timeToReceive.under3.total}
+          percentage={chain.timeToReceive.under3.percentage}
+          kind="less than 3s"
         />
         <ReceivedBlocks
-          amount={chain.timeToReceive.between48and51.total}
-          percentage={chain.timeToReceive.between48and51.percentage}
-          kind="between 48 - 51s"
+          amount={chain.timeToReceive.between3and6.total}
+          percentage={chain.timeToReceive.between3and6.percentage}
+          kind="between 3 - 6s"
         />
         <ReceivedBlocks
-          amount={chain.timeToReceive.between51and60.total}
-          percentage={chain.timeToReceive.between51and60.percentage}
-          kind="between 51 - 60s"
+          amount={chain.timeToReceive.between6and15.total}
+          percentage={chain.timeToReceive.between6and15.percentage}
+          kind="between 6 - 15s"
         />
         <ReceivedBlocks
-          amount={chain.timeToReceive.above60.total}
-          percentage={chain.timeToReceive.above60.percentage}
-          kind="more than 60s"
+          amount={chain.timeToReceive.above15.total}
+          percentage={chain.timeToReceive.above15.percentage}
+          kind="more than 15s"
         />
       </Block>
       <Block>

@@ -477,7 +477,6 @@ ElGrapho.prototype = {
     this.on('zoom-to-node', function(e) {
       const { nodeY, initialPanY } = e
       const yDiff = 0.95 - nodeY
-      console.log('y diff is', yDiff)
       const height = window.innerHeight
       let y = (yDiff / 2) * height * that.zoomY * that.zoomY
       y = y - (that.panY - initialPanY * that.zoomY) * that.zoomY
@@ -541,13 +540,6 @@ ElGrapho.prototype = {
     this.addListener(document, 'mousemove', function(evt) {
       if (that.interactionMode === Enums.interactionMode.BOX_ZOOM) {
         BoxZoom.update(evt.clientX, evt.clientY)
-      }
-    })
-
-    this.addListener(document, 'touchstart', function(evt) {
-      console.log('evt', evt)
-      if (evt.touches.length === 2) {
-        console.log('two finger touch')
       }
     })
 
@@ -772,7 +764,6 @@ ElGrapho.prototype = {
 
       // that.panX += mouseDiff.x / that.scale;
       // that.panY -= mouseDiff.y / that.scale;
-      console.log('update panx')
       that.panX += mouseDiff.x
       that.panY -= mouseDiff.y
 
@@ -836,8 +827,6 @@ ElGrapho.prototype = {
         endTime: new Date().getTime() + 300,
         prop: 'panX',
       })
-      console.log('start', that.panY)
-      console.log('end', (that.panY + panY / that.zoomY) * zoomY)
       this.animations.push({
         startVal: that.panY,
         endVal: (that.panY + panY / that.zoomY) * zoomY,

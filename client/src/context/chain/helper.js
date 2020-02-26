@@ -24,22 +24,22 @@ export const getChain = async ({ blockRange, startDate, endDate, miner, cid }) =
 
 const mapTimeToReceive = (chain) => {
   const table = {
-    under48: {
+    under3: {
       total: 0,
       percentage: 0,
       nodes: [],
     },
-    between48and51: {
+    between3and6: {
       total: 0,
       percentage: 0,
       nodes: [],
     },
-    between51and60: {
+    between6and15: {
       total: 0,
       percentage: 0,
       nodes: [],
     },
-    above60: {
+    above15: {
       total: 0,
       percentage: 0,
       nodes: [],
@@ -47,14 +47,14 @@ const mapTimeToReceive = (chain) => {
   }
 
   chain.nodes.forEach((node) => {
-    if (node.timeToReceiveRaw < 48000) {
-      table.under48.nodes.push(node)
-    } else if (node.timeToReceiveRaw >= 48000 && node.timeToReceiveRaw < 51000) {
-      table.between48and51.nodes.push(node)
-    } else if (node.timeToReceiveRaw >= 51000 && node.timeToReceiveRaw < 60000) {
-      table.between51and60.nodes.push(node)
+    if (node.timeToReceiveRaw < 3000) {
+      table.under3.nodes.push(node)
+    } else if (node.timeToReceiveRaw >= 3000 && node.timeToReceiveRaw < 6000) {
+      table.between3and6.nodes.push(node)
+    } else if (node.timeToReceiveRaw >= 6000 && node.timeToReceiveRaw < 15000) {
+      table.between6and15.nodes.push(node)
     } else {
-      table.above60.nodes.push(node)
+      table.above15.nodes.push(node)
     }
   })
 
