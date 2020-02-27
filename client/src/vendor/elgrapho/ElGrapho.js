@@ -388,16 +388,33 @@ ElGrapho.prototype = {
     context.beginPath()
     context.stroke()
 
-    const gl = this.hoverLayer.scene.context
+    /*
+       _
+      | |
+      | |===( )  //////
+      |_|   ||| | o o|
+            ||| ( c  )                  ___
+            ||| \= /                  ||   \_
+             ||||||                   ||     |
+             ||||||                ...||__/|-"
+             ||||||             __|________|__
+               |||             |______________|
+               |||             || ||      || ||
+               |||             || ||      || ||
+    -----------|||-------------||-||------||-||-------
+               |__>            || ||      || ||
+    */
 
-    let vertexBuffer = gl.createBuffer()
-    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer)
-    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW)
-    vertexBuffer.numItems = vertices.length / 2
+    // const gl = this.hoverLayer.scene.context
 
-    gl.vertexAttribPointer(vertices, 2, gl.FLOAT, false, 0, 0)
+    // let vertexBuffer = gl.createBuffer()
+    // gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer)
+    // gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW)
+    // vertexBuffer.numItems = vertices.length / 2
 
-    gl.drawArrays(gl.POINTS, 0, vertexBuffer.numItems)
+    // gl.vertexAttribPointer(vertices, 2, gl.FLOAT, false, 0, 0)
+
+    // gl.drawArrays(gl.POINTS, 0, vertexBuffer.numItems)
 
     context.restore()
     context.restore()
