@@ -290,7 +290,7 @@ WebGL.prototype = {
       this.buffers.triangles = {
         positions: this.createBuffer(vertices.triangles.positions, 2, this.layer.scene.context),
         normals: this.createBuffer(vertices.triangles.normals, 2, this.layer.scene.context),
-        colors: this.createBuffer(vertices.triangles.colors, 1, this.layer.scene.context),
+        triangleColors: this.createBuffer(vertices.triangles.triangleColors, 1, this.layer.scene.context),
       }
     }
   }),
@@ -453,7 +453,7 @@ WebGL.prototype = {
 
     this.bindBuffer(buffers.positions, shaderProgram.vertexPositionAttribute, gl)
     this.bindBuffer(buffers.normals, shaderProgram.normalsAttribute, gl)
-    this.bindBuffer(buffers.colors, shaderProgram.vertexColorAttribute, gl)
+    this.bindBuffer(buffers.triangleColors, shaderProgram.vertexColorAttribute, gl)
 
     gl.drawArrays(gl.TRIANGLES, 0, buffers.positions.numItems)
   },
