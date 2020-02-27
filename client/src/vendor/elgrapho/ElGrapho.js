@@ -639,7 +639,7 @@ ElGrapho.prototype = {
               // also highlight edges of node hovering on
               if (that.hoveredDataIndex !== -1) {
                 that.selectGroup(that.vertices.points.nodeColors[dataIndex])
-              } else if (that.selectedIndex == -1) {
+              } else if (that.selectedIndex === -1) {
                 that.deselectGroup()
               }
 
