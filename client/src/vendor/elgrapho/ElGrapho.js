@@ -423,7 +423,6 @@ ElGrapho.prototype = {
         context.stroke()
         context.restore()
       }
-
       context.restore()
     }
   },
@@ -636,6 +635,13 @@ ElGrapho.prototype = {
               that.hoveredDataIndex = dataIndex
               that.hoverDirty = true
               //that.dirty = true;
+
+              // also highlight edges of node hovering on
+              if (that.hoveredDataIndex !== -1) {
+                that.selectGroup(that.vertices.points.nodeColors[dataIndex])
+              } else if (that.selectedIndex === -1) {
+                that.deselectGroup()
+              }
 
               if (that.hoveredDataIndex !== -1) {
                 that.fire(Enums.events.NODE_MOUSEOVER, {

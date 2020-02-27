@@ -53,7 +53,7 @@ void main() {
   //gl_Position.z = 0.0;
   
 
-  bool isFocused = focusedGroup == -1.0 || aVertexColor == focusedGroup;
+  bool isFocused = aVertexColor == focusedGroup;
 
   if (isFocused) {
     gl_Position.z = -0.3;
@@ -63,22 +63,16 @@ void main() {
   }
 
   float validColor = mod(aVertexColor, 8.0);
-  if (darkMode) {
+  if (isFocused) {
+    vVertexColor = vec4(51.0/255.0, 102.0/255.0, 204.0/255.0, globalAlpha); // 3366CC
+  }
+  else if (darkMode) {
       vVertexColor = vec4(55.0/255.0, 55.0/255.0, 55.0/255.0, 1);  
   }
   else {
     vVertexColor = vec4(128.0/255.0, 128.0/255.0, 128.0/255.0, 1);
   }
   
-
-  // if (!isFocused) {
-  //   if (darkMode) {
-  //     vVertexColor = vec4(60.0/255.0, 60.0/255.0, 60.0/255.0, globalAlpha);  
-  //   }
-  //   else {
-  //     vVertexColor = vec4(220.0/255.0, 220.0/255.0, 220.0/255.0, globalAlpha);
-  //   }
-  // }
   // else if (validColor == 0.0) {
   //   vVertexColor = vec4(51.0/255.0, 102.0/255.0, 204.0/255.0, globalAlpha); // 3366CC
   // }

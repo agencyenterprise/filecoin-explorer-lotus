@@ -11,6 +11,7 @@ const VertexBridge = {
     let positions = new Float32Array(nodes.length * 2)
     //let halfWidth = width/2;
     //let halfHeight = height/2;
+    let nodeColors = new Float32Array(nodes.length)
     let colors = new Float32Array(nodes.length)
     let glowColors = new Float32Array(nodes.length)
     let outlineColors = new Float32Array(nodes.length)
@@ -24,6 +25,7 @@ const VertexBridge = {
       positions[positionCounter++] = node.x
       positions[positionCounter++] = node.y
       colors[n] = node.minerColor
+      nodeColors[n] = n
       glowColors[n] = node.tipset
       outlineColors[n] = node.weirdTime
     })
@@ -113,8 +115,8 @@ const VertexBridge = {
       let y0 = nodes[pointIndex0].y
       let y1 = nodes[pointIndex1].y
 
-      let color0 = colors[pointIndex0]
-      let color1 = colors[pointIndex1]
+      let color0 = nodeColors[pointIndex0]
+      let color1 = nodeColors[pointIndex1]
 
       addLine(x0, y0, color0, x1, y1, color1)
 
@@ -148,15 +150,16 @@ const VertexBridge = {
 
     return {
       points: {
-        positions: positions,
-        colors: colors,
-        glowColors: glowColors,
-        outlineColors: outlineColors,
+        positions,
+        colors,
+        nodeColors,
+        glowColors,
+        outlineColors,
       },
       triangles: {
         positions: trianglePositions,
         normals: triangleNormals,
-        colors: triangleColors,
+        triangleColors,
       },
     }
   }),
