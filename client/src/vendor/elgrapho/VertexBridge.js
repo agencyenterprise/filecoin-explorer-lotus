@@ -104,6 +104,8 @@ const VertexBridge = {
       }
     }
 
+    const store = {}
+
     for (let n = 0; n < numEdges; n++) {
       let pointIndex0 = edges[n].from
       let pointIndex1 = edges[n].to
@@ -116,7 +118,26 @@ const VertexBridge = {
       let color0 = colors[pointIndex0]
       let color1 = colors[pointIndex1]
 
+      const posBefore = trianglePositionsIndex
+
       addLine(x0, y0, color0, x1, y1, color1)
+
+      const createdLine = trianglePositions.slice(posBefore, posBefore + 6)
+
+      const fromCid = nodes[pointIndex0].id
+      const toCid = nodes[pointIndex1].id
+
+      if (!store[fromCid]) {
+        store[fromCid] = []
+      }
+
+      store[fromCid].push(...createdLine)
+
+      if (!store[toCid]) {
+        store[toCid] = []
+      }
+
+      store[toCid].push(...createdLine)
 
       if (showArrows) {
         let direction = getDirection(x0, y0, x1, y1)
@@ -158,6 +179,7 @@ const VertexBridge = {
         normals: triangleNormals,
         colors: triangleColors,
       },
+      store,
     }
   }),
 }

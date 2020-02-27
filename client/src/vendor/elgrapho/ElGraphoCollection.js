@@ -81,6 +81,7 @@ let ElGraphoCollection = {
         graph.hoverLayer.scene.clear()
 
         graph.renderRings(scale)
+        graph.highlightEdges(scale)
       }
 
       if (graph.dirty) {

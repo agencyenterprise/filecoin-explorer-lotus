@@ -149,6 +149,7 @@ ElGrapho.prototype = {
     this.setHasLabels()
 
     let vertices = (this.vertices = VertexBridge.modelToVertices(config.model, this.showArrows))
+    this.store = vertices.store
 
     this.webgl.initBuffers(vertices)
 
@@ -363,6 +364,43 @@ ElGrapho.prototype = {
     })
 
     labelsContext.restore()
+  },
+  highlightEdges: function(scale) {
+    let hoverIndex = this.hoveredDataIndex
+
+    if (hoverIndex < 0) return
+
+    // render
+    let scene = this.hoverLayer.scene
+    let context = scene.context
+
+    context.save()
+    context.scale(scale, scale)
+
+    const node = this.model.nodes[hoverIndex]
+
+    const vertices = this.store[node.id]
+
+    context.save()
+
+    context.strokeStyle = 'white'
+    context.lineWidth = 2
+    context.beginPath()
+    context.stroke()
+
+    const gl = this.hoverLayer.scene.context
+
+    let vertexBuffer = gl.createBuffer()
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer)
+    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW)
+    vertexBuffer.numItems = vertices.length / 2
+
+    gl.vertexAttribPointer(vertices, 2, gl.FLOAT, false, 0, 0)
+
+    gl.drawArrays(gl.POINTS, 0, vertexBuffer.numItems)
+
+    context.restore()
+    context.restore()
   },
   renderRings: function(scale) {
     let hoverIndex = this.hoveredDataIndex
