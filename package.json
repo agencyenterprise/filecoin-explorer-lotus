@@ -11,7 +11,7 @@
     "babel-node": "^0.0.1-security",
     "dotenv": "^8.2.0",
     "elgrapho": "^2.4.0",
-    "express": "^4.17.1",
+    "express": "^4.17.3",
     "nodemon": "^2.0.2",
     "ts-node": "^8.6.2",
     "typescript": "^3.7.5"
